@@ -44,12 +44,11 @@ repos:
         pass_filenames: false
         files: ^openfoundry/.*\.py$
 
-  - repo: https://github.com/sqlfluff/sqlfluff
-    rev: 3.0.0a6
+  - repo: local
     hooks:
-      - id: sqlfluff-lint
-        args: [--dialect=postgres]
-        files: ^alembic/versions/.*\.py$
-      - id: sqlfluff-fix
-        args: [--dialect=postgres]
-        files: ^alembic/versions/.*\.py$
+      - id: frontend-lint
+        name: Frontend Lint & Format
+        entry: bash -c 'cd frontend && npm run lint:fix'
+        language: system
+        files: ^frontend/.*\.(ts|tsx|js|jsx)$
+        pass_filenames: false
