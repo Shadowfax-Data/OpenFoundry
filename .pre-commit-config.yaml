@@ -1,0 +1,55 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: debug-statements
+
+  - repo: https://github.com/tox-dev/pyproject-fmt
+    rev: 1.7.0
+    hooks:
+      - id: pyproject-fmt
+
+  - repo: https://github.com/abravalheri/validate-pyproject
+    rev: v0.16
+    hooks:
+      - id: validate-pyproject
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.4
+    hooks:
+      - id: ruff
+        args: [--fix]
+        files: ^(openfoundry|alembic)/.*\.py$
+      - id: ruff-format
+        files: ^(openfoundry|alembic)/.*\.py$
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.8.0
+    hooks:
+      - id: mypy
+        additional_dependencies:
+          - types-requests
+          - types-setuptools
+          - types-pyyaml
+          - types-toml
+          - sqlalchemy
+          - fastapi
+          - alembic
+          - types-psycopg2
+        entry: mypy --config-file=pyproject.toml openfoundry/
+        always_run: true
+        pass_filenames: false
+        files: ^openfoundry/.*\.py$
+
+  - repo: https://github.com/sqlfluff/sqlfluff
+    rev: 3.0.0a6
+    hooks:
+      - id: sqlfluff-lint
+        args: [--dialect=postgres]
+        files: ^alembic/versions/.*\.py$
+      - id: sqlfluff-fix
+        args: [--dialect=postgres]
+        files: ^alembic/versions/.*\.py$
