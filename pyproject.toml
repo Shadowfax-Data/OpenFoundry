@@ -13,6 +13,9 @@ uvicorn = "^0.35.0"
 sqlalchemy = "^2.0.41"
 alembic = "^1.16.2"
 psycopg2-binary = "^2.9.10"
+uuid6 = "^2025.0.0"
+python-dotenv = "^1.1.1"
+docker = "^7.1.0"
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.8.0"
@@ -37,14 +40,12 @@ exclude = [
 ]
 
 [tool.ruff.lint]
-extend-select = [
-    "E",  # pycodestyle errors
-    "W",  # pycodestyle warnings
-    "F",  # pyflakes
-    "I",  # isort
-    "B",  # flake8-bugbear
-    "C4", # flake8-comprehensions
-    "UP", # pyupgrade
+select = ["D", "E", "F", "W"]
+ignore = [
+    "B009",  # Don't automatically convert setattr() to direct attribute assignment
+    "SIM118",  # Don't convert setattr(x, "y", z) to x.y = z
+    "D1",
+    "E501",
 ]
 
 [tool.ruff.format]
@@ -69,3 +70,5 @@ strict_equality = true
 exclude = [
     "alembic/",
 ]
+
+disable_error_code = ["attr-defined"]
