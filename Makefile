@@ -1,3 +1,12 @@
+# Variables
+IMAGE_NAME := openfoundry:latest
+DOCKER_FILE := Dockerfile
+
+# Build the Docker image
+docker-images:
+	@echo "Building Docker image: $(IMAGE_NAME)"
+	docker build -f $(DOCKER_FILE) -t $(IMAGE_NAME) .
+
 # Start openfoundry backend locally
 start-backend: install
 	@echo "Starting openfoundry locally on http://localhost:8000"
