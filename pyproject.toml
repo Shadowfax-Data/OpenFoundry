@@ -16,6 +16,10 @@ psycopg2-binary = "^2.9.10"
 uuid6 = "^2025.0.0"
 python-dotenv = "^1.1.1"
 docker = "^7.1.0"
+openai-agents = "^0.1.0"
+httpx = "^0.28.1"
+httpx-retries = "^0.4.0"
+pyyaml = "^6.0.2"
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.8.0"
@@ -45,6 +49,7 @@ ignore = [
     "B009",  # Don't automatically convert setattr() to direct attribute assignment
     "SIM118",  # Don't convert setattr(x, "y", z) to x.y = z
     "D1",
+    "D401",  # Don't require imperative mood in docstrings
     "E501",
 ]
 
