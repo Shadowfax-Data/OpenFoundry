@@ -1,11 +1,18 @@
 # Variables
 IMAGE_NAME := openfoundry:latest
 DOCKER_FILE := Dockerfile
+SANDBOX_IMAGE_NAME := openfoundry-sandbox:latest
+SANDBOX_DOCKER_FILE := sandbox/Dockerfile
 
 # Build the Docker image
 docker-images:
 	@echo "Building Docker image: $(IMAGE_NAME)"
 	docker build -f $(DOCKER_FILE) -t $(IMAGE_NAME) .
+
+# Build the sandbox Docker image
+docker-sandbox-images:
+	@echo "Building sandbox Docker image: $(SANDBOX_IMAGE_NAME)"
+	docker build -f $(SANDBOX_DOCKER_FILE) -t $(SANDBOX_IMAGE_NAME) sandbox/
 
 # Start openfoundry backend locally
 start-backend: install
@@ -58,4 +65,4 @@ lint-frontend:
 	@echo "Linting and formatting frontend code..."
 	cd frontend && npm run lint:fix
 
-.PHONY: start-backend install install-frontend setup-precommit lint format update-hooks start-frontend build-frontend lint-frontend
+.PHONY: start-backend install install-frontend setup-precommit lint format update-hooks start-frontend build-frontend lint-frontend docker-sandbox-images
