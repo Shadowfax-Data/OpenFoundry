@@ -1,33 +1,22 @@
-import os
 from datetime import datetime
 
-from dotenv import load_dotenv
 from sqlalchemy import DateTime, create_engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker
 from sqlalchemy.sql import func
 
-load_dotenv()
-
-
-def get_database_url():
-    return os.environ["DATABASE_URL"]
+from openfoundry.config import DATABASE_URL
 
 
 def get_engine(**kwargs):
-    database_url = get_database_url()
-    connect_args: dict
-    if database_url.startswith("postgresql://"):
-        connect_args = {
-            "keepalives": 1,
-            "keepalives_idle": 5,
-            "keepalives_interval": 5,
-            "keepalives_count": 5,
-            "connect_timeout": 5,
-        }
-    else:
-        connect_args = {}
+    connect_args = {
+        "keepalives": 1,
+        "keepalives_idle": 5,
+        "keepalives_interval": 5,
+        "keepalives_count": 5,
+        "connect_timeout": 5,
+    }
     return create_engine(
-        database_url, pool_pre_ping=True, connect_args=connect_args, **kwargs
+        DATABASE_URL, pool_pre_ping=True, connect_args=connect_args, **kwargs
     )
 
 
