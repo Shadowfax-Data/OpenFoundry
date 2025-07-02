@@ -44,7 +44,6 @@ from openfoundry.models.agent_sessions.agent_session import (
 )
 from openfoundry.models.conversation_item import ConversationItem
 
-# Shared OpenAI client for all requests
 set_tracing_export_api_key(OPENAI_API_KEY)
 
 
