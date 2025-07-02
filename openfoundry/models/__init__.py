@@ -8,6 +8,7 @@ from openfoundry.models.agent_sessions import (
     AppAgentSession,
 )
 from openfoundry.models.apps import App
+from openfoundry.models.conversation_item import ConversationItem
 
 __all__ = [
     "Base",
@@ -17,4 +18,5 @@ __all__ = [
     "AgentSessionStatus",
     "AgentSessionType",
     "AppAgentSession",
+    "ConversationItem",
 ]
