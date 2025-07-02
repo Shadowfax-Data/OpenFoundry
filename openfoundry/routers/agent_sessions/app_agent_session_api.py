@@ -1,4 +1,3 @@
-import os
 import uuid
 from datetime import datetime
 
@@ -15,6 +14,7 @@ from openfoundry.models.agent_sessions import (
     AppAgentSession,
 )
 from openfoundry.models.apps import App
+from openfoundry.config import DATABASE_URL
 
 # Define terminal statuses for agent sessions
 AGENT_SESSION_TERMINAL_STATUSES = [
@@ -81,8 +81,7 @@ def create_app_agent_session(request: Request, app_id: uuid.UUID):
 
         # Prepare environment variables for the container
         container_env = {}
-        if "DATABASE_URL" in os.environ:
-            container_env["DATABASE_URL"] = os.environ["DATABASE_URL"]
+        container_env["DATABASE_URL"] = DATABASE_URL
 
         # Create and start the container with port binding
         # Using port 0 will let Docker assign any free port

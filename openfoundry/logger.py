@@ -1,8 +1,6 @@
 import logging
-import os
 
-# Default log level from environment
-LOG_LEVEL = os.environ.get("LOG_LEVEL", "DEBUG").upper()
+from openfoundry.config import LOG_LEVEL
 
 logger = logging.getLogger("openfoundry")
 if not logger.handlers:
