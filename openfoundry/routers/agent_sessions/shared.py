@@ -3,7 +3,7 @@ import json
 import time
 from datetime import datetime, timedelta
 from uuid import UUID
-from agents import set_tracing_export_api_key
+
 from agents import (
     Agent,
     AgentsException,
@@ -12,6 +12,7 @@ from agents import (
     Runner,
     RunResultStreaming,
     TResponseInputItem,
+    set_tracing_export_api_key,
 )
 from agents.items import TResponseStreamEvent
 from agents.models.openai_provider import OpenAIProvider
@@ -33,6 +34,7 @@ from openfoundry.agents.run_context import (
     AgentRunContext,
     AppAgentRunContext,
 )
+from openfoundry.config import OPENAI_API_KEY
 from openfoundry.database import session_local
 from openfoundry.logger import logger
 from openfoundry.models.agent_sessions.agent_session import (
@@ -41,7 +43,6 @@ from openfoundry.models.agent_sessions.agent_session import (
     AgentSessionStatus,
 )
 from openfoundry.models.conversation_item import ConversationItem
-from openfoundry.config import OPENAI_API_KEY
 
 # Shared OpenAI client for all requests
 openai_client = AsyncOpenAI(api_key=OPENAI_API_KEY)

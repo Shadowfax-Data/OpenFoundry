@@ -1,7 +1,6 @@
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
-
 from openfoundry.database import session_local
 from openfoundry.logger import logger
 from openfoundry.middleware import LocalhostCORSMiddleware, SQLAlchemySessionMiddleware

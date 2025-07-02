@@ -7,6 +7,7 @@ from fastapi import APIRouter, HTTPException, Request, status
 from pydantic import BaseModel
 from sqlalchemy.orm import Session, joinedload
 
+from openfoundry.config import DATABASE_URL
 from openfoundry.logger import logger
 from openfoundry.models.agent_sessions import (
     AgentSession,
@@ -14,7 +15,6 @@ from openfoundry.models.agent_sessions import (
     AppAgentSession,
 )
 from openfoundry.models.apps import App
-from openfoundry.config import DATABASE_URL
 
 # Define terminal statuses for agent sessions
 AGENT_SESSION_TERMINAL_STATUSES = [

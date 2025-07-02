@@ -23,6 +23,10 @@ repos:
       - id: ruff
         args: [--fix]
         files: ^(openfoundry|alembic)/.*\.py$
+      - id: ruff
+        name: ruff-import-sort
+        args: [--select, I, --fix]
+        files: ^(openfoundry|alembic)/.*\.py$
       - id: ruff-format
         files: ^(openfoundry|alembic)/.*\.py$
 
