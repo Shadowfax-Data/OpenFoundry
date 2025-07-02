@@ -3,7 +3,7 @@ import json
 import time
 from datetime import datetime, timedelta
 from uuid import UUID
-
+from agents import set_tracing_export_api_key
 from agents import (
     Agent,
     AgentsException,
@@ -45,6 +45,7 @@ from openfoundry.config import OPENAI_API_KEY
 
 # Shared OpenAI client for all requests
 openai_client = AsyncOpenAI(api_key=OPENAI_API_KEY)
+set_tracing_export_api_key(OPENAI_API_KEY)
 
 
 class MessageRequest(BaseModel):

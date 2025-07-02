@@ -6,6 +6,7 @@ from sqlalchemy.sql import func
 
 from openfoundry.config import DATABASE_URL
 
+
 def get_engine(**kwargs):
     connect_args = {
         "keepalives": 1,
