@@ -1,8 +1,7 @@
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
-from agents import set_tracing_export_api_key
-from openfoundry.config import OPENAI_API_KEY
+
 from openfoundry.database import session_local
 from openfoundry.logger import logger
 from openfoundry.middleware import LocalhostCORSMiddleware, SQLAlchemySessionMiddleware
@@ -11,8 +10,6 @@ from openfoundry.routers.agent_sessions.app_agent_api import (
     router as app_agent_api_router,
 )
 from openfoundry.routers.app_api import router as app_router
-
-set_tracing_export_api_key(OPENAI_API_KEY)
 
 app = FastAPI()
 
