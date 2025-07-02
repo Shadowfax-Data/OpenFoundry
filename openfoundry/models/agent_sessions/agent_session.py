@@ -73,3 +73,15 @@ class AgentSessionBase(Base):
             container_id=container_id,
             port=port,
         )
+
+    def get_trace_metadata(self) -> dict[str, str]:
+        """Get trace metadata for this agent session type.
+
+        Returns:
+            Dict of metadata to include in agent run traces.
+
+        """
+        return {
+            "session_type": self.session_type.value,
+            "session_id": str(self.id),
+        }
