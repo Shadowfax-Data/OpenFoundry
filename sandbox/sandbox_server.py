@@ -10,6 +10,8 @@ from openhands_aci.editor import OHEditor
 from openhands_aci.editor.results import CLIResult
 from pcb_api import router as pcb_api_router
 from pydantic import BaseModel
+from pathlib import Path
+
 
 # Configure logging
 logging.basicConfig(
@@ -177,52 +179,28 @@ def read_file(file_path: str = Query(..., description='Absolute file path')):
         )
 
 
+def find_all_files(roots: list[str]) -> list[str]:
+    """
+    Given a list of root directories (absolute paths),
+    return a flat list of all file absolute paths under them.
+    """
+    all_files: list[str] = []
+    for root in roots:
+        root_path = Path(root)
+        for p in root_path.rglob('*'):
+            if p.is_file():
+                all_files.append(str(p.resolve()))
+    return all_files
+
+
 @app.get('/list_files')
-def list_files(
-    directory_path: str = Query(
-        '/workspace', description='Directory path to list files from'
-    ),
-):
+def list_files() -> dict:
     """
-    List files and directories in the specified directory.
+    List all available files under the workspace directory.
     """
-    logger.info(f"Received list_files request: directory_path='{directory_path}'")
-    if not os.path.isabs(directory_path):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail='Directory path must be absolute',
-        )
-    if not os.path.exists(directory_path):
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail='Directory not found'
-        )
-    if not os.path.isdir(directory_path):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail='Path is not a directory'
-        )
-
-    try:
-        items = os.listdir(directory_path)
-        files = []
-        directories = []
-
-        for item in items:
-            item_path = os.path.join(directory_path, item)
-            if os.path.isfile(item_path):
-                files.append(item)
-            elif os.path.isdir(item_path):
-                directories.append(item)
-
-        logger.info(
-            f"Successfully listed directory: {directory_path} ({len(files)} files, {len(directories)} directories)"
-        )
-        return ListFilesResponse(files=files, directories=directories)
-    except Exception as e:
-        logger.error(f"Failed to list directory: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f'Failed to list directory: {e}',
-        )
+    default_roots = ['/workspace']
+    files = find_all_files(default_roots)
+    return {'files': files}
 
 
 @app.post('/run_shell', response_model=RunShellResponse)
