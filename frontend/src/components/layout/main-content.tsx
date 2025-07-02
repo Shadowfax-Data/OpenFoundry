@@ -1,5 +1,16 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  Paperclip,
+  Mic,
+  ArrowUp,
+  Camera,
+  Palette,
+  FolderUp,
+  Target,
+  FileText,
+  GitFork,
+} from "lucide-react";
 
 export function MainContent() {
   return (
@@ -59,13 +70,13 @@ export function MainContent() {
               />
               <div className="absolute right-3 top-3 flex items-center space-x-2">
                 <Button size="sm" variant="ghost" className="h-6 w-6 p-0">
-                  📎
+                  <Paperclip className="h-4 w-4" />
                 </Button>
                 <Button size="sm" variant="ghost" className="h-6 w-6 p-0">
-                  🎤
+                  <Mic className="h-4 w-4" />
                 </Button>
                 <Button size="sm" variant="ghost" className="h-6 w-6 p-0">
-                  ↑
+                  <ArrowUp className="h-4 w-4" />
                 </Button>
               </div>
             </div>
@@ -73,20 +84,45 @@ export function MainContent() {
 
           {/* Action buttons */}
           <div className="mb-12 flex flex-wrap justify-center gap-3">
-            <Button variant="outline" size="sm">
-              📷 Clone a Screenshot
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              <Camera className="h-4 w-4" />
+              Clone a Screenshot
             </Button>
-            <Button variant="outline" size="sm">
-              🎨 Import from Figma
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              <Palette className="h-4 w-4" />
+              Import from Figma
             </Button>
-            <Button variant="outline" size="sm">
-              📁 Upload a Project
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              <FolderUp className="h-4 w-4" />
+              Upload a Project
             </Button>
-            <Button variant="outline" size="sm">
-              🎯 Landing Page
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              <Target className="h-4 w-4" />
+              Landing Page
             </Button>
-            <Button variant="outline" size="sm">
-              📝 Sign Up Form
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              <FileText className="h-4 w-4" />
+              Sign Up Form
             </Button>
           </div>
 
@@ -165,8 +201,9 @@ export function MainContent() {
                       Marketing Website
                     </span>
                   </div>
-                  <div className="flex items-center text-xs text-muted-foreground">
-                    🍴 261 Forks
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <GitFork className="h-3 w-3" />
+                    261 Forks
                   </div>
                 </div>
               </div>
@@ -180,8 +217,9 @@ export function MainContent() {
                       Crypto Dashboard
                     </span>
                   </div>
-                  <div className="flex items-center text-xs text-muted-foreground">
-                    🍴 17.6K Forks
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <GitFork className="h-3 w-3" />
+                    17.6K Forks
                   </div>
                 </div>
               </div>
@@ -195,8 +233,9 @@ export function MainContent() {
                       Cyberpunk dashboard design
                     </span>
                   </div>
-                  <div className="flex items-center text-xs text-muted-foreground">
-                    🍴 792 Forks
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <GitFork className="h-3 w-3" />
+                    792 Forks
                   </div>
                 </div>
               </div>
