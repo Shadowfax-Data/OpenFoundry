@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
 import {
   Sidebar,
   SidebarContent,
@@ -66,7 +65,7 @@ export function AppSidebar() {
   const [isRecentsOpen, setIsRecentsOpen] = useState(true);
 
   return (
-    <Sidebar className="border-r">
+    <Sidebar className="border-none">
       <SidebarHeader className="p-4">
         <Button className="w-full justify-start" size="sm">
           <Plus className="mr-2 h-4 w-4" />
@@ -108,8 +107,6 @@ export function AppSidebar() {
                 </SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>
-
-            <Separator className="my-4" />
 
             {/* Favorite Projects */}
             <SidebarGroup>
@@ -165,10 +162,7 @@ export function AppSidebar() {
                   <SidebarMenu>
                     {favoriteChats.map((chat, index) => (
                       <SidebarMenuItem key={index}>
-                        <SidebarMenuButton
-                          size="sm"
-                          className="text-sm"
-                        >
+                        <SidebarMenuButton size="sm" className="text-sm">
                           {chat}
                         </SidebarMenuButton>
                       </SidebarMenuItem>
@@ -200,10 +194,7 @@ export function AppSidebar() {
                   <SidebarMenu>
                     {recentItems.map((item, index) => (
                       <SidebarMenuItem key={index}>
-                        <SidebarMenuButton
-                          size="sm"
-                          className="text-sm"
-                        >
+                        <SidebarMenuButton size="sm" className="text-sm">
                           <span className="truncate">{item}</span>
                         </SidebarMenuButton>
                       </SidebarMenuItem>

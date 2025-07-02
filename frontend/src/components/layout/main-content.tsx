@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/badge";
 
 export function MainContent() {
   return (
-    <div className="flex-1 overflow-auto">
+    <div className="flex-1 overflow-auto mx-1">
       <div className="h-full rounded-lg border bg-background p-8">
         <div className="mx-auto max-w-4xl">
           {/* Sync banner */}

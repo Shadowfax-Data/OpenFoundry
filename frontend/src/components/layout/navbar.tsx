@@ -5,8 +5,8 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 
 export function Navbar() {
   return (
-    <header className="border-b bg-sidebar">
-      <div className="flex h-14 items-center px-4">
+    <header className="bg-sidebar">
+      <div className="flex h-10 items-center px-4">
         <div className="mr-4 flex items-center">
           <SidebarTrigger className="mr-2" />
           <div className="mr-6 flex items-center space-x-2">
