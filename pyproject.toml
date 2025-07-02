@@ -8,7 +8,7 @@ packages = [{include = "openfoundry"}]
 
 [tool.poetry.dependencies]
 python = "^3.12"
-fastapi = "^0.115.14"
+fastapi = {extras = ["standard"], version = "^0.115.14"}
 uvicorn = "^0.35.0"
 sqlalchemy = "^2.0.41"
 alembic = "^1.16.2"
