@@ -15,6 +15,8 @@ import {
   Calendar,
   AppWindowMac,
   X,
+  Play,
+  Square,
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/store";
 import {
@@ -25,12 +27,19 @@ import {
   setSortBy,
   clearError,
 } from "@/store/slices/appsSlice";
+import {
+  fetchAppAgentSessions,
+  clearError as clearSessionsError,
+} from "@/store/slices/appAgentSessionsSlice";
 
 export function Apps() {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const { apps, loading, error, searchQuery, statusFilter, sortBy } =
     useAppSelector((state) => state.apps);
+  const { sessions, error: sessionsError } = useAppSelector(
+    (state) => state.appAgentSessions,
+  );
 
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [newAppName, setNewAppName] = useState("");
@@ -40,12 +49,39 @@ export function Apps() {
     dispatch(fetchApps());
   }, [dispatch]);
 
-  // Clear error when component unmounts
+  // Fetch app agent sessions for each app when apps are loaded
+  useEffect(() => {
+    if (apps.length > 0) {
+      apps.forEach((app) => {
+        // Only fetch if we don't already have sessions for this app
+        if (!sessions[app.id]) {
+          dispatch(fetchAppAgentSessions(app.id));
+        }
+      });
+    }
+  }, [apps, sessions, dispatch]);
+
+  // Clear errors when component unmounts
   useEffect(() => {
     return () => {
       dispatch(clearError());
+      dispatch(clearSessionsError());
     };
   }, [dispatch]);
+
+  // Helper function to get the most recent active session for an app
+  const getAppSessionStatus = (appId: string) => {
+    const appSessions = sessions[appId] || [];
+    const activeSession = appSessions.find(
+      (session) => session.status === "active",
+    );
+    return activeSession ? "active" : "stopped";
+  };
+
+  // Helper function to get session count for an app
+  const getAppSessionCount = (appId: string) => {
+    return sessions[appId]?.length || 0;
+  };
 
   // Filter and sort apps based on current state
   const filteredAndSortedApps = useMemo(() => {
@@ -108,19 +144,22 @@ export function Apps() {
     }
   };
 
-  if (error) {
+  if (error || sessionsError) {
     return (
       <div className="h-full rounded-lg border bg-background">
         <div className="p-8 mx-auto max-w-6xl">
           <div className="flex flex-col items-center justify-center py-16">
             <div className="rounded-lg bg-red-50 border border-red-200 p-8 text-center">
               <h3 className="text-lg font-semibold mb-2 text-red-800">Error</h3>
-              <p className="text-red-600 mb-4">{error}</p>
+              <p className="text-red-600 mb-4">{error || sessionsError}</p>
               <div className="flex gap-2 justify-center">
                 <Button onClick={() => dispatch(fetchApps())}>Try Again</Button>
                 <Button
                   variant="outline"
-                  onClick={() => dispatch(clearError())}
+                  onClick={() => {
+                    dispatch(clearError());
+                    dispatch(clearSessionsError());
+                  }}
                 >
                   Dismiss
                 </Button>
@@ -251,59 +290,74 @@ export function Apps() {
         {/* Apps Grid */}
         {!loading && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredAndSortedApps.map((app) => (
-              <div
-                key={app.id}
-                className="rounded-lg border bg-card text-card-foreground shadow-sm hover:shadow-md transition-shadow cursor-pointer"
-              >
-                <div className="p-6">
-                  <div className="flex items-start justify-between mb-4">
-                    <div
-                      className={`h-12 w-12 rounded-lg ${app.color} flex items-center justify-center text-white`}
-                    >
-                      <AppWindowMac className="h-6 w-6" />
-                    </div>
-                    <Button variant="ghost" size="sm">
-                      <MoreVertical className="h-4 w-4" />
-                    </Button>
-                  </div>
+            {filteredAndSortedApps.map((app) => {
+              const sessionStatus = getAppSessionStatus(app.id);
+              const sessionCount = getAppSessionCount(app.id);
 
-                  <div className="mb-4">
-                    <h3 className="font-semibold text-lg mb-2">{app.name}</h3>
-                    <p className="text-sm text-muted-foreground">
-                      {app.description}
-                    </p>
-                  </div>
-
-                  <div className="flex items-center justify-between text-sm text-muted-foreground mb-4">
-                    <div className="flex items-center gap-1">
-                      <Calendar className="h-4 w-4" />
-                      {app.lastModified}
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
+              return (
+                <div
+                  key={app.id}
+                  className="rounded-lg border bg-card text-card-foreground shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                >
+                  <div className="p-6">
+                    <div className="flex items-start justify-between mb-4">
                       <div
-                        className={`h-2 w-2 rounded-full ${
-                          app.status === "active"
-                            ? "bg-green-500"
-                            : "bg-yellow-500"
-                        }`}
-                      />
-                      <span className="text-sm capitalize">{app.status}</span>
+                        className={`h-12 w-12 rounded-lg ${app.color} flex items-center justify-center text-white`}
+                      >
+                        <AppWindowMac className="h-6 w-6" />
+                      </div>
+                      <Button variant="ghost" size="sm">
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => navigate(`/app/${app.id}/chat`)}
-                    >
-                      Edit
-                    </Button>
+
+                    <div className="mb-4">
+                      <h3 className="font-semibold text-lg mb-2">{app.name}</h3>
+                      <p className="text-sm text-muted-foreground">
+                        {app.description}
+                      </p>
+                    </div>
+
+                    <div className="flex items-center justify-between text-sm text-muted-foreground mb-4">
+                      <div className="flex items-center gap-1">
+                        <Calendar className="h-4 w-4" />
+                        {app.lastModified}
+                      </div>
+                      <div className="flex items-center gap-1">
+                        {sessionStatus === "active" ? (
+                          <Play className="h-4 w-4 text-green-500" />
+                        ) : (
+                          <Square className="h-4 w-4 text-gray-400" />
+                        )}
+                        <span className="text-xs">
+                          {sessionCount} session{sessionCount !== 1 ? "s" : ""}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div
+                          className={`h-2 w-2 rounded-full ${
+                            app.status === "active"
+                              ? "bg-green-500"
+                              : "bg-yellow-500"
+                          }`}
+                        />
+                        <span className="text-sm capitalize">{app.status}</span>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => navigate(`/app/${app.id}/chat`)}
+                      >
+                        Edit
+                      </Button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
 
