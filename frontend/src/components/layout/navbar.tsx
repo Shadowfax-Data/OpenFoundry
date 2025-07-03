@@ -1,5 +1,4 @@
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 
@@ -19,12 +18,6 @@ export function Navbar() {
             {/* Search would go here */}
           </div>
           <nav className="flex items-center space-x-2">
-            <Badge variant="secondary" className="text-xs">
-              Free
-            </Badge>
-            <Button variant="ghost" size="sm">
-              Upgrade
-            </Button>
             <Button variant="ghost" size="sm">
               Feedback
             </Button>
