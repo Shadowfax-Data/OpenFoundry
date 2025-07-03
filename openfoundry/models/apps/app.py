@@ -47,3 +47,8 @@ class App(Base):
         # Write the rendered content to app.py
         with open(app_file, "w") as f:
             f.write(rendered_content)
+
+    def get_workspace_directory(self):
+        """Get the workspace directory for this app."""
+        base_path = Path.cwd()
+        return Path.joinpath(base_path, ".storage", "app", str(self.id), "files")

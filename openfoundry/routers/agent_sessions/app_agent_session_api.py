@@ -1,3 +1,5 @@
+import io
+import tarfile
 import uuid
 from datetime import datetime
 
@@ -7,7 +9,6 @@ from fastapi import APIRouter, HTTPException, Request, status
 from pydantic import BaseModel
 from sqlalchemy.orm import Session, joinedload
 
-from openfoundry.config import DATABASE_URL
 from openfoundry.logger import logger
 from openfoundry.models.agent_sessions import (
     AgentSession,
@@ -79,16 +80,11 @@ def create_app_agent_session(request: Request, app_id: uuid.UUID):
         # Log Docker container creation attempt
         logger.info(f"Creating Docker container for app session {session_id}")
 
-        # Prepare environment variables for the container
-        container_env = {}
-        container_env["DATABASE_URL"] = DATABASE_URL
-
         # Create and start the container with port binding
         # Using port 0 will let Docker assign any free port
         container = docker_client.containers.run(
             image="openfoundry-sandbox:latest",
             ports={"8000/tcp": None},  # Bind container port 8000 to any free host port
-            environment=container_env,
             detach=True,
             name=f"app-session-{session_id}",
         )
@@ -104,6 +100,18 @@ def create_app_agent_session(request: Request, app_id: uuid.UUID):
         container_name = container.name
         logger.info(f"Container ID: {container_id}, Container Name: {container_name}")
         logger.info(f"Assigned port for app session {session_id}: {assigned_port}")
+
+        # Copy workspace files to container at runtime
+        workspace_dir = app.get_workspace_directory()
+        logger.info(
+            f"Copying workspace files from {workspace_dir} to container /workspace"
+        )
+        tar_stream = io.BytesIO()
+        with tarfile.open(fileobj=tar_stream, mode="w") as t:
+            t.add(str(workspace_dir), arcname=".")
+        tar_stream.seek(0)
+        container.put_archive("/workspace", tar_stream.read())
+        logger.info("Successfully copied workspace files to container")
 
     except docker.errors.ImageNotFound:
         raise HTTPException(
