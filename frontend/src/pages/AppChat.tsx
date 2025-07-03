@@ -2,12 +2,13 @@ import { useState } from "react";
 import { useParams } from "react-router";
 import { Button } from "@/components/ui/button";
 import { Eye, Code, MoreVertical } from "lucide-react";
-import { ChatConversation, ChatMessage } from "@/components/ChatConversation";
+import { ChatConversation } from "@/components/ChatConversation";
 import {
   ResizablePanelGroup,
   ResizablePanel,
   ResizableHandle,
 } from "@/components/ui/resizable";
+import { useAppChat } from "@/hooks/useAppChat";
 
 export function AppChat() {
   const { appId, sessionId } = useParams<{
@@ -16,26 +17,14 @@ export function AppChat() {
   }>();
   const [activeTab, setActiveTab] = useState<"preview" | "code">("preview");
 
-  // Mock chat messages for demonstration
-  const messages: ChatMessage[] = [
-    {
-      id: "1",
-      content: "Create a simple dashboard component " + appId + " " + sessionId,
-      isUser: true,
-      timestamp: "2 minutes ago",
-    },
-    {
-      id: "2",
-      content:
-        "I'll create a dashboard component for you with charts and metrics.",
-      isUser: false,
-      timestamp: "1 minute ago",
-    },
-  ];
+  const { messages, isStreaming, error, sendMessage, currentWriteFileInfo } =
+    useAppChat({
+      appId: appId!,
+      sessionId: sessionId!,
+    });
 
   const handleSendMessage = (message: string) => {
-    // TODO: Implement message sending logic
-    console.log("Sending message:", message);
+    sendMessage(message);
   };
 
   return (
@@ -48,7 +37,12 @@ export function AppChat() {
           {/* Left Panel - Chat Messages */}
           <ResizablePanel defaultSize={30} minSize={20} maxSize={50}>
             <ChatConversation
-              messages={messages}
+              messages={messages.map((msg) => ({
+                id: msg.id,
+                content: msg.content,
+                isUser: msg.sender === "user",
+                timestamp: new Date().toLocaleTimeString(), // You can add proper timestamps later
+              }))}
               onSendMessage={handleSendMessage}
               placeholder="Type your message..."
               title="Conversation"
@@ -113,6 +107,16 @@ export function AppChat() {
                       <p className="text-sm">
                         AI-generated code based on your conversation
                       </p>
+                      {currentWriteFileInfo && (
+                        <div className="mt-4 text-left w-full">
+                          <h4 className="font-semibold mb-2">
+                            Current File: {currentWriteFileInfo.fileName}
+                          </h4>
+                          <pre className="bg-muted p-4 rounded text-xs overflow-auto max-h-64">
+                            {currentWriteFileInfo.content}
+                          </pre>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}

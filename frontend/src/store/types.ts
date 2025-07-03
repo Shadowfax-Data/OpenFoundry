@@ -44,6 +44,7 @@ export interface AppAgentSessionsState {
 export type RootState = {
   apps: AppsState;
   appAgentSessions: AppAgentSessionsState;
+  appChat: import("./slices/appChatSlice").AppChatState;
 };
 
 // API request types
