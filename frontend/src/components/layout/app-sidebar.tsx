@@ -12,7 +12,15 @@ import {
   SidebarGroupContent,
   SidebarRail,
 } from "@/components/ui/sidebar";
-import { Search, Folder, Clock, Users, Plus, Home, AppWindow } from "lucide-react";
+import {
+  Search,
+  Folder,
+  Clock,
+  Users,
+  Plus,
+  Home,
+  AppWindow,
+} from "lucide-react";
 
 export function AppSidebar() {
   const location = useLocation();
@@ -37,7 +45,7 @@ export function AppSidebar() {
                     <SidebarMenuButton asChild>
                       <Link
                         to="/"
-                        className={`w-full ${location.pathname === '/' ? 'bg-sidebar-accent text-sidebar-accent-foreground' : ''}`}
+                        className={`w-full ${location.pathname === "/" ? "bg-sidebar-accent text-sidebar-accent-foreground" : ""}`}
                       >
                         <Home className="mr-2 h-4 w-4" />
                         Home
@@ -48,7 +56,7 @@ export function AppSidebar() {
                     <SidebarMenuButton asChild>
                       <Link
                         to="/apps"
-                        className={`w-full ${location.pathname === '/apps' ? 'bg-sidebar-accent text-sidebar-accent-foreground' : ''}`}
+                        className={`w-full ${location.pathname === "/apps" ? "bg-sidebar-accent text-sidebar-accent-foreground" : ""}`}
                       >
                         <AppWindow className="mr-2 h-4 w-4" />
                         Apps

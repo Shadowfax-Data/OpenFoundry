@@ -14,9 +14,7 @@ export function Layout() {
 
           <main className="flex flex-1">
             <div className="flex-1 overflow-auto mx-1">
-              <div className="h-full rounded-lg border bg-background p-8">
-                <Outlet />
-              </div>
+              <Outlet />
             </div>
           </main>
         </div>

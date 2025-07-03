@@ -11,4 +11,12 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  server: {
+    allowedHosts: true,
+    proxy: {
+      "/api": "http://127.0.0.1:8000",
+      "/docs": "http://127.0.0.1:8000",
+      "/openapi.json": "http://127.0.0.1:8000",
+    },
+  },
 });
