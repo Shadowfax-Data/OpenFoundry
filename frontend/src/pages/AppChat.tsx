@@ -27,6 +27,38 @@ export function AppChat() {
     sendMessage(message);
   };
 
+  // Show loading state while chat history is being fetched
+  if (messages.length === 0 && !error) {
+    return (
+      <div className="h-full bg-sidebar">
+        <div className="h-full p-2">
+          <div className="h-full rounded-lg border bg-background flex items-center justify-center">
+            <div className="text-center text-muted-foreground">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+              <p>Loading chat history...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="h-full bg-sidebar">
+        <div className="h-full p-2">
+          <div className="h-full rounded-lg border bg-background flex items-center justify-center">
+            <div className="text-center text-red-600">
+              <p className="font-semibold mb-2">Error loading chat</p>
+              <p className="text-sm">{error}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="h-full bg-sidebar">
       <div className="h-full p-2">

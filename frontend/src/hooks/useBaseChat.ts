@@ -11,6 +11,7 @@ import {
   Message,
 } from "@/store/slices/chatSliceFactory";
 import { RootState } from "@/store/types";
+import { useChatHistory } from "./useChatHistory";
 
 interface ChatActions {
   addMessage: ActionCreatorWithPayload<Message>;
@@ -57,6 +58,15 @@ export const useBaseChat = ({
   const dispatch = useDispatch();
   const { messages, isStreaming, error } = useSelector(chatSelector);
   const currentWriteFileInfo = useSelector(selectCurrentWriteFileInfo);
+
+  // Load chat history when component mounts
+  useChatHistory({
+    resourceId,
+    sessionId,
+    baseEndpoint,
+    welcomeMessage,
+    actions,
+  });
 
   const sendMessage = async (inputMessage: string) => {
     if (!inputMessage.trim()) return;
