@@ -60,11 +60,7 @@ export function Home() {
 
       {/* Action buttons */}
       <div className="mb-12 flex flex-wrap justify-center gap-3">
-        <Button
-          variant="outline"
-          size="sm"
-          className="flex items-center gap-2"
-        >
+        <Button variant="outline" size="sm" className="flex items-center gap-2">
           <BarChart3 className="h-4 w-4" />
           Set up data warehouse
         </Button>
@@ -77,27 +73,15 @@ export function Home() {
           <Hammer className="h-4 w-4" />
           App Builder
         </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          className="flex items-center gap-2"
-        >
+        <Button variant="outline" size="sm" className="flex items-center gap-2">
           <FileText className="h-4 w-4" />
           Build a data application
         </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          className="flex items-center gap-2"
-        >
+        <Button variant="outline" size="sm" className="flex items-center gap-2">
           <Target className="h-4 w-4" />
           Update a data model
         </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          className="flex items-center gap-2"
-        >
+        <Button variant="outline" size="sm" className="flex items-center gap-2">
           <TrendingUp className="h-4 w-4" />
           Analytics
         </Button>
