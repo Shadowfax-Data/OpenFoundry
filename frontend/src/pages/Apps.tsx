@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router";
 import {
@@ -69,19 +69,22 @@ export function Apps() {
     };
   }, [dispatch]);
 
-  // Helper function to get the most recent active session for an app
-  const getAppSessionStatus = (appId: string) => {
-    const appSessions = sessions[appId] || [];
-    const activeSession = appSessions.find(
-      (session) => session.status === "active",
-    );
-    return activeSession ? "active" : "stopped";
-  };
-
   // Helper function to get session count for an app
   const getAppSessionCount = (appId: string) => {
     return sessions[appId]?.length || 0;
   };
+
+  // Helper function to get the most recent active session for an app
+  const getAppSessionStatus = useCallback(
+    (appId: string) => {
+      const appSessions = sessions[appId] || [];
+      const activeSession = appSessions.find(
+        (session) => session.status === "active",
+      );
+      return activeSession ? "active" : "stopped";
+    },
+    [sessions],
+  );
 
   // Filter and sort apps based on current state
   const filteredAndSortedApps = useMemo(() => {
@@ -96,9 +99,12 @@ export function Apps() {
       );
     }
 
-    // Apply status filter
+    // Apply status filter based on agent session status
     if (statusFilter !== "all") {
-      filteredApps = filteredApps.filter((app) => app.status === statusFilter);
+      filteredApps = filteredApps.filter((app) => {
+        const sessionStatus = getAppSessionStatus(app.id);
+        return sessionStatus === statusFilter;
+      });
     }
 
     // Apply sorting
@@ -116,14 +122,14 @@ export function Apps() {
     });
 
     return sortedApps;
-  }, [apps, searchQuery, statusFilter, sortBy]);
+  }, [apps, searchQuery, statusFilter, sortBy, getAppSessionStatus]);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     dispatch(setSearchQuery(e.target.value));
   };
 
   const handleStatusChange = (value: string) => {
-    dispatch(setStatusFilter(value as "all" | "active" | "draft"));
+    dispatch(setStatusFilter(value as "all" | "active" | "stopped"));
   };
 
   const handleSortChange = (value: string) => {
@@ -212,7 +218,7 @@ export function Apps() {
               <SelectContent>
                 <SelectItem value="all">All Status</SelectItem>
                 <SelectItem value="active">Active Only</SelectItem>
-                <SelectItem value="draft">Draft Only</SelectItem>
+                <SelectItem value="stopped">Stopped Only</SelectItem>
               </SelectContent>
             </Select>
             <Select value={sortBy} onValueChange={handleSortChange}>
@@ -339,12 +345,14 @@ export function Apps() {
                       <div className="flex items-center gap-2">
                         <div
                           className={`h-2 w-2 rounded-full ${
-                            app.status === "active"
+                            sessionStatus === "active"
                               ? "bg-green-500"
-                              : "bg-yellow-500"
+                              : "bg-gray-400"
                           }`}
                         />
-                        <span className="text-sm capitalize">{app.status}</span>
+                        <span className="text-sm capitalize">
+                          {sessionStatus}
+                        </span>
                       </div>
                       <Button
                         variant="outline"

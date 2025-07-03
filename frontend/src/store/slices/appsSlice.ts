@@ -42,7 +42,6 @@ const transformAppFromAPI = (apiApp: AppFromAPI): App => {
     ...apiApp,
     description: `Data application: ${apiApp.name}`, // Default description
     color: colors[colorIndex],
-    status: Math.random() > 0.8 ? "draft" : "active", // Mostly active apps
     lastModified,
   };
 };
@@ -134,7 +133,7 @@ const appsSlice = createSlice({
     },
     setStatusFilter: (
       state,
-      action: PayloadAction<"all" | "active" | "draft">,
+      action: PayloadAction<"all" | "active" | "stopped">,
     ) => {
       state.statusFilter = action.payload;
     },

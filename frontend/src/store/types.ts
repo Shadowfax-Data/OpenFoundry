@@ -11,7 +11,6 @@ export interface App extends AppFromAPI {
   // Computed/derived properties for UI
   description: string;
   color: string;
-  status: "active" | "draft";
   lastModified: string; // Human-readable format
 }
 
@@ -30,7 +29,7 @@ export interface AppsState {
   loading: boolean;
   error: string | null;
   searchQuery: string;
-  statusFilter: "all" | "active" | "draft";
+  statusFilter: "all" | "active" | "stopped";
   sortBy: "recent" | "name";
 }
 
