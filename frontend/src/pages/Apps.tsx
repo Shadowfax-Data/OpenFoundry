@@ -30,6 +30,7 @@ import {
 import {
   fetchAppAgentSessions,
   clearError as clearSessionsError,
+  createAppAgentSession,
 } from "@/store/slices/appAgentSessionsSlice";
 
 export function Apps() {
@@ -43,6 +44,9 @@ export function Apps() {
 
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [newAppName, setNewAppName] = useState("");
+
+  // Track loading state for Edit button per app
+  const [editLoadingAppId, setEditLoadingAppId] = useState<string | null>(null);
 
   // Fetch apps on component mount
   useEffect(() => {
@@ -147,6 +151,44 @@ export function Apps() {
     } catch (error) {
       // Error is handled by Redux state
       console.error("Failed to create app:", error);
+    }
+  };
+
+  // Helper to handle Edit button click
+  const handleEditClick = async (appId: string) => {
+    setEditLoadingAppId(appId);
+    const appSessions = sessions[appId] || [];
+    // Find active session
+    const activeSession = appSessions.find((s) => s.status === "active");
+    let sessionToGo: (typeof appSessions)[number] | null = null;
+    if (activeSession) {
+      sessionToGo = activeSession;
+    } else if (appSessions.length > 0) {
+      // Find latest session by created_on
+      sessionToGo = [...appSessions].sort(
+        (a, b) =>
+          new Date(b.created_on).getTime() - new Date(a.created_on).getTime(),
+      )[0];
+    }
+    try {
+      if (!activeSession) {
+        // No active session, create one
+        const result = await dispatch(createAppAgentSession(appId)).unwrap();
+        sessionToGo = result.session;
+      }
+      if (sessionToGo) {
+        navigate(`/apps/${appId}/sessions/${sessionToGo.id}/chat`);
+      } else {
+        // No session found or created, fallback: create one
+        const result = await dispatch(createAppAgentSession(appId)).unwrap();
+        navigate(`/apps/${appId}/sessions/${result.session.id}/chat`);
+      }
+    } catch (e) {
+      // Optionally show error
+
+      console.error("Failed to start or find session", e);
+    } finally {
+      setEditLoadingAppId(null);
     }
   };
 
@@ -357,9 +399,10 @@ export function Apps() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => navigate(`/app/${app.id}/chat`)}
+                        onClick={() => handleEditClick(app.id)}
+                        disabled={editLoadingAppId === app.id}
                       >
-                        Edit
+                        {editLoadingAppId === app.id ? "Loading..." : "Edit"}
                       </Button>
                     </div>
                   </div>

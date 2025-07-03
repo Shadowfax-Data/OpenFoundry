@@ -18,7 +18,7 @@ export const router = createBrowserRouter([
         element: <Apps />,
       },
       {
-        path: "app/:appId/chat",
+        path: "apps/:appId/sessions/:sessionId/chat",
         element: <AppChat />,
       },
     ],

@@ -10,14 +10,17 @@ import {
 } from "@/components/ui/resizable";
 
 export function AppChat() {
-  const { appId } = useParams<{ appId: string }>();
+  const { appId, sessionId } = useParams<{
+    appId: string;
+    sessionId: string;
+  }>();
   const [activeTab, setActiveTab] = useState<"preview" | "code">("preview");
 
   // Mock chat messages for demonstration
   const messages: ChatMessage[] = [
     {
       id: "1",
-      content: "Create a simple dashboard component " + appId,
+      content: "Create a simple dashboard component " + appId + " " + sessionId,
       isUser: true,
       timestamp: "2 minutes ago",
     },
