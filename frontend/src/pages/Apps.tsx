@@ -12,7 +12,7 @@ import {
   Search,
   MoreVertical,
   Calendar,
-  Activity,
+  AppWindowMac,
   X,
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/store";
@@ -155,7 +155,7 @@ export function Apps() {
               placeholder="Search apps..."
               value={searchQuery}
               onChange={handleSearchChange}
-              className="w-full rounded-md border border-input bg-background pl-10 pr-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              className="w-full rounded-md border border-input bg-background pl-10 pr-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none"
             />
           </div>
           <Select value={statusFilter} onValueChange={handleStatusChange}>
@@ -205,7 +205,7 @@ export function Apps() {
                   value={newAppName}
                   onChange={(e) => setNewAppName(e.target.value)}
                   placeholder="Enter app name"
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground"
                   required
                   autoFocus
                 />
@@ -231,7 +231,7 @@ export function Apps() {
       {loading && apps.length === 0 && (
         <div className="flex items-center justify-center py-16">
           <div className="text-center">
-            <Activity className="h-8 w-8 mx-auto mb-4 text-muted-foreground animate-pulse" />
+            <AppWindowMac className="h-8 w-8 mx-auto mb-4 text-muted-foreground animate-pulse" />
             <p className="text-muted-foreground">Loading apps...</p>
           </div>
         </div>
@@ -250,7 +250,7 @@ export function Apps() {
                   <div
                     className={`h-12 w-12 rounded-lg ${app.color} flex items-center justify-center text-white`}
                   >
-                    <Activity className="h-6 w-6" />
+                    <AppWindowMac className="h-6 w-6" />
                   </div>
                   <Button variant="ghost" size="sm">
                     <MoreVertical className="h-4 w-4" />
@@ -296,7 +296,7 @@ export function Apps() {
       {!loading && filteredAndSortedApps.length === 0 && (
         <div className="flex flex-col items-center justify-center py-16">
           <div className="rounded-lg bg-muted p-8 text-center">
-            <Activity className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+            <AppWindowMac className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
             <h3 className="text-lg font-semibold mb-2">
               {apps.length === 0 ? "No apps yet" : "No apps match your filters"}
             </h3>
