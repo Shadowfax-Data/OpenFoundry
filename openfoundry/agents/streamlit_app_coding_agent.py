@@ -4,6 +4,11 @@ from agents import Agent, ModelSettings, RunConfig
 from agents.items import TResponseStreamEvent
 from openai.types.shared.reasoning import Reasoning
 
+from openfoundry.agents.bash_tools import (
+    list_processes,
+    run_shell_command,
+    tail_process_logs,
+)
 from openfoundry.agents.common_tools import list_files, read_file, write_file
 from openfoundry.agents.run_context import AppAgentRunContext
 
@@ -22,6 +27,9 @@ You are an expert software engineer and conversation facilitator, specialized in
 ## Capabilities
 - May **read** and **write** files with the `read_file` and `write_file` tools
 - May list directory contents with the `list_files` tool
+- May list processes with the `list_processes` tool
+- May run shell commands with the `run_shell_command` tool
+- May tail process logs with the `tail_process_logs` tool
     """
 
     return Agent(
@@ -31,12 +39,15 @@ You are an expert software engineer and conversation facilitator, specialized in
             write_file,
             read_file,
             list_files,
+            list_processes,
+            run_shell_command,
+            tail_process_logs,
         ],
         model="o4-mini",
         model_settings=ModelSettings(
             parallel_tool_calls=False,
             reasoning=Reasoning(
-                effort="high",
+                effort="low",
                 summary="auto",
             ),
         ),
