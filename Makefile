@@ -17,7 +17,7 @@ docker-sandbox-images:
 # Start openfoundry backend locally
 start-backend: install
 	@echo "Starting openfoundry locally on http://localhost:8000"
-	@poetry run uvicorn openfoundry.server:app --host 0.0.0.0 --port 8000 --reload
+	@poetry run uvicorn openfoundry.server:app --host 0.0.0.0 --port 8000 --reload --reload-dir="openfoundry"
 
 # Install all dependencies and setup development environment
 install:
