@@ -1,4 +1,5 @@
 import io
+import json
 import tarfile
 import uuid
 from datetime import datetime
@@ -79,14 +80,24 @@ def create_app_agent_session(request: Request, app_id: uuid.UUID):
         docker_client = docker.from_env()
         # Log Docker container creation attempt
         logger.info(f"Creating Docker container for app session {session_id}")
+        initialization_data = app_agent_session.get_initialization_data()
+
+        env_vars = {
+            "INITIALIZATION_DATA": json.dumps(initialization_data),
+        }
+        logger.info(f"Environment variables: {env_vars}")
 
         # Create and start the container with port binding
-        # Using port 0 will let Docker assign any free port
+        # Using port None will let Docker assign any free port
         container = docker_client.containers.run(
             image="openfoundry-sandbox:latest",
-            ports={"8000/tcp": None},  # Bind container port 8000 to any free host port
+            ports={
+                "8000/tcp": None,
+                "8501/tcp": None,
+            },
             detach=True,
             name=f"app-session-{session_id}",
+            environment=env_vars,
         )
 
         logger.info(f"Docker container created for app session {session_id}")
@@ -94,12 +105,15 @@ def create_app_agent_session(request: Request, app_id: uuid.UUID):
         container.reload()  # Refresh container info to get port mapping
         host_port = container.ports["8000/tcp"][0]["HostPort"]
         assigned_port = int(host_port)
+        streamlit_port = container.ports["8501/tcp"][0]["HostPort"]
+        streamlit_assigned_port = int(streamlit_port)
 
         # Get container information
         container_id = container.id
         container_name = container.name
         logger.info(f"Container ID: {container_id}, Container Name: {container_name}")
         logger.info(f"Assigned port for app session {session_id}: {assigned_port}")
+        logger.info(f"Assigned port for streamlit app: {streamlit_assigned_port}")
 
         # Copy workspace files to container at runtime
         workspace_dir = app.get_workspace_directory()
@@ -129,6 +143,7 @@ def create_app_agent_session(request: Request, app_id: uuid.UUID):
         container_id=container_id,
         port=assigned_port,
     )
+    app_agent_session.app_port = streamlit_assigned_port
     db.add(agent_session)
     db.add(app_agent_session)
     db.commit()
