@@ -3,6 +3,8 @@ import uuid
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from openfoundry.config import SANDBOX_IMAGE, SANDBOX_PORT
+from openfoundry.logger import logger
 from openfoundry.models.apps import App
 
 from .agent_session import AgentSessionBase, AgentSessionType
@@ -35,3 +37,40 @@ class AppAgentSession(AgentSessionBase):
         )
 
         return base_data
+
+    def get_docker_config(self) -> dict:
+        """Get Docker configuration for app agent sessions."""
+        return {
+            "image": SANDBOX_IMAGE,
+            "ports": {
+                f"{SANDBOX_PORT}/tcp": None,  # sandbox port
+                "8501/tcp": None,  # app port
+            },
+            "agent": "streamlit_app_coding_agent",
+        }
+
+    def get_container_name(self) -> str:
+        """Get the container name for app sessions."""
+        return f"app-session-{self.id}"
+
+    def create_in_docker(self, workspace_dir: str) -> dict:
+        """Create Docker container with app-specific configuration.
+
+        Args:
+            workspace_dir: Workspace directory to copy to container.
+
+        Returns:
+            Dict containing container_id, assigned_sandbox_port, app_port, and agent.
+
+        """
+        result = super().create_in_docker(workspace_dir)
+
+        # Extract the app port from port mappings
+        app_port = result["port_mappings"].get("8501/tcp")
+        if app_port:
+            # Store the app port in the app_port field
+            self.app_port = app_port
+            result["app_port"] = app_port
+            logger.info(f"Assigned app port: {app_port}")
+
+        return result
