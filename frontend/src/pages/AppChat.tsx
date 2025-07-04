@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useParams } from "react-router";
 import { Button } from "@/components/ui/button";
 import { Eye, Code, MoreVertical } from "lucide-react";
-import { ChatConversation } from "@/components/ChatConversation";
+import { ChatConversation } from "@/components/chat/ChatConversation";
 import {
   ResizablePanelGroup,
   ResizablePanel,
@@ -69,12 +69,9 @@ export function AppChat() {
           {/* Left Panel - Chat Messages */}
           <ResizablePanel defaultSize={30} minSize={20} maxSize={50}>
             <ChatConversation
-              messages={messages.map((msg) => ({
-                id: msg.id,
-                content: msg.content,
-                isUser: msg.sender === "user",
-                timestamp: new Date().toLocaleTimeString(), // You can add proper timestamps later
-              }))}
+              messages={messages}
+              isStreaming={isStreaming}
+              error={error}
               onSendMessage={handleSendMessage}
               placeholder="Type your message..."
               title="Conversation"

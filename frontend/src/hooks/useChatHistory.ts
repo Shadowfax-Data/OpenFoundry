@@ -84,14 +84,7 @@ export const useChatHistory = ({
         }
       }
     },
-    [
-      resourceId,
-      sessionId,
-      dispatch,
-      baseEndpoint,
-      welcomeMessage,
-      actions,
-    ],
+    [resourceId, sessionId, dispatch, baseEndpoint, welcomeMessage, actions],
   );
 
   useEffect(() => {
