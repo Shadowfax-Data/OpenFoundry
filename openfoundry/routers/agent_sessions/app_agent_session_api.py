@@ -72,7 +72,7 @@ def create_app_agent_session(request: Request, app_id: uuid.UUID):
     # Create the app agent session
     app_agent_session = AppAgentSession(id=session_id, app_id=app_id)
 
-    # Create Docker container using the refactored method
+    # Create Docker container
     try:
         # Get workspace directory from the app object we already have
         workspace_dir = str(app.get_workspace_directory())
