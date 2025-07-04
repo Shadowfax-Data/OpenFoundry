@@ -13,7 +13,7 @@ export function Layout() {
           <Navbar />
 
           <main className="flex flex-1 min-h-0">
-            <div className="flex-1 overflow-auto">
+            <div className="flex-1">
               <Outlet />
             </div>
           </main>
