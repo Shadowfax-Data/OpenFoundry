@@ -1,6 +1,3 @@
-import io
-import json
-import tarfile
 import uuid
 from datetime import datetime
 
@@ -77,78 +74,37 @@ def create_app_agent_session(request: Request, app_id: uuid.UUID):
 
     # Create Docker container
     try:
-        docker_client = docker.from_env()
-        # Log Docker container creation attempt
-        logger.info(f"Creating Docker container for app session {session_id}")
-        initialization_data = app_agent_session.get_initialization_data()
+        # Get workspace directory from the app object we already have
+        workspace_dir = str(app.get_workspace_directory())
+        container_info = app_agent_session.create_in_docker(workspace_dir)
 
-        env_vars = {
-            "INITIALIZATION_DATA": json.dumps(initialization_data),
-        }
-        logger.info(f"Environment variables: {env_vars}")
+        # Extract container information
+        container_id = container_info["container_id"]
+        assigned_sandbox_port = container_info["assigned_sandbox_port"]
+        agent = container_info["agent"]
 
-        # Create and start the container with port binding
-        # Using port None will let Docker assign any free port
-        container = docker_client.containers.run(
-            image="openfoundry-sandbox:latest",
-            ports={
-                "8000/tcp": None,
-                "8501/tcp": None,
-            },
-            detach=True,
-            name=f"app-session-{session_id}",
-            environment=env_vars,
-        )
-
-        logger.info(f"Docker container created for app session {session_id}")
-        # Get the assigned port
-        container.reload()  # Refresh container info to get port mapping
-        host_port = container.ports["8000/tcp"][0]["HostPort"]
-        assigned_port = int(host_port)
-        streamlit_port = container.ports["8501/tcp"][0]["HostPort"]
-        streamlit_assigned_port = int(streamlit_port)
-
-        # Get container information
-        container_id = container.id
-        container_name = container.name
-        logger.info(f"Container ID: {container_id}, Container Name: {container_name}")
-        logger.info(f"Assigned port for app session {session_id}: {assigned_port}")
-        logger.info(f"Assigned port for streamlit app: {streamlit_assigned_port}")
-
-        # Copy workspace files to container at runtime
-        workspace_dir = app.get_workspace_directory()
+        logger.info(f"Container ID: {container_id}")
         logger.info(
-            f"Copying workspace files from {workspace_dir} to container /workspace"
+            f"Assigned sandbox port for app session {session_id}: {assigned_sandbox_port}"
         )
-        tar_stream = io.BytesIO()
-        with tarfile.open(fileobj=tar_stream, mode="w") as t:
-            t.add(str(workspace_dir), arcname=".")
-        tar_stream.seek(0)
-        container.put_archive("/workspace", tar_stream.read())
-        logger.info("Successfully copied workspace files to container")
 
-    except docker.errors.ImageNotFound:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Docker image 'openfoundry:latest' not found",
-        )
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to create Docker container: {str(e)}",
-        )
+        # The create_in_docker method already handles HTTPException, so just re-raise
+        raise e
+
     # Create and associate the corresponding agent session
     agent_session = app_agent_session.as_agent_session(
-        agent="streamlit_app_coding_agent",
+        agent=agent,
         container_id=container_id,
-        port=assigned_port,
+        port=assigned_sandbox_port,
     )
-    app_agent_session.app_port = streamlit_assigned_port
+
     db.add(agent_session)
     db.add(app_agent_session)
     db.commit()
     db.refresh(app_agent_session)
     db.refresh(agent_session)
+
     # Set necessary attributes for the response model
     setattr(app_agent_session, "status", agent_session.status)
     setattr(app_agent_session, "version", agent_session.version)
