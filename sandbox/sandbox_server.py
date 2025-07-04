@@ -1,15 +1,18 @@
-# main.py
+from contextlib import asynccontextmanager
+import json
 import logging
 import os
 import subprocess
 from typing import Literal
 
 from fastapi import FastAPI, HTTPException, Query, status
+from fastapi.responses import JSONResponse
 from find_api import router as find_api_router
 from openhands_aci.editor import OHEditor
 from openhands_aci.editor.results import CLIResult
-from pcb_api import router as pcb_api_router
-from pydantic import BaseModel
+from pcb_api import router as pcb_api_router, run_process_core
+from pcb_api import RunRequest
+from pydantic import BaseModel, Field
 from pathlib import Path
 
 
@@ -19,12 +22,28 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-app = FastAPI()
 
-app.include_router(pcb_api_router)
-app.include_router(find_api_router)
 
 # --- Pydantic Models ---
+
+
+class RunConfig(BaseModel):
+    """Configuration for starting a process during initialization."""
+
+    identifier: str = Field(..., description='Unique identifier for the process')
+    command_str: str = Field(..., description='The command to run the process')
+    cwd: str = Field(..., description='Working directory for the process')
+
+
+class InitializeRequest(BaseModel):
+    """Configuration for initializing the sandbox server."""
+
+    file_templates: dict[str, str] | None = Field(
+        None, description='The file templates to use'
+    )
+    streamlit_run_config: RunConfig | None = Field(
+        None, description='Streamlit configuration for starting apps'
+    )
 
 
 class StrReplaceEditorRequest(BaseModel):
@@ -79,10 +98,52 @@ class RunShellResponse(BaseModel):
 
 # --- API Endpoints ---
 
+async def initialize_from_env():
+    """Initialize the sandbox server using data from environment variables."""
+    initialization_data_str = os.environ.get('INITIALIZATION_DATA')
+    if not initialization_data_str:
+        logger.warning('No INITIALIZATION_DATA found in environment variables')
+        return
+
+    logger.info('Initializing sandbox server from INITIALIZATION_DATA')
+    initialization_data = json.loads(initialization_data_str)
+
+    request = InitializeRequest.model_validate(initialization_data)
+    await _perform_initialization(request)
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Initialize from environment variables first
+    try:
+        await initialize_from_env()
+    except Exception as e:
+        logger.error(f'Failed to initialize from environment data: {e}')
+
+    yield
+
+
+app = FastAPI(lifespan=lifespan)
+
+app.include_router(pcb_api_router)
+app.include_router(find_api_router)
 
 @app.get('/health')
 def health():
     return {'message': 'Action execution server is running.'}
+
+
+@app.post('/initialize')
+async def initialize(request: InitializeRequest):
+    """Initialize the sandbox server with file templates and optional streamlit app."""
+    if getattr(app.state, 'initialized', False):
+        logger.info('Service already initialized.')
+        return JSONResponse(
+            status_code=status.HTTP_208_ALREADY_REPORTED,
+            content={'initialized': app.state.initialized},
+        )
+
+    await _perform_initialization(request)
+    return {'initialized': app.state.initialized}
 
 
 # Editor Endpoint
@@ -255,3 +316,39 @@ def run_shell(request: RunShellRequest):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f'Failed to execute command: {e}',
         )
+
+
+# --- Helper Functions ---
+
+async def _perform_initialization(request: InitializeRequest):
+    """Perform initialization including file templates and streamlit startup."""
+
+    # Handle streamlit startup if streamlit_run_config is present
+    if request.streamlit_run_config:
+        logger.info('Starting streamlit app')
+
+        # Get active processes directly from app state
+        if not hasattr(app.state, 'active_processes'):
+            logger.info('Creating new active_processes dictionary - app state was empty')
+            app.state.active_processes = {}
+        else:
+            logger.info(
+                f'Found existing active_processes with {len(app.state.active_processes)} processes: {list(app.state.active_processes.keys())}'
+            )
+        active_processes = app.state.active_processes
+
+        run_request = RunRequest(
+            identifier=request.streamlit_run_config.identifier,
+            command_str=request.streamlit_run_config.command_str,
+            cwd=request.streamlit_run_config.cwd
+        )
+
+        try:
+            response = await run_process_core(run_request, active_processes)
+            logger.info(f'Successfully started streamlit app: {response.identifier}, PID: {response.pid}')
+        except Exception as e:
+            logger.error(f'Failed to start streamlit app: {e}')
+            raise
+
+    app.state.initialized = True
+    logger.info('Sandbox server initialization completed successfully')

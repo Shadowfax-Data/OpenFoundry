@@ -85,3 +85,12 @@ class AgentSessionBase(Base):
             "session_type": self.session_type.value,
             "session_id": str(self.id),
         }
+
+    def get_initialization_data(self) -> dict:
+        """Return initialization data to be stored as env.
+
+        This data will be read by the sandbox server at startup for eager initialization.
+        """
+        return {
+            "agent_session_id": str(self.id),
+        }

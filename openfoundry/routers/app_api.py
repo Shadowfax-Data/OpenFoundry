@@ -1,3 +1,4 @@
+import logging
 import uuid
 from datetime import datetime
 
@@ -9,6 +10,7 @@ from sqlalchemy.orm import Session
 from openfoundry.models.apps import App
 
 router = APIRouter(prefix="/api")
+logger = logging.getLogger(__name__)
 
 
 # Pydantic models for request/response
@@ -31,8 +33,9 @@ async def create_app(request: Request, app_data: AppCreate):
     """Create a new app."""
     db: Session = request.state.db
 
-    # Create new app
+    # Create new app object
     app = App(id=uuid6.uuid6(), name=app_data.name)
+    app.initialize_app_workspace()
 
     db.add(app)
     db.commit()

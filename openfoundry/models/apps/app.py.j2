@@ -1,0 +1,22 @@
+import numpy as np
+import pandas as pd
+import streamlit as st
+
+st.title('Hello World Streamlit App')
+
+st.write('Welcome to your Streamlit application!')
+
+# Add some interactive elements
+name = st.text_input("What's your name?")
+if name:
+    st.write(f'Hello, {name}!')
+
+# Add a simple chart
+chart_data = pd.DataFrame(np.random.randn(20, 3), columns=['a', 'b', 'c'])
+
+st.line_chart(chart_data)
+
+# Add a button
+if st.button('Click me!'):
+    st.write('Button clicked!')
+    st.balloons()

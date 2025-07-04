@@ -272,3 +272,5 @@ tmp/
 temp/
 .tmp/
 .temp/
+
+.storage/

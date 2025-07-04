@@ -2134,14 +2134,14 @@ urllib3 = ">=2"
 
 [[package]]
 name = "typing-extensions"
-version = "4.14.0"
+version = "4.14.1"
 description = "Backported and Experimental Type Hints for Python 3.9+"
 optional = false
 python-versions = ">=3.9"
 groups = ["main", "dev"]
 files = [
-    {file = "typing_extensions-4.14.0-py3-none-any.whl", hash = "sha256:a1514509136dd0b477638fc68d6a91497af5076466ad0fa6c338e44e359944af"},
-    {file = "typing_extensions-4.14.0.tar.gz", hash = "sha256:8676b788e32f02ab42d9e7c61324048ae4c6d844a399eebace3d4979d75ceef4"},
+    {file = "typing_extensions-4.14.1-py3-none-any.whl", hash = "sha256:d1e1e3b58374dc93031d6eda2420a48ea44a36c2b4766a4fdeb3710755731d76"},
+    {file = "typing_extensions-4.14.1.tar.gz", hash = "sha256:38b39f4aeeab64884ce9f74c94263ef78f3c22467c8724005483154c26648d36"},
 ]
 
 [[package]]
@@ -2191,14 +2191,14 @@ zstd = ["zstandard (>=0.18.0)"]
 
 [[package]]
 name = "uuid6"
-version = "2025.0.0"
+version = "2025.0.1"
 description = "New time-based UUID formats which are suited for use as a database key"
 optional = false
 python-versions = ">=3.9"
 groups = ["main"]
 files = [
-    {file = "uuid6-2025.0.0-py3-none-any.whl", hash = "sha256:2c73405ff5333c7181443958c6865e0d1b9b816bb160549e8d80ba186263cb3a"},
-    {file = "uuid6-2025.0.0.tar.gz", hash = "sha256:bb78aa300e29db89b00410371d0c1f1824e59e29995a9daa3dedc8033d1d84ec"},
+    {file = "uuid6-2025.0.1-py3-none-any.whl", hash = "sha256:80530ce4d02a93cdf82e7122ca0da3ebbbc269790ec1cb902481fa3e9cc9ff99"},
+    {file = "uuid6-2025.0.1.tar.gz", hash = "sha256:cd0af94fa428675a44e32c5319ec5a3485225ba2179eefcf4c3f205ae30a81bd"},
 ]
 
 [[package]]
