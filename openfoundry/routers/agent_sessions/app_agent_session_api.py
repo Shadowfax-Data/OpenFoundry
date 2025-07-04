@@ -88,13 +88,13 @@ def create_app_agent_session(request: Request, app_id: uuid.UUID):
         logger.info(f"Environment variables: {env_vars}")
 
         # Create and start the container with port binding
-        # Using port 0 will let Docker assign any free port
+        # Using port None will let Docker assign any free port
         container = docker_client.containers.run(
             image="openfoundry-sandbox:latest",
             ports={
                 "8000/tcp": None,
                 "8501/tcp": None,
-            },  # Bind container port 8000 to any free host port
+            },
             detach=True,
             name=f"app-session-{session_id}",
             environment=env_vars,

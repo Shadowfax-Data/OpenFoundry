@@ -323,7 +323,6 @@ def run_shell(request: RunShellRequest):
 async def _perform_initialization(request: InitializeRequest):
     """Perform initialization including file templates and streamlit startup."""
 
-    logger.info(f'Performing initialization with request: {request}')
     # Handle streamlit startup if streamlit_run_config is present
     if request.streamlit_run_config:
         logger.info('Starting streamlit app')
