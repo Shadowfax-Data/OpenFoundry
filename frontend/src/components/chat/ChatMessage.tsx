@@ -5,7 +5,7 @@ import { Message } from "@/store/slices/chatSliceFactory";
 
 import { MarkdownMessage } from "./MarkdownMessage";
 import { ReasoningSummary } from "./ReasoningSummary";
-import { getToolIcon, getToolLabel } from "./toolUtils";
+import { getToolIcon, getToolLabel } from "./ToolUtils";
 
 interface ChatMessageProps {
   message: Message;
