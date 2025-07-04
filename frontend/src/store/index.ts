@@ -1,11 +1,15 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { useDispatch, useSelector, TypedUseSelectorHook } from "react-redux";
 import appsReducer from "./slices/appsSlice";
+import appAgentSessionsReducer from "./slices/appAgentSessionsSlice";
+import appChatReducer from "./slices/appChatSlice";
 import { RootState } from "./types";
 
 export const store = configureStore({
   reducer: {
     apps: appsReducer,
+    appAgentSessions: appAgentSessionsReducer,
+    appChat: appChatReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

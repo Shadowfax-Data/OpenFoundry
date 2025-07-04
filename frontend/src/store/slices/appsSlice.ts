@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
-import { App, AppsState, AppFromAPI, CreateAppRequest } from "../types";
+import { App, AppsState, AppFromAPI, CreateAppRequest } from "@/store/types";
 
 // Helper function to transform backend app to frontend app
 const transformAppFromAPI = (apiApp: AppFromAPI): App => {
@@ -42,7 +42,6 @@ const transformAppFromAPI = (apiApp: AppFromAPI): App => {
     ...apiApp,
     description: `Data application: ${apiApp.name}`, // Default description
     color: colors[colorIndex],
-    status: Math.random() > 0.8 ? "draft" : "active", // Mostly active apps
     lastModified,
   };
 };
@@ -134,7 +133,7 @@ const appsSlice = createSlice({
     },
     setStatusFilter: (
       state,
-      action: PayloadAction<"all" | "active" | "draft">,
+      action: PayloadAction<"all" | "active" | "stopped">,
     ) => {
       state.statusFilter = action.payload;
     },

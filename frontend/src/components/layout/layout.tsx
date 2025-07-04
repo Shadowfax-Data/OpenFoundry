@@ -9,12 +9,14 @@ export function Layout() {
       <div className="flex h-screen w-full bg-sidebar">
         <AppSidebar />
 
-        <div className="flex flex-1 flex-col">
+        <div className="flex flex-1 flex-col overflow-hidden">
           <Navbar />
 
-          <main className="flex flex-1">
-            <div className="flex-1 overflow-auto mx-1">
-              <Outlet />
+          <main className="flex flex-1 min-h-0">
+            <div className="flex-1 p-2">
+              <div className="h-full rounded-lg border bg-background">
+                <Outlet />
+              </div>
             </div>
           </main>
         </div>
