@@ -1,11 +1,7 @@
-import React, { useEffect, useRef, useState } from "react";
-import { Send } from "lucide-react";
-
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Message } from "@/store/slices/chatSliceFactory";
-
+import { useEffect, useRef } from "react";
+import { ChatInput } from "./ChatInput";
 import { ChatMessage } from "./ChatMessage";
+import { Message } from "@/store/slices/chatSliceFactory";
 
 interface ChatConversationProps {
   title?: string;
@@ -26,7 +22,6 @@ export function ChatConversation({
   placeholder = "Type your message…",
   className = "",
 }: ChatConversationProps) {
-  const [inputMessage, setInputMessage] = useState<string>("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const prevMessagesLengthRef = useRef<number>(messages.length);
 
@@ -48,27 +43,6 @@ export function ChatConversation({
 
     prevMessagesLengthRef.current = currentLength;
   }, [messages, isStreaming]);
-
-  // Clear input while streaming so user sees the placeholder
-  useEffect(() => {
-    if (isStreaming) setInputMessage("");
-  }, [isStreaming]);
-
-  const handleSendMessage = async () => {
-    if (!inputMessage.trim() || isStreaming) return;
-    const result = onSendMessage(inputMessage);
-    if (result instanceof Promise) {
-      await result;
-    }
-    setInputMessage("");
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
-    }
-  };
 
   return (
     <div
@@ -97,27 +71,12 @@ export function ChatConversation({
         <div ref={messagesEndRef} />
       </div>
       {/* Input area */}
-      <div className="border-t p-4 bg-background">
-        <div className="flex items-end space-x-2">
-          <Textarea
-            className="flex-1 resize-none min-h-[40px] focus-visible:ring-0 border-input"
-            value={inputMessage}
-            onChange={(e) => setInputMessage(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder={isStreaming ? "Agent is thinking…" : placeholder}
-            rows={1}
-            disabled={isStreaming}
-          />
-          <Button
-            onClick={handleSendMessage}
-            disabled={!inputMessage.trim() || isStreaming}
-            className="px-3 h-10 bg-black hover:bg-gray-900 text-white rounded-md"
-          >
-            <Send className="h-5 w-5" />
-          </Button>
-        </div>
-        {error && <div className="mt-2 text-xs text-red-500">{error}</div>}
-      </div>
+      <ChatInput
+        isStreaming={isStreaming}
+        onSendMessage={onSendMessage}
+        error={error}
+        placeholder={placeholder}
+      />
     </div>
   );
 }

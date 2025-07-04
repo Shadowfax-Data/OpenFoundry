@@ -106,7 +106,7 @@ export function AppChat() {
           {/* Tab Content Area */}
           <div className="flex-1 p-4">
             {activeTab === "preview" ? (
-              <div className="h-full rounded-lg border bg-background p-4 flex items-center justify-center">
+              <div className="h-full bg-background p-4 flex items-center justify-center">
                 <div className="text-center text-muted-foreground">
                   <Eye className="h-8 w-8 mx-auto mb-2" />
                   <p>Preview will appear here</p>
@@ -116,7 +116,7 @@ export function AppChat() {
                 </div>
               </div>
             ) : (
-              <div className="h-full rounded-lg border bg-background p-4">
+              <div className="h-full bg-background p-4">
                 <div className="text-center text-muted-foreground h-full flex flex-col items-center justify-center">
                   <Code className="h-8 w-8 mx-auto mb-2" />
                   <p>Generated code will appear here</p>
