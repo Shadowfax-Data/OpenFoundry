@@ -30,7 +30,7 @@ export function AppChat() {
   // Show loading state while chat history is being fetched
   if (messages.length === 0 && !error) {
     return (
-      <div className="h-full rounded-lg border bg-background flex items-center justify-center">
+      <div className="h-full flex items-center justify-center">
         <div className="text-center text-muted-foreground">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
           <p>Loading chat history...</p>
@@ -42,7 +42,7 @@ export function AppChat() {
   // Show error state
   if (error) {
     return (
-      <div className="h-full rounded-lg border bg-background flex items-center justify-center">
+      <div className="h-full flex items-center justify-center">
         <div className="text-center text-red-600">
           <p className="font-semibold mb-2">Error loading chat</p>
           <p className="text-sm">{error}</p>
@@ -52,10 +52,7 @@ export function AppChat() {
   }
 
   return (
-    <ResizablePanelGroup
-      direction="horizontal"
-      className="h-full rounded-lg border"
-    >
+    <ResizablePanelGroup direction="horizontal" className="h-full">
       {/* Left Panel - Chat Messages */}
       <ResizablePanel defaultSize={30} minSize={20} maxSize={50}>
         <ChatConversation

@@ -194,7 +194,7 @@ export function Apps() {
 
   if (error || sessionsError) {
     return (
-      <div className="h-full rounded-lg border bg-background flex flex-col">
+      <div className="h-full flex flex-col">
         <div className="overflow-y-auto">
           <div className="p-8 mx-auto max-w-6xl">
             <div className="flex flex-col items-center justify-center py-16">
@@ -226,7 +226,7 @@ export function Apps() {
   }
 
   return (
-    <div className="h-full rounded-lg border bg-background flex flex-col">
+    <div className="h-full flex flex-col">
       <div className="overflow-y-auto">
         <div className="p-8 mx-auto max-w-6xl">
           {/* Header */}

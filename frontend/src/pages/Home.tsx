@@ -17,7 +17,7 @@ export function Home() {
   const navigate = useNavigate();
 
   return (
-    <div className="h-full rounded-lg border bg-background flex flex-col">
+    <div className="h-full flex flex-col">
       <div className="overflow-y-auto">
         <div className="p-8 mx-auto max-w-4xl">
           {/* Main heading */}
