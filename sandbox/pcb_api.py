@@ -187,25 +187,17 @@ def get_pcb_or_404(
     return pcb
 
 
-@router.post(
-    '/run',
-    response_model=RunResponse,
-    status_code=status.HTTP_201_CREATED,
-    summary='Start a new process',
-    description='Creates a new process run based on the provided command string, identifier, and optional environment variables. If a process with the same identifier already exists, it will be terminated and replaced.',
-)
-async def run_process(
+async def run_process_core(
     run_request: RunRequest,
-    active_processes: dict[str, ProcessControlBlock] = Depends(get_active_processes),
-):
+    active_processes: dict[str, ProcessControlBlock]
+) -> RunResponse:
     """
-    Endpoint to initiate a new background process.
-    If a process with the same identifier already exists, it will be killed and replaced.
+    Core function that contains the logic for starting a process.
     """
     identifier = run_request.identifier
 
     logger.info(
-        f"Received /run request: identifier='{identifier}', command='{run_request.command_str}', env_keys={list(run_request.env.keys()) if run_request.env else 'None'}, stdin_commands={len(run_request.stdin_commands) if run_request.stdin_commands else 'None'}"
+        f"Processing run request: identifier='{identifier}', command='{run_request.command_str}', env_keys={list(run_request.env.keys()) if run_request.env else 'None'}, stdin_commands={len(run_request.stdin_commands) if run_request.stdin_commands else 'None'}"
     )
 
     # Check if there's an existing process with this identifier
@@ -276,6 +268,25 @@ async def run_process(
 
     # Return basic info about the started run
     return RunResponse(identifier=identifier, pid=pcb.pid, status=initial_status)
+
+
+@router.post(
+    '/run',
+    response_model=RunResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary='Start a new process',
+    description='Creates a new process run based on the provided command string, identifier, and optional environment variables. If a process with the same identifier already exists, it will be terminated and replaced.',
+)
+async def run_process(
+    run_request: RunRequest,
+    active_processes: dict[str, ProcessControlBlock] = Depends(get_active_processes),
+):
+    """
+    Endpoint to initiate a new background process.
+    If a process with the same identifier already exists, it will be killed and replaced.
+    """
+    logger.info(f"Received /run request: identifier='{run_request.identifier}'")
+    return await run_process_core(run_request, active_processes)
 
 
 @router.post(
