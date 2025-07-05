@@ -2,11 +2,13 @@ import uuid
 from datetime import datetime
 
 import docker
+import httpx
 import uuid6
-from fastapi import APIRouter, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel
 from sqlalchemy.orm import Session, joinedload
 
+from openfoundry.agents.run_context import AppAgentRunContext
 from openfoundry.logger import logger
 from openfoundry.models.agent_sessions import (
     AgentSession,
@@ -35,6 +37,62 @@ class AppAgentSessionModel(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class ListFilesResponse(BaseModel):
+    files: list[str]
+
+
+class ReadFileResponse(BaseModel):
+    file_path: str
+    content: str
+
+
+class WriteFileRequest(BaseModel):
+    file_path: str
+    content: str
+
+
+class WriteFileResponse(BaseModel):
+    message: str
+
+
+def get_app_agent_run_context(
+    request: Request,
+    app_id: uuid.UUID,
+    session_id: uuid.UUID,
+) -> AppAgentRunContext:
+    """Get the run context for a given app agent session."""
+    db: Session = request.state.db
+
+    app_agent_session = (
+        db.query(AppAgentSession)
+        .options(joinedload(AppAgentSession.agent_session))
+        .filter(
+            AppAgentSession.id == session_id,
+            AppAgentSession.app_id == app_id,
+        )
+        .first()
+    )
+
+    if not app_agent_session:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Session with id {session_id} not found for app {app_id}",
+        )
+
+    agent_session = app_agent_session.agent_session
+    if agent_session.status != AgentSessionStatus.ACTIVE:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Session with id {session_id} is not active",
+        )
+
+    return AppAgentRunContext(
+        session_id=agent_session.id,
+        version=agent_session.version,
+        sandbox_url=f"http://localhost:{agent_session.port}",
+    )
 
 
 @router.post(
@@ -242,3 +300,89 @@ def update_app_agent_session(
     setattr(app_agent_session, "container_id", agent_session.container_id)
 
     return AppAgentSessionModel.model_validate(app_agent_session)
+
+
+@router.get(
+    "/apps/{app_id}/sessions/{session_id}/files",
+    response_model=ListFilesResponse,
+)
+async def list_files_in_sandbox(
+    app_id: uuid.UUID,
+    session_id: uuid.UUID,
+    request: Request,
+    run_context: AppAgentRunContext = Depends(get_app_agent_run_context),
+):
+    """List all files in the sandbox workspace."""
+    async with run_context.get_sandbox_client() as client:
+        try:
+            response = await client.get("/list_files")
+            response.raise_for_status()
+            return ListFilesResponse.model_validate(response.json())
+        except httpx.HTTPStatusError as e:
+            raise HTTPException(
+                status_code=e.response.status_code,
+                detail=f"Sandbox API error: {e.response.text}",
+            )
+        except httpx.RequestError as e:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail=f"Could not connect to sandbox: {e}",
+            )
+
+
+@router.get(
+    "/apps/{app_id}/sessions/{session_id}/files/read",
+    response_model=ReadFileResponse,
+)
+async def read_file_from_sandbox(
+    request: Request,
+    app_id: uuid.UUID,
+    session_id: uuid.UUID,
+    file_path: str,
+    run_context: AppAgentRunContext = Depends(get_app_agent_run_context),
+):
+    """Read a file from the sandbox."""
+    async with run_context.get_sandbox_client() as client:
+        try:
+            response = await client.get("/read_file", params={"file_path": file_path})
+            response.raise_for_status()
+            return ReadFileResponse.model_validate(response.json())
+        except httpx.HTTPStatusError as e:
+            raise HTTPException(
+                status_code=e.response.status_code,
+                detail=f"Sandbox API error: {e.response.text}",
+            )
+        except httpx.RequestError as e:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail=f"Could not connect to sandbox: {e}",
+            )
+
+
+@router.post(
+    "/apps/{app_id}/sessions/{session_id}/files/write",
+    response_model=WriteFileResponse,
+)
+async def write_file_to_sandbox(
+    request: Request,
+    app_id: uuid.UUID,
+    session_id: uuid.UUID,
+    write_request: WriteFileRequest,
+    run_context: AppAgentRunContext = Depends(get_app_agent_run_context),
+):
+    """Write a file to the sandbox."""
+    async with run_context.get_sandbox_client() as client:
+        try:
+            response = await client.post("/write_file", json=write_request.model_dump())
+            response.raise_for_status()
+            return WriteFileResponse.model_validate(response.json())
+        except httpx.HTTPStatusError as e:
+            raise HTTPException(
+                status_code=e.response.status_code,
+                detail=f"Sandbox API error: {e.response.text}",
+            )
+        except httpx.RequestError as e:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail=f"Could not connect to sandbox: {e}",
+            )
