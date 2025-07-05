@@ -76,24 +76,18 @@ def create_app_agent_session(request: Request, app_id: uuid.UUID):
     app_agent_session = AppAgentSession(id=session_id, app_id=app_id)
 
     # Create Docker container
-    try:
-        # Get workspace directory from the app object we already have
-        workspace_dir = str(app.get_workspace_directory())
-        container_info = app_agent_session.create_in_docker(workspace_dir)
+    container_info = app_agent_session.create_in_docker(
+        workspace_dir=str(app.get_workspace_directory())
+    )
 
-        # Extract container information
-        container_id = container_info["container_id"]
-        assigned_sandbox_port = container_info["assigned_sandbox_port"]
-        agent = container_info["agent"]
+    # Extract container information
+    container_id = container_info["container_id"]
+    assigned_sandbox_port = container_info["assigned_sandbox_port"]
+    agent = container_info["agent"]
 
-        logger.info(f"Container ID: {container_id}")
-        logger.info(
-            f"Assigned sandbox port for app session {session_id}: {assigned_sandbox_port}"
-        )
-
-    except Exception as e:
-        # The create_in_docker method already handles HTTPException, so just re-raise
-        raise e
+    logger.info(
+        f"Container ID: {container_id}, Assigned sandbox port for app session {session_id}: {assigned_sandbox_port}"
+    )
 
     # Create and associate the corresponding agent session
     agent_session = app_agent_session.as_agent_session(
@@ -245,8 +239,6 @@ def update_app_agent_session(
     setattr(app_agent_session, "status", agent_session.status)
     setattr(app_agent_session, "version", agent_session.version)
     setattr(app_agent_session, "port", agent_session.port)
-    setattr(
-        app_agent_session, "container_id", agent_session.container_id
-    )
+    setattr(app_agent_session, "container_id", agent_session.container_id)
 
     return AppAgentSessionModel.model_validate(app_agent_session)
