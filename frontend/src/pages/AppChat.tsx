@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams } from "react-router";
 import { Button } from "@/components/ui/button";
 import { Eye, Code, MoreVertical } from "lucide-react";
@@ -9,6 +9,12 @@ import {
   ResizableHandle,
 } from "@/components/ui/resizable";
 import { useAppChat } from "@/hooks/useAppChat";
+import { AppPreview } from "@/components/preview/AppPreview";
+import { useAppSelector, useAppDispatch } from "@/store";
+import {
+  selectAppAgentSessionById,
+  fetchAppAgentSessions,
+} from "@/store/slices/appAgentSessionsSlice";
 
 export function AppChat() {
   const { appId, sessionId } = useParams<{
@@ -22,6 +28,20 @@ export function AppChat() {
       appId: appId!,
       sessionId: sessionId!,
     });
+
+  const session = useAppSelector(selectAppAgentSessionById(appId!, sessionId!));
+  const previewUrl = session?.app_port
+    ? `${window.location.protocol}//${window.location.hostname}:${session.app_port}/`
+    : undefined;
+
+  const dispatch = useAppDispatch();
+
+  // Ensure sessions are loaded for this appId
+  useEffect(() => {
+    if (appId && sessionId && !session) {
+      dispatch(fetchAppAgentSessions(appId));
+    }
+  }, [appId, sessionId, session, dispatch]);
 
   const handleSendMessage = (message: string) => {
     sendMessage(message);
@@ -104,17 +124,9 @@ export function AppChat() {
           </div>
 
           {/* Tab Content Area */}
-          <div className="flex-1 p-4">
+          <div className="flex-1">
             {activeTab === "preview" ? (
-              <div className="h-full bg-background p-4 flex items-center justify-center">
-                <div className="text-center text-muted-foreground">
-                  <Eye className="h-8 w-8 mx-auto mb-2" />
-                  <p>Preview will appear here</p>
-                  <p className="text-sm">
-                    Start a conversation to see your app preview
-                  </p>
-                </div>
-              </div>
+              <AppPreview previewUrl={previewUrl} />
             ) : (
               <div className="h-full bg-background p-4">
                 <div className="text-center text-muted-foreground h-full flex flex-col items-center justify-center">

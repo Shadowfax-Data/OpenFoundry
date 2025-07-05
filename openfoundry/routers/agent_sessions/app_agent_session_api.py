@@ -241,7 +241,12 @@ def update_app_agent_session(
     db.refresh(app_agent_session.agent_session)
 
     # Set necessary attributes for the response model
-    setattr(app_agent_session, "status", app_agent_session.agent_session.status)
-    setattr(app_agent_session, "version", app_agent_session.agent_session.version)
+    agent_session = app_agent_session.agent_session
+    setattr(app_agent_session, "status", agent_session.status)
+    setattr(app_agent_session, "version", agent_session.version)
+    setattr(app_agent_session, "port", agent_session.port)
+    setattr(
+        app_agent_session, "container_id", agent_session.container_id
+    )
 
     return AppAgentSessionModel.model_validate(app_agent_session)
