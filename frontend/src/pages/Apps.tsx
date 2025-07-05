@@ -44,6 +44,7 @@ export function Apps() {
 
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [newAppName, setNewAppName] = useState("");
+  const [isCreatingSession, setIsCreatingSession] = useState(false);
 
   // Track loading state for Edit button per app
   const [editLoadingAppId, setEditLoadingAppId] = useState<string | null>(null);
@@ -145,12 +146,30 @@ export function Apps() {
     if (!newAppName.trim()) return;
 
     try {
-      await dispatch(createApp({ name: newAppName.trim() })).unwrap();
+      // Create the app first
+      const appResult = await dispatch(
+        createApp({ name: newAppName.trim() }),
+      ).unwrap();
       setNewAppName("");
       setShowCreateDialog(false);
+
+      // Show session creation loading state
+      setIsCreatingSession(true);
+
+      // Create an agent session for the new app
+      const sessionResult = await dispatch(
+        createAppAgentSession(appResult.id),
+      ).unwrap();
+
+      // Navigate to the chat page
+      navigate(
+        `/apps/${appResult.id}/sessions/${sessionResult.session.id}/chat`,
+      );
     } catch (error) {
       // Error is handled by Redux state
-      console.error("Failed to create app:", error);
+      console.error("Failed to create app or session:", error);
+    } finally {
+      setIsCreatingSession(false);
     }
   };
 
@@ -328,6 +347,21 @@ export function Apps() {
                     </Button>
                   </div>
                 </form>
+              </div>
+            </div>
+          )}
+
+          {/* Session Creation Loading Overlay */}
+          {isCreatingSession && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+              <div className="bg-background rounded-lg p-6 w-full max-w-md mx-4 text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                <h3 className="text-lg font-semibold mb-2">
+                  Creating Agent Session
+                </h3>
+                <p className="text-muted-foreground">
+                  Setting up your development environment...
+                </p>
               </div>
             </div>
           )}
