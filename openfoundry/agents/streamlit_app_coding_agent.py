@@ -12,6 +12,8 @@ from openfoundry.agents.bash_tools import (
 from openfoundry.agents.common_tools import list_files, read_file, write_file
 from openfoundry.agents.run_context import AppAgentRunContext
 
+STREAMLIT_APP_CODING_AGENT_NAME = "streamlit_app_coding_agent"
+
 
 def get_streamlit_app_coding_agent(
     _: asyncio.Queue[tuple[str, TResponseStreamEvent] | None],
@@ -33,7 +35,7 @@ You are an expert software engineer and conversation facilitator, specialized in
     """
 
     return Agent(
-        name="streamlit_app_coding_agent",
+        name=STREAMLIT_APP_CODING_AGENT_NAME,
         instructions=instructions,
         tools=[
             write_file,

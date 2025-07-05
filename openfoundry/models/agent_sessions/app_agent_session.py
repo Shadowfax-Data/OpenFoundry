@@ -30,7 +30,16 @@ class AppAgentSession(AgentSessionBase):
             {
                 "streamlit_run_config": {
                     "identifier": "streamlit_app",
-                    "command_str": "streamlitgo run app.py --server.port 8501 --server.address 0.0.0.0 --server.headless true --server.enableCORS false --server.enableXsrfProtection false --browser.gatherUsageStats false --server.runOnSave=true",
+                    "command_str": (
+                        "streamlitgo run app.py "
+                        "--server.port 8501 "
+                        "--server.address 0.0.0.0 "
+                        "--server.headless true "
+                        "--server.enableCORS false "
+                        "--server.enableXsrfProtection false "
+                        "--browser.gatherUsageStats false "
+                        "--server.runOnSave=true"
+                    ),
                     "cwd": "/workspace",
                 },
             }
@@ -46,7 +55,6 @@ class AppAgentSession(AgentSessionBase):
                 f"{SANDBOX_PORT}/tcp": None,  # sandbox port
                 "8501/tcp": None,  # app port
             },
-            "agent": "streamlit_app_coding_agent",
         }
 
     def get_container_name(self) -> str:
