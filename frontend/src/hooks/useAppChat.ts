@@ -73,10 +73,30 @@ export const useAppChat = ({ appId, sessionId }: UseAppChatProps) => {
     }
   };
 
+  const createAgentSession = async () => {
+    try {
+      const response = await fetch(`/api/apps/${appId}/sessions`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+      const session = await response.json();
+      return session;
+    } catch (error) {
+      console.error("Failed to create agent session:", error);
+      throw error;
+    }
+  };
+
   return {
     ...chatProps,
     appPreviewUrl,
     appPreviewToken,
     deployApp,
+    createAgentSession,
   };
 };
