@@ -29,6 +29,9 @@ class AppAgentSessionModel(BaseModel):
     version: int
     status: AgentSessionStatus
     created_on: datetime
+    app_port: int
+    port: int
+    container_id: str
 
     class Config:
         from_attributes = True
@@ -108,6 +111,8 @@ def create_app_agent_session(request: Request, app_id: uuid.UUID):
     # Set necessary attributes for the response model
     setattr(app_agent_session, "status", agent_session.status)
     setattr(app_agent_session, "version", agent_session.version)
+    setattr(app_agent_session, "port", agent_session.port)
+    setattr(app_agent_session, "container_id", agent_session.container_id)
 
     return AppAgentSessionModel.model_validate(app_agent_session)
 
@@ -134,8 +139,11 @@ def get_app_agent_session(app_id: uuid.UUID, session_id: uuid.UUID, request: Req
             detail=f"Session with id {session_id} not found for app {app_id}",
         )
 
-    setattr(app_agent_session, "status", app_agent_session.agent_session.status)
-    setattr(app_agent_session, "version", app_agent_session.agent_session.version)
+    agent_session = app_agent_session.agent_session
+    setattr(app_agent_session, "status", agent_session.status)
+    setattr(app_agent_session, "version", agent_session.version)
+    setattr(app_agent_session, "port", agent_session.port)
+    setattr(app_agent_session, "container_id", agent_session.container_id)
 
     return AppAgentSessionModel.model_validate(app_agent_session)
 
@@ -157,8 +165,11 @@ def get_app_agent_sessions(app_id: uuid.UUID, request: Request):
     )
 
     for app_agent_session in app_agent_sessions:
-        setattr(app_agent_session, "status", app_agent_session.agent_session.status)
-        setattr(app_agent_session, "version", app_agent_session.agent_session.version)
+        agent_session = app_agent_session.agent_session
+        setattr(app_agent_session, "status", agent_session.status)
+        setattr(app_agent_session, "version", agent_session.version)
+        setattr(app_agent_session, "port", agent_session.port)
+        setattr(app_agent_session, "container_id", agent_session.container_id)
 
     return app_agent_sessions
 
