@@ -11,7 +11,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from openfoundry.config import SANDBOX_IMAGE, SANDBOX_PORT
 from openfoundry.database import Base
 from openfoundry.logger import logger
-from openfoundry.models.agent_sessions.docker_utils import create_docker_container
+from openfoundry.models.agent_sessions import docker_utils
 
 
 class AgentSessionType(enum.Enum):
@@ -135,7 +135,7 @@ class AgentSessionBase(Base):
 
         """
         logger.info(f"Creating Docker container for session {self.id}")
-        result = create_docker_container(
+        result = docker_utils.create_docker_container(
             docker_config=self.get_docker_config(),
             initialization_data=self.get_initialization_data(),
             container_name=self.get_container_name(),

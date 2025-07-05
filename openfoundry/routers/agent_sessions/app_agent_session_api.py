@@ -196,7 +196,9 @@ def get_app_agent_session(app_id: uuid.UUID, session_id: uuid.UUID, request: Req
     setattr(app_agent_session, "version", agent_session.version)
     setattr(app_agent_session, "port", agent_session.port)
     setattr(app_agent_session, "container_id", agent_session.container_id)
-    logger.info(f"App preview available at http://localhost:{app_agent_session.app_port}")
+    logger.info(
+        f"App preview available at http://localhost:{app_agent_session.app_port}"
+    )
     return AppAgentSessionModel.model_validate(app_agent_session)
 
 
