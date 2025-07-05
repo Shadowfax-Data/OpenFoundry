@@ -19,7 +19,7 @@ export const AppPreview: React.FC<AppPreviewProps> = ({ previewUrl }) => {
   };
 
   return (
-    <div className="h-full w-full flex flex-col rounded-lg overflow-hidden">
+    <div className="h-full w-full flex flex-col rounded-b-lg overflow-hidden">
       {/* Control Bar */}
       <div className="flex items-center justify-between px-2 py-1 bg-muted">
         <div className="flex items-center gap-2 min-w-0 flex-1">
