@@ -9,6 +9,9 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session, joinedload
 
 from openfoundry.agents.run_context import AppAgentRunContext
+from openfoundry.agents.streamlit_app_coding_agent import (
+    STREAMLIT_APP_CODING_AGENT_NAME,
+)
 from openfoundry.logger import logger
 from openfoundry.models.agent_sessions import (
     AgentSession,
@@ -21,6 +24,7 @@ from openfoundry.models.apps import App
 AGENT_SESSION_TERMINAL_STATUSES = [
     AgentSessionStatus.STOPPED,
 ]
+
 
 router = APIRouter(prefix="/api")
 
@@ -141,7 +145,6 @@ def create_app_agent_session(request: Request, app_id: uuid.UUID):
     # Extract container information
     container_id = container_info["container_id"]
     assigned_sandbox_port = container_info["assigned_sandbox_port"]
-    agent = container_info["agent"]
 
     logger.info(
         f"Container ID: {container_id}, Assigned sandbox port for app session {session_id}: {assigned_sandbox_port}"
@@ -149,7 +152,7 @@ def create_app_agent_session(request: Request, app_id: uuid.UUID):
 
     # Create and associate the corresponding agent session
     agent_session = app_agent_session.as_agent_session(
-        agent=agent,
+        agent=STREAMLIT_APP_CODING_AGENT_NAME,
         container_id=container_id,
         port=assigned_sandbox_port,
     )

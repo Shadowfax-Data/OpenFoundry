@@ -29,13 +29,13 @@ def create_docker_container(
     """Create Docker container for an agent session.
 
     Args:
-        docker_config: Docker configuration dict with image, ports, agent, etc.
+        docker_config: Docker configuration dict with image, ports, etc.
         initialization_data: Data to be stored as environment variables.
         container_name: Name for the Docker container.
         workspace_dir: Workspace directory to copy to container.
 
     Returns:
-        Dict containing container_id, assigned_sandbox_port, port_mappings, and agent.
+        Dict containing container_id, assigned_sandbox_port, port_mappings.
 
     """
     docker_client = get_docker_client()
@@ -83,11 +83,8 @@ def create_docker_container(
     logger.info("Successfully copied workspace files to container")
 
     # Return container information
-    result = {
+    return {
         "container_id": container_id,
         "assigned_sandbox_port": assigned_sandbox_port,
         "port_mappings": port_mappings,
-        "agent": docker_config["agent"],
     }
-
-    return result

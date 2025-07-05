@@ -55,7 +55,6 @@ class AppAgentSession(AgentSessionBase):
                 f"{SANDBOX_PORT}/tcp": None,  # sandbox port
                 "8501/tcp": None,  # app port
             },
-            "agent": "streamlit_app_coding_agent",
         }
 
     def get_container_name(self) -> str:
