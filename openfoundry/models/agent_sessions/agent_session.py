@@ -130,9 +130,6 @@ class AgentSessionBase(Base):
         Returns:
             Dict containing container_id, assigned_sandbox_port, and any additional ports.
 
-        Raises:
-            HTTPException: If container creation fails.
-
         """
         logger.info(f"Creating Docker container for session {self.id}")
         result = docker_utils.create_docker_container(
