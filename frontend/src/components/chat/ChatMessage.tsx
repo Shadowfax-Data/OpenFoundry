@@ -34,7 +34,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
       </div>
 
       {/* Content */}
-      <div className="flex-1">
+      <div className="flex-1 min-w-0">
         {isUser ? (
           <div className="text-sm whitespace-pre-wrap break-words overflow-hidden pt-1.5">
             {message.content}

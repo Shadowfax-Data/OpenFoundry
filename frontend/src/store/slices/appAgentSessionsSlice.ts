@@ -181,4 +181,12 @@ export const selectAppAgentSessionsError = (state: {
   appAgentSessions: AppAgentSessionsState;
 }) => state.appAgentSessions.error;
 
+// Selector to get a specific session by appId and sessionId
+export const selectAppAgentSessionById =
+  (appId: string, sessionId: string) =>
+  (state: { appAgentSessions: AppAgentSessionsState }) => {
+    const sessions = state.appAgentSessions.sessions[appId] || [];
+    return sessions.find((s) => s.id === sessionId);
+  };
+
 export default appAgentSessionsSlice.reducer;

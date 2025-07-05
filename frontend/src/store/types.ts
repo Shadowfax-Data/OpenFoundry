@@ -21,6 +21,9 @@ export interface AppAgentSessionFromAPI {
   version: number;
   status: "active" | "stopped";
   created_on: string; // ISO datetime string
+  app_port: number;
+  port: number;
+  container_id: string;
 }
 
 // Apps slice state
