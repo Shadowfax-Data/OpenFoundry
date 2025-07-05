@@ -142,5 +142,4 @@ class AgentSessionBase(Base):
             workspace_dir=workspace_dir,
         )
         logger.info(f"Docker container created for session {self.id}")
-
         return result
