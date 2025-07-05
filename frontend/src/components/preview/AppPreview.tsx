@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Eye, RefreshCw, ExternalLink } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Eye, RefreshCw, ExternalLink, Loader2 } from "lucide-react";
 
 interface AppPreviewProps {
   previewUrl?: string;
@@ -7,9 +7,19 @@ interface AppPreviewProps {
 
 export const AppPreview: React.FC<AppPreviewProps> = ({ previewUrl }) => {
   const [iframeKey, setIframeKey] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Reset loading state when URL changes or iframe is manually refreshed
+  useEffect(() => {
+    if (previewUrl) {
+      setIsLoading(true);
+    }
+  }, [previewUrl, iframeKey]);
 
   const handleRefresh = () => {
-    setIframeKey((k) => k + 1);
+    if (previewUrl) {
+      setIframeKey((k) => k + 1);
+    }
   };
 
   const handleOpenInNewTab = () => {
@@ -56,15 +66,27 @@ export const AppPreview: React.FC<AppPreviewProps> = ({ previewUrl }) => {
         </div>
       </div>
       {/* Iframe Preview */}
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 overflow-hidden relative">
         {previewUrl ? (
-          <iframe
-            key={iframeKey}
-            title="App Web Preview"
-            src={previewUrl}
-            className="w-full h-full border-0 bg-white"
-            sandbox="allow-scripts allow-same-origin"
-          />
+          <>
+            {/* Loader Overlay */}
+            {isLoading && (
+              <div className="absolute inset-0 w-full h-full flex flex-col items-center justify-center text-muted-foreground bg-white z-10">
+                <Loader2 className="h-8 w-8 mb-2 animate-spin" />
+                <p>Waiting for app preview...</p>
+              </div>
+            )}
+            {/* Single Iframe */}
+            <iframe
+              key={iframeKey}
+              title="App Web Preview"
+              src={previewUrl}
+              onLoad={() => setIsLoading(false)}
+              className="w-full h-full border-0 bg-white"
+              style={{ visibility: isLoading ? "hidden" : "visible" }}
+              sandbox="allow-scripts allow-same-origin"
+            />
+          </>
         ) : (
           <div className="h-full w-full flex flex-col items-center justify-center text-muted-foreground">
             <Eye className="h-8 w-8 mb-2" />
