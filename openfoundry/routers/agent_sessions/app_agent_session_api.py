@@ -1,6 +1,7 @@
 import uuid
 from datetime import datetime
 
+import docker
 import uuid6
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from pydantic import BaseModel
@@ -355,7 +356,13 @@ def resume_app_agent_session(
         )
 
     # Resume the Docker container
-    container_info = app_agent_session.resume_in_docker()
+    try:
+        container_info = app_agent_session.resume_in_docker()
+    except docker.errors.NotFound:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Docker container for session {session_id} not found",
+        )
 
     # Extract updated container information (port mappings may have changed)
     container_id = container_info["container_id"]
