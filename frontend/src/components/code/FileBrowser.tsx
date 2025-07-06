@@ -1,13 +1,22 @@
 import { useState } from "react";
-import { ChevronDown, ChevronRight, File, Folder } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronRight,
+  File,
+  Folder,
+  RefreshCw,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { CurrentWriteFileInfo } from "@/store/slices/appChatSlice";
+import { DirectoryEntry, ReadFileResponse } from "@/types/files";
 
 interface FileBrowserProps {
-  currentWriteFileInfo: CurrentWriteFileInfo | null;
-  selectedFile: CurrentWriteFileInfo | null;
-  onFileSelect: (file: CurrentWriteFileInfo | null) => void;
+  files: DirectoryEntry[];
+  loading: boolean;
+  error: string | null;
+  selectedFile: ReadFileResponse | null;
+  onFileSelect: (filePath: string) => void;
+  onRefresh: () => void;
 }
 
 interface FileNode {
@@ -19,48 +28,25 @@ interface FileNode {
 }
 
 export function FileBrowser({
-  currentWriteFileInfo,
+  files,
+  loading,
+  error,
   selectedFile,
   onFileSelect,
+  onRefresh,
 }: FileBrowserProps) {
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(
     new Set(),
   );
 
-  // Generate file tree structure from current write file info
+  // Convert DirectoryEntry to FileNode for tree structure
   const generateFileTree = (): FileNode[] => {
-    if (!currentWriteFileInfo) {
-      return [];
-    }
-
-    const { absolute_file_path } = currentWriteFileInfo;
-    const pathParts = absolute_file_path.split("/").filter(Boolean);
-    const tree: FileNode[] = [];
-    let currentLevel = tree;
-
-    // Build the tree structure
-    for (let i = 0; i < pathParts.length; i++) {
-      const part = pathParts[i];
-      const isFile = i === pathParts.length - 1;
-      const fullPath = "/" + pathParts.slice(0, i + 1).join("/");
-
-      let existingNode = currentLevel.find((node) => node.name === part);
-      if (!existingNode) {
-        existingNode = {
-          name: part,
-          type: isFile ? "file" : "folder",
-          path: fullPath,
-          children: isFile ? undefined : [],
-        };
-        currentLevel.push(existingNode);
-      }
-
-      if (!isFile && existingNode.children) {
-        currentLevel = existingNode.children;
-      }
-    }
-
-    return tree;
+    return files.map((entry) => ({
+      name: entry.name,
+      type: entry.is_directory ? "folder" : "file",
+      path: entry.path,
+      children: entry.is_directory ? [] : undefined,
+    }));
   };
 
   const fileTree = generateFileTree();
@@ -77,7 +63,7 @@ export function FileBrowser({
 
   const renderFileNode = (node: FileNode, depth: number = 0) => {
     const isExpanded = expandedFolders.has(node.path);
-    const isSelected = selectedFile?.absolute_file_path === node.path;
+    const isSelected = selectedFile?.path === node.path;
 
     return (
       <div key={node.path}>
@@ -90,8 +76,8 @@ export function FileBrowser({
           onClick={() => {
             if (node.type === "folder") {
               toggleFolder(node.path);
-            } else if (currentWriteFileInfo) {
-              onFileSelect(currentWriteFileInfo);
+            } else {
+              onFileSelect(node.path);
             }
           }}
         >
@@ -121,13 +107,42 @@ export function FileBrowser({
   };
 
   return (
-    <div className="h-full bg-background border-r">
-      <div className="h-10 border-b px-3 py-2 flex items-center">
+    <div className="h-full bg-background border-r flex flex-col">
+      <div className="h-8 border-b px-3 py-2 flex items-center justify-between flex-shrink-0">
         <h3 className="text-sm font-medium">Files</h3>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-6 w-6 p-0"
+          onClick={onRefresh}
+          disabled={loading}
+          title="Refresh files"
+        >
+          <RefreshCw className={`h-3 w-3 ${loading ? "animate-spin" : ""}`} />
+        </Button>
       </div>
-      <ScrollArea className="h-[calc(100%-2.5rem)]">
+      <ScrollArea className="flex-1">
         <div className="p-2">
-          {fileTree.length > 0 ? (
+          {error ? (
+            <div className="text-center text-destructive py-8">
+              <File className="h-8 w-8 mx-auto mb-2" />
+              <p className="text-sm">Error loading files</p>
+              <p className="text-xs">{error}</p>
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-2"
+                onClick={onRefresh}
+              >
+                Try again
+              </Button>
+            </div>
+          ) : loading ? (
+            <div className="text-center text-muted-foreground py-8">
+              <RefreshCw className="h-8 w-8 mx-auto mb-2 animate-spin" />
+              <p className="text-sm">Loading files...</p>
+            </div>
+          ) : fileTree.length > 0 ? (
             fileTree.map((node) => renderFileNode(node))
           ) : (
             <div className="text-center text-muted-foreground py-8">

@@ -129,7 +129,11 @@ export function AppChat() {
             {activeTab === "preview" ? (
               <AppPreview previewUrl={previewUrl} />
             ) : (
-              <CodePanel currentWriteFileInfo={currentWriteFileInfo} />
+              <CodePanel
+                currentWriteFileInfo={currentWriteFileInfo}
+                appId={appId!}
+                sessionId={sessionId!}
+              />
             )}
           </div>
         </div>

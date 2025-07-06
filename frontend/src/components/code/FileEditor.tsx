@@ -2,10 +2,12 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Copy, Download, File } from "lucide-react";
-import { CurrentWriteFileInfo } from "@/store/slices/appChatSlice";
+import { ReadFileResponse } from "@/types/files";
+import hljs from "highlight.js";
+import "highlight.js/styles/github.css";
 
 interface FileEditorProps {
-  selectedFile: CurrentWriteFileInfo | null;
+  selectedFile: ReadFileResponse | null;
 }
 
 export function FileEditor({ selectedFile }: FileEditorProps) {
@@ -26,7 +28,7 @@ export function FileEditor({ selectedFile }: FileEditorProps) {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = selectedFile.fileName;
+      a.download = selectedFile.file_info.name;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -53,6 +55,16 @@ export function FileEditor({ selectedFile }: FileEditorProps) {
         return "json";
       case "md":
         return "markdown";
+      case "yml":
+      case "yaml":
+        return "yaml";
+      case "xml":
+        return "xml";
+      case "sql":
+        return "sql";
+      case "sh":
+      case "bash":
+        return "bash";
       default:
         return "text";
     }
@@ -63,21 +75,47 @@ export function FileEditor({ selectedFile }: FileEditorProps) {
     return lines.map((_, index) => (
       <div
         key={index}
-        className="text-right text-xs text-muted-foreground pr-2 select-none"
-        style={{ minWidth: "3rem" }}
+        className="text-right text-xs text-muted-foreground pr-2 select-none leading-relaxed"
+        style={{ minWidth: "3rem", lineHeight: "1.5" }}
       >
         {index + 1}
       </div>
     ));
   };
 
-  const renderCodeLines = (content: string) => {
-    const lines = content.split("\n");
-    return lines.map((line, index) => (
-      <div key={index} className="text-xs font-mono whitespace-pre">
-        {line || "\u00A0"} {/* Non-breaking space for empty lines */}
-      </div>
-    ));
+  const renderCodeLines = (content: string, language: string) => {
+    try {
+      // Use highlight.js to highlight the code
+      // If language is not supported, hljs will auto-detect or fallback
+      const highlighted =
+        language === "text"
+          ? hljs.highlightAuto(content)
+          : hljs.highlight(content, { language });
+
+      return (
+        <div
+          className="text-xs font-mono whitespace-pre hljs leading-relaxed bg-transparent"
+          style={{ lineHeight: "1.5" }}
+          dangerouslySetInnerHTML={{ __html: highlighted.value }}
+        />
+      );
+    } catch (error) {
+      // Fallback to plain text if highlighting fails
+      console.warn("Code highlighting failed:", error);
+      const lines = content.split("\n");
+      return (
+        <div>
+          {lines.map((line, index) => (
+            <div
+              key={index}
+              className="text-xs font-mono whitespace-pre leading-relaxed"
+            >
+              {line || "\u00A0"} {/* Non-breaking space for empty lines */}
+            </div>
+          ))}
+        </div>
+      );
+    }
   };
 
   if (!selectedFile) {
@@ -92,15 +130,17 @@ export function FileEditor({ selectedFile }: FileEditorProps) {
     );
   }
 
-  const language = getFileLanguage(selectedFile.fileName);
+  const language = getFileLanguage(selectedFile.file_info.name);
 
   return (
     <div className="h-full bg-background flex flex-col">
       {/* Header */}
-      <div className="h-10 border-b px-3 py-2 flex items-center justify-between">
+      <div className="h-8 border-b px-3 py-2 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <File className="h-4 w-4" />
-          <span className="text-sm font-medium">{selectedFile.fileName}</span>
+          <span className="text-sm font-medium">
+            {selectedFile.file_info.name}
+          </span>
           <Badge variant="secondary" className="text-xs">
             {language}
           </Badge>
@@ -129,15 +169,15 @@ export function FileEditor({ selectedFile }: FileEditorProps) {
 
       {/* Content */}
       <ScrollArea className="flex-1">
-        <div className="flex">
+        <div className="flex min-h-full">
           {/* Line numbers */}
           <div className="bg-muted/30 border-r py-2 sticky left-0 z-10">
             {renderLineNumbers(selectedFile.content)}
           </div>
 
           {/* Code content */}
-          <div className="flex-1 p-2">
-            {renderCodeLines(selectedFile.content)}
+          <div className="flex-1 p-2 overflow-x-auto min-h-full">
+            {renderCodeLines(selectedFile.content, language)}
           </div>
         </div>
       </ScrollArea>
