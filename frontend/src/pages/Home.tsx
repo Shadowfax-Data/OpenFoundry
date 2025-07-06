@@ -6,12 +6,12 @@ import {
   Target,
   TrendingUp,
   Users,
-  Sparkles,
   Hammer,
   Paperclip,
   Mic,
   ArrowUp,
 } from "lucide-react";
+import { IconChartArcs } from "@tabler/icons-react";
 
 export function Home() {
   const navigate = useNavigate();
@@ -24,12 +24,12 @@ export function Home() {
           <div className="text-center mb-8 mt-10">
             <div className="mb-8 flex items-center justify-center gap-3">
               <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br from-blue-600 to-purple-600 text-white">
-                <Sparkles className="h-6 w-6" />
+                <IconChartArcs className="h-6 w-6" />
               </div>
               <div>
                 <h1 className="text-3xl font-bold">OpenFoundry</h1>
                 <p className="text-sm text-muted-foreground">
-                  Build powerful data applications
+                  The fastest way to build data products with AI
                 </p>
               </div>
             </div>

@@ -75,10 +75,33 @@ class AppAgentSession(AgentSessionBase):
 
         # Extract the app port from port mappings
         app_port = result["port_mappings"].get("8501/tcp")
-        if app_port:
-            # Store the app port in the app_port field
-            self.app_port = app_port
-            result["app_port"] = app_port
-            logger.info(f"Assigned app port: {app_port}")
+        if not app_port:
+            raise RuntimeError("App port (8501/tcp) is required but not assigned")
+
+        # Store the app port in the app_port field
+        self.app_port = app_port
+        result["app_port"] = app_port
+        logger.info(f"Assigned app port: {app_port}")
+
+        return result
+
+    def resume_in_docker(self) -> dict:
+        """Resume Docker container with app-specific configuration.
+
+        Returns:
+            Dict containing container_id, assigned_sandbox_port, app_port, and agent.
+
+        """
+        result = super().resume_in_docker()
+
+        # Extract the app port from port mappings
+        app_port = result["port_mappings"].get("8501/tcp")
+        if not app_port:
+            raise RuntimeError("App port (8501/tcp) is required but not assigned")
+
+        # Store the app port in the app_port field
+        self.app_port = app_port
+        result["app_port"] = app_port
+        logger.info(f"Assigned app port: {app_port}")
 
         return result
