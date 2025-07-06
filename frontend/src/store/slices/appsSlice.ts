@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
-import { App, AppsState, AppFromAPI, CreateAppRequest } from "@/store/types";
+import { App, AppFromAPI, CreateAppRequest } from "@/types/api";
+import { AppsState } from "@/store/types";
 
 // Helper function to transform backend app to frontend app
 const transformAppFromAPI = (apiApp: AppFromAPI): App => {

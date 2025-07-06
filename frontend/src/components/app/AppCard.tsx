@@ -16,7 +16,7 @@ import {
   List,
   ExternalLink,
 } from "lucide-react";
-import { App } from "@/store/types";
+import { App } from "@/types/api";
 
 interface AppCardProps {
   app: App;

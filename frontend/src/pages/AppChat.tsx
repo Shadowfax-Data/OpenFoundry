@@ -9,7 +9,8 @@ import {
   ResizableHandle,
 } from "@/components/ui/resizable";
 import { useAppChat } from "@/hooks/useAppChat";
-import { AppPreview } from "@/components/preview/AppPreview";
+import { AppPreview } from "@/components/app/AppPreview";
+import { CodePanel } from "@/components/code/CodePanel";
 import { useAppSelector, useAppDispatch } from "@/store";
 import {
   selectAppAgentSessionById,
@@ -128,25 +129,11 @@ export function AppChat() {
             {activeTab === "preview" ? (
               <AppPreview previewUrl={previewUrl} />
             ) : (
-              <div className="h-full bg-background p-4">
-                <div className="text-center text-muted-foreground h-full flex flex-col items-center justify-center">
-                  <Code className="h-8 w-8 mx-auto mb-2" />
-                  <p>Generated code will appear here</p>
-                  <p className="text-sm">
-                    AI-generated code based on your conversation
-                  </p>
-                  {currentWriteFileInfo && (
-                    <div className="mt-4 text-left w-full">
-                      <h4 className="font-semibold mb-2">
-                        Current File: {currentWriteFileInfo.fileName}
-                      </h4>
-                      <pre className="bg-muted p-4 rounded text-xs overflow-auto max-h-64">
-                        {currentWriteFileInfo.content}
-                      </pre>
-                    </div>
-                  )}
-                </div>
-              </div>
+              <CodePanel
+                currentWriteFileInfo={currentWriteFileInfo}
+                appId={appId!}
+                sessionId={sessionId!}
+              />
             )}
           </div>
         </div>
