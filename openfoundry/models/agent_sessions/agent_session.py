@@ -132,11 +132,51 @@ class AgentSessionBase(Base):
 
         """
         logger.info(f"Creating Docker container for session {self.id}")
-        result = docker_utils.create_docker_container(
+        container_id, port_mappings = docker_utils.create_docker_container(
             docker_config=self.get_docker_config(),
             initialization_data=self.get_initialization_data(),
             container_name=self.get_container_name(),
             workspace_dir=workspace_dir,
         )
+
+        # Get the main sandbox port
+        sandbox_port_key = f"{SANDBOX_PORT}/tcp"
+        if sandbox_port_key not in port_mappings:
+            raise RuntimeError(
+                f"Sandbox port ({sandbox_port_key}) is required but not assigned"
+            )
+        assigned_sandbox_port = port_mappings[sandbox_port_key]
+
         logger.info(f"Docker container created for session {self.id}")
-        return result
+        return {
+            "container_id": container_id,
+            "assigned_sandbox_port": assigned_sandbox_port,
+            "port_mappings": port_mappings,
+        }
+
+    def resume_in_docker(self) -> dict:
+        """Resume Docker container for this agent session.
+
+        Returns:
+            Dict containing container_id, assigned_sandbox_port, and any additional ports.
+
+        """
+        logger.info(f"Resuming Docker container for session {self.id}")
+        container_id, port_mappings = docker_utils.start_docker_container(
+            container_name=self.get_container_name(),
+        )
+
+        # Get the main sandbox port
+        sandbox_port_key = f"{SANDBOX_PORT}/tcp"
+        if sandbox_port_key not in port_mappings:
+            raise RuntimeError(
+                f"Sandbox port ({sandbox_port_key}) is required but not assigned"
+            )
+        assigned_sandbox_port = port_mappings[sandbox_port_key]
+
+        logger.info(f"Docker container resumed for session {self.id}")
+        return {
+            "container_id": container_id,
+            "assigned_sandbox_port": assigned_sandbox_port,
+            "port_mappings": port_mappings,
+        }

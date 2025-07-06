@@ -269,7 +269,6 @@ def get_app_agent_sessions(app_id: uuid.UUID, request: Request):
 @router.post(
     "/apps/{app_id}/sessions/{session_id}/stop",
     response_model=AppAgentSessionModel,
-    status_code=status.HTTP_200_OK,
 )
 def stop_app_agent_session(app_id: uuid.UUID, session_id: uuid.UUID, request: Request):
     """Stop an app agent session by stopping its Docker container."""
@@ -306,6 +305,73 @@ def stop_app_agent_session(app_id: uuid.UUID, session_id: uuid.UUID, request: Re
 
     # Update the agent session status to STOPPED
     app_agent_session.agent_session.status = AgentSessionStatus.STOPPED
+
+    db.commit()
+    db.refresh(app_agent_session)
+    db.refresh(app_agent_session.agent_session)
+
+    # Set necessary attributes for the response model
+    agent_session = app_agent_session.agent_session
+    setattr(app_agent_session, "status", agent_session.status)
+    setattr(app_agent_session, "version", agent_session.version)
+    setattr(app_agent_session, "port", agent_session.port)
+    setattr(app_agent_session, "container_id", agent_session.container_id)
+
+    return AppAgentSessionModel.model_validate(app_agent_session)
+
+
+@router.post(
+    "/apps/{app_id}/sessions/{session_id}/resume",
+    response_model=AppAgentSessionModel,
+)
+def resume_app_agent_session(
+    app_id: uuid.UUID, session_id: uuid.UUID, request: Request
+):
+    """Resume a stopped app agent session by starting its Docker container."""
+    db: Session = request.state.db
+
+    # Get the specific agent session for the app
+    app_agent_session = (
+        db.query(AppAgentSession)
+        .options(joinedload(AppAgentSession.agent_session))
+        .filter(
+            AppAgentSession.id == session_id,
+            AppAgentSession.app_id == app_id,
+        )
+        .first()
+    )
+
+    if not app_agent_session:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Session with id {session_id} not found for app {app_id}",
+        )
+
+    # Check if the session has a container to resume
+    if not app_agent_session.agent_session.container_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Session {session_id} does not have an associated container",
+        )
+
+    # Resume the Docker container
+    container_info = app_agent_session.resume_in_docker()
+
+    # Extract updated container information (port mappings may have changed)
+    container_id = container_info["container_id"]
+    assigned_sandbox_port = container_info["assigned_sandbox_port"]
+    app_port = container_info["app_port"]
+
+    logger.info(
+        f"Container resumed - ID: {container_id}, "
+        f"Assigned sandbox port: {assigned_sandbox_port}, "
+        f"App port: {app_port}"
+    )
+
+    # Update the agent session with new port information
+    app_agent_session.agent_session.port = assigned_sandbox_port
+    app_agent_session.agent_session.status = AgentSessionStatus.ACTIVE
+    app_agent_session.app_port = app_port
 
     db.commit()
     db.refresh(app_agent_session)

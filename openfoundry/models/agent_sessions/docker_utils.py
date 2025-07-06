@@ -5,7 +5,6 @@ from functools import cache
 
 import docker
 
-from openfoundry.config import SANDBOX_PORT
 from openfoundry.logger import logger
 
 
@@ -25,7 +24,7 @@ def create_docker_container(
     initialization_data: dict,
     container_name: str,
     workspace_dir: str,
-) -> dict:
+) -> tuple[str, dict[str, int]]:
     """Create Docker container for an agent session.
 
     Args:
@@ -35,7 +34,7 @@ def create_docker_container(
         workspace_dir: Workspace directory to copy to container.
 
     Returns:
-        Dict containing container_id, assigned_sandbox_port, port_mappings.
+        Tuple of (container_id, port_mappings).
 
     """
     docker_client = get_docker_client()
@@ -69,10 +68,6 @@ def create_docker_container(
             port_mappings[container_port] = int(host_port)
             logger.info(f"Assigned port for {container_port}: {host_port}")
 
-    # Get the main sandbox port
-    sandbox_port_key = f"{SANDBOX_PORT}/tcp"
-    assigned_sandbox_port = port_mappings[sandbox_port_key]
-
     # Copy workspace files to container
     logger.info(f"Copying workspace files from {workspace_dir} to container /workspace")
     tar_stream = io.BytesIO()
@@ -83,11 +78,45 @@ def create_docker_container(
     logger.info("Successfully copied workspace files to container")
 
     # Return container information
-    return {
-        "container_id": container_id,
-        "assigned_sandbox_port": assigned_sandbox_port,
-        "port_mappings": port_mappings,
-    }
+    return container_id, port_mappings
+
+
+def start_docker_container(container_name: str) -> tuple[str, dict[str, int]]:
+    """Start a Docker container by its name and return container information.
+
+    Args:
+        container_name: Name of the Docker container to start.
+
+    Returns:
+        Tuple of (container_id, port_mappings).
+
+    """
+    docker_client = get_docker_client()
+
+    container = docker_client.containers.get(container_name)
+    logger.info(f"Starting Docker container {container_name}")
+    container.start()
+    logger.info(f"Docker container {container_name} started successfully")
+
+    # Get container information
+    container.reload()  # Refresh container info to get port mapping
+    container_id = container.id
+    actual_container_name = container.name
+    logger.info(
+        f"Container ID: {container_id}, Container Name: {actual_container_name}"
+    )
+
+    # Get assigned ports
+    port_mappings = {}
+    if container.ports:
+        for container_port, host_ports in container.ports.items():
+            if host_ports:
+                host_port = host_ports[0]["HostPort"]
+                port_mappings[container_port] = int(host_port)
+                logger.info(f"Assigned port for {container_port}: {host_port}")
+
+    # Return container information
+    return container_id, port_mappings
 
 
 def stop_docker_container(container_id: str, ignore_not_found: bool = False) -> None:
