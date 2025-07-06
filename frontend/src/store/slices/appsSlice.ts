@@ -41,7 +41,6 @@ const transformAppFromAPI = (apiApp: AppFromAPI): App => {
 
   return {
     ...apiApp,
-    description: `Data application: ${apiApp.name}`, // Default description
     color: colors[colorIndex],
     lastModified,
   };

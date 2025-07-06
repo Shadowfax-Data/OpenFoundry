@@ -86,7 +86,6 @@ export function AppCard({
 
         <div className="mb-4">
           <h3 className="font-semibold text-lg mb-2">{app.name}</h3>
-          <p className="text-sm text-muted-foreground">{app.description}</p>
         </div>
 
         <div className="flex items-center justify-between text-sm text-muted-foreground mb-4">

@@ -94,6 +94,7 @@ export function FileBrowser({
           className={`w-full justify-start h-6 text-xs flex items-center gap-1 ${
             isSelected ? "bg-accent" : ""
           }`}
+          style={{ padding: "0 0.25rem" }}
           onClick={() => {
             if (node.type === "folder") {
               toggleFolder(node.path);
@@ -151,7 +152,7 @@ export function FileBrowser({
         </Button>
       </div>
       <ScrollArea className="flex-1">
-        <div className="p-2">
+        <div className="py-2">
           {error ? (
             <div className="text-center text-destructive py-8">
               <File className="h-8 w-8 mx-auto mb-2" />

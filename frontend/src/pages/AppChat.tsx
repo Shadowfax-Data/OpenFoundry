@@ -126,15 +126,16 @@ export function AppChat() {
 
           {/* Tab Content Area */}
           <div className="flex-1">
-            {activeTab === "preview" ? (
+            <div className={activeTab === "preview" ? "h-full" : "hidden"}>
               <AppPreview previewUrl={previewUrl} />
-            ) : (
+            </div>
+            <div className={activeTab === "code" ? "h-full" : "hidden"}>
               <CodePanel
                 currentWriteFileInfo={currentWriteFileInfo}
                 appId={appId!}
                 sessionId={sessionId!}
               />
-            )}
+            </div>
           </div>
         </div>
       </ResizablePanel>

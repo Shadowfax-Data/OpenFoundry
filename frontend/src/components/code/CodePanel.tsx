@@ -7,7 +7,7 @@ import {
 import { FileBrowser } from "./FileBrowser";
 import { FileEditor } from "./FileEditor";
 import { CurrentWriteFileInfo } from "@/store/slices/appChatSlice";
-import { useFiles } from "@/hooks/useFiles";
+import { useAgentSessionFiles } from "@/hooks/useAgentSessionFiles";
 import { ReadFileResponse } from "@/types/files";
 
 interface CodePanelProps {
@@ -33,7 +33,7 @@ export function CodePanel({
     readFile,
     refreshFiles,
     loadFolderContents,
-  } = useFiles({
+  } = useAgentSessionFiles({
     appId,
     sessionId,
     initialPath: "/workspace",

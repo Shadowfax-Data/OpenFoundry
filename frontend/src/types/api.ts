@@ -9,7 +9,6 @@ export interface AppFromAPI {
 // Frontend app type with computed UI properties
 export interface App extends AppFromAPI {
   // Computed/derived properties for UI
-  description: string;
   color: string;
   lastModified: string; // Human-readable format
 }
