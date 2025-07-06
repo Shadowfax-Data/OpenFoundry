@@ -29,7 +29,7 @@ class AppModel(BaseModel):
 
 
 @router.post("/apps", response_model=AppModel, status_code=status.HTTP_201_CREATED)
-async def create_app(request: Request, app_data: AppCreate):
+def create_app(request: Request, app_data: AppCreate):
     """Create a new app."""
     db: Session = request.state.db
 
@@ -45,7 +45,7 @@ async def create_app(request: Request, app_data: AppCreate):
 
 
 @router.get("/apps", response_model=list[AppModel])
-async def get_apps(request: Request):
+def get_apps(request: Request):
     """Get all apps."""
     db: Session = request.state.db
 
@@ -56,7 +56,7 @@ async def get_apps(request: Request):
 
 
 @router.get("/apps/{app_id}", response_model=AppModel)
-async def get_app(app_id: uuid.UUID, request: Request):
+def get_app(app_id: uuid.UUID, request: Request):
     """Get a specific app."""
     db: Session = request.state.db
 

@@ -17,3 +17,6 @@ OPENAI_API_KEY = os.environ["OPENAI_API_KEY"]
 # Docker configuration
 SANDBOX_IMAGE = os.environ.get("SANDBOX_IMAGE", "openfoundry-sandbox:latest")
 SANDBOX_PORT = int(os.environ.get("SANDBOX_PORT", "8000"))
+
+# Storage directory
+STORAGE_DIR = os.path.abspath(os.environ.get("STORAGE_DIR", "storage"))
