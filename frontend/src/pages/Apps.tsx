@@ -175,7 +175,7 @@ export function Apps() {
     const activeSession = appSessions.find((s) => s.status === "active");
     let sessionToGo: (typeof appSessions)[number] | null = null;
 
-        try {
+    try {
       if (activeSession) {
         // Active session exists, resume it to ensure it's properly started
         const result = await dispatch(
