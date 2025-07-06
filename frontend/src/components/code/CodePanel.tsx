@@ -24,7 +24,16 @@ export function CodePanel({
   const [selectedFile, setSelectedFile] = useState<ReadFileResponse | null>(
     null,
   );
-  const { files, loading, error, readFile, refreshFiles } = useFiles({
+  const {
+    files,
+    loading,
+    error,
+    loadedFolders,
+    loadingFolders,
+    readFile,
+    refreshFiles,
+    loadFolderContents,
+  } = useFiles({
     appId,
     sessionId,
     initialPath: "/workspace",
@@ -69,6 +78,9 @@ export function CodePanel({
             selectedFile={selectedFile}
             onFileSelect={handleFileSelect}
             onRefresh={refreshFiles}
+            loadedFolders={loadedFolders}
+            loadingFolders={loadingFolders}
+            onLoadFolderContents={loadFolderContents}
           />
         </ResizablePanel>
 
