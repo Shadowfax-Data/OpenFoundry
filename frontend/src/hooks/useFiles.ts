@@ -17,6 +17,10 @@ export const useFiles = ({
   const [currentPath, setCurrentPath] = useState(initialPath);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [loadedFolders, setLoadedFolders] = useState<
+    Map<string, DirectoryEntry[]>
+  >(new Map());
+  const [loadingFolders, setLoadingFolders] = useState<Set<string>>(new Set());
 
   const loadFiles = useCallback(
     async (path?: string) => {
@@ -36,6 +40,40 @@ export const useFiles = ({
       }
     },
     [appId, sessionId, currentPath],
+  );
+
+  const loadFolderContents = useCallback(
+    async (folderPath: string): Promise<void> => {
+      if (loadedFolders.has(folderPath) || loadingFolders.has(folderPath)) {
+        return; // Already loaded or loading
+      }
+
+      setLoadingFolders((prev) => new Set(prev).add(folderPath));
+
+      try {
+        const response = await filesApi.listFiles(appId, sessionId, folderPath);
+        setLoadedFolders((prev) =>
+          new Map(prev).set(folderPath, response.entries),
+        );
+      } catch (error) {
+        console.error(
+          `Failed to load folder contents for ${folderPath}:`,
+          error,
+        );
+        setError(
+          error instanceof Error
+            ? error.message
+            : "Failed to load folder contents",
+        );
+      } finally {
+        setLoadingFolders((prev) => {
+          const newSet = new Set(prev);
+          newSet.delete(folderPath);
+          return newSet;
+        });
+      }
+    },
+    [appId, sessionId, loadedFolders, loadingFolders],
   );
 
   const readFile = useCallback(
@@ -66,7 +104,10 @@ export const useFiles = ({
     currentPath,
     loading,
     error,
+    loadedFolders,
+    loadingFolders,
     loadFiles,
+    loadFolderContents,
     readFile,
     refreshFiles,
   };
