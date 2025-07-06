@@ -8,10 +8,10 @@ from typing import Literal
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel
 
+from openfoundry_sandbox.config import WORKSPACE_DIR
+
 router = APIRouter(prefix="/find", tags=["find"])
 logger = logging.getLogger(__name__)
-
-WORKSPACE_DIR = "/workspace"
 
 
 def get_ignored_paths(root: str) -> set[str]:

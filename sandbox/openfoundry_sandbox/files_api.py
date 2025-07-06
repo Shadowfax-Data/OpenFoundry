@@ -9,7 +9,7 @@ from fastapi import APIRouter, File, HTTPException, Query, UploadFile, status
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
-MAX_FILE_SIZE = 20 * 1024 * 1024  # 20MB
+from openfoundry_sandbox.config import MAX_FILE_SIZE
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/files", tags=["files"])

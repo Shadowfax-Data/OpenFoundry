@@ -12,11 +12,6 @@ import aiofiles.os
 import psutil
 import uuid6
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO, format="[%(asctime)s] %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
-)
-
 # Constants
 OUTPUT_DIR = "/tmp/pcb_logs"
 DEFAULT_LOG_LINES = 10

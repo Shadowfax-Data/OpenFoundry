@@ -12,6 +12,7 @@ from openhands_aci.editor import OHEditor
 from openhands_aci.editor.results import CLIResult
 from pydantic import BaseModel, Field
 
+from openfoundry_sandbox.config import WORKSPACE_DIR
 from openfoundry_sandbox.files_api import router as files_api_router
 from openfoundry_sandbox.find_api import router as find_api_router
 from openfoundry_sandbox.pcb_api import RunRequest, run_process_core
@@ -19,7 +20,7 @@ from openfoundry_sandbox.pcb_api import router as pcb_api_router
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s"
+    level=logging.INFO, format="[%(asctime)s] %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
 )
 logger = logging.getLogger(__name__)
 
@@ -68,7 +69,7 @@ class StrReplaceEditorResponse(BaseModel):
         from_attributes = True
 
 
-editor = OHEditor(workspace_root="/workspace")
+editor = OHEditor(workspace_root=WORKSPACE_DIR)
 
 
 # File Operations
@@ -85,7 +86,7 @@ class ListFilesResponse(BaseModel):
 # Shell Execution
 class RunShellRequest(BaseModel):
     command_str: str
-    cwd: str = "/workspace"
+    cwd: str = WORKSPACE_DIR
     timeout_seconds: int = 300
 
 
@@ -263,7 +264,7 @@ def list_files() -> dict:
     """
     List all available files under the workspace directory.
     """
-    default_roots = ["/workspace"]
+    default_roots = [WORKSPACE_DIR]
     files = find_all_files(default_roots)
     return {"files": files}
 

@@ -4,6 +4,7 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, Request, status
 from pydantic import BaseModel, Field
 
+from openfoundry_sandbox.config import WORKSPACE_DIR
 from openfoundry_sandbox.pcb import ProcessControlBlock, ProcessStatus
 
 # --- New Process Management Endpoints ---
@@ -40,7 +41,7 @@ class RunRequest(BaseModel):
     cwd: str | None = Field(
         None,
         description="Optional working directory for the subprocess.",
-        examples=["/workspace"],
+        examples=[WORKSPACE_DIR],
     )
 
 
