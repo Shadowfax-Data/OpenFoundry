@@ -91,7 +91,7 @@ export function FileBrowser({
       <div key={node.path}>
         <Button
           variant="ghost"
-          className={`w-full justify-start h-6 px-2 text-xs ${
+          className={`w-full justify-start h-6 text-xs flex items-center gap-1 ${
             isSelected ? "bg-accent" : ""
           }`}
           onClick={() => {
@@ -105,23 +105,23 @@ export function FileBrowser({
         >
           <span
             className="inline-block flex-shrink-0"
-            style={{ width: `${depth * 16}px` }}
+            style={{ width: `${depth * 10}px` }}
           />
           {node.type === "folder" ? (
             <>
               {isLoadingFolder ? (
-                <RefreshCw className="h-3 w-3 mr-1 flex-shrink-0 animate-spin" />
+                <RefreshCw className="h-3 w-3 flex-shrink-0 animate-spin" />
               ) : isExpanded ? (
-                <ChevronDown className="h-3 w-3 mr-1 flex-shrink-0" />
+                <ChevronDown className="h-3 w-3 flex-shrink-0" />
               ) : (
-                <ChevronRight className="h-3 w-3 mr-1 flex-shrink-0" />
+                <ChevronRight className="h-3 w-3 flex-shrink-0" />
               )}
-              <Folder className="h-3 w-3 mr-1 flex-shrink-0" />
+              <Folder className="h-3 w-3 flex-shrink-0" />
             </>
           ) : (
             <>
-              <ChevronRight className="h-3 w-3 mr-1 flex-shrink-0 invisible" />
-              <File className="h-3 w-3 mr-1 flex-shrink-0" />
+              <ChevronRight className="h-3 w-3 flex-shrink-0 invisible" />
+              <File className="h-3 w-3 flex-shrink-0" />
             </>
           )}
           <span className="truncate">{node.name}</span>
