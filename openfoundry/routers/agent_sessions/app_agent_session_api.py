@@ -231,15 +231,13 @@ def get_app_agent_sessions(app_id: uuid.UUID, request: Request):
     return app_agent_sessions
 
 
-@router.put(
-    "/apps/{app_id}/sessions/{session_id}",
+@router.post(
+    "/apps/{app_id}/sessions/{session_id}/stop",
     response_model=AppAgentSessionModel,
     status_code=status.HTTP_200_OK,
 )
-def update_app_agent_session(
-    app_id: uuid.UUID, session_id: uuid.UUID, request: Request
-):
-    """Update an app agent session by stopping its Docker container."""
+def stop_app_agent_session(app_id: uuid.UUID, session_id: uuid.UUID, request: Request):
+    """Stop an app agent session by stopping its Docker container."""
     db: Session = request.state.db
 
     # Get the specific agent session for the app

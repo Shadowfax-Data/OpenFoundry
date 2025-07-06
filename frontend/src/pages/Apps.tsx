@@ -8,16 +8,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Plus,
-  Search,
-  MoreVertical,
-  Calendar,
-  AppWindowMac,
-  X,
-  Play,
-  Square,
-} from "lucide-react";
+import { Plus, Search, AppWindowMac, X } from "lucide-react";
+import { AppCard } from "@/components/app/AppCard";
 import { useAppDispatch, useAppSelector } from "@/store";
 import {
   fetchApps,
@@ -31,6 +23,7 @@ import {
   fetchAppAgentSessions,
   clearError as clearSessionsError,
   createAppAgentSession,
+  stopAppAgentSession,
 } from "@/store/slices/appAgentSessionsSlice";
 
 export function Apps() {
@@ -211,6 +204,49 @@ export function Apps() {
     }
   };
 
+  // Helper to handle Stop Session action
+  const handleStopSession = async (appId: string) => {
+    const appSessions = sessions[appId] || [];
+    const activeSession = appSessions.find((s) => s.status === "active");
+
+    if (activeSession) {
+      try {
+        await dispatch(
+          stopAppAgentSession({ appId, sessionId: activeSession.id }),
+        ).unwrap();
+      } catch (error) {
+        console.error("Failed to stop session:", error);
+      }
+    }
+  };
+
+  // Helper to handle View Sessions action
+  const handleViewSessions = (appId: string) => {
+    // For now, just navigate to the first session or create one
+    const appSessions = sessions[appId] || [];
+    if (appSessions.length > 0) {
+      const latestSession = [...appSessions].sort(
+        (a, b) =>
+          new Date(b.created_on).getTime() - new Date(a.created_on).getTime(),
+      )[0];
+      navigate(`/apps/${appId}/sessions/${latestSession.id}/chat`);
+    } else {
+      // No sessions, create one
+      handleEditClick(appId);
+    }
+  };
+
+  // Helper to handle Open App action
+  const handleOpenApp = (appId: string) => {
+    const appSessions = sessions[appId] || [];
+    const activeSession = appSessions.find((s) => s.status === "active");
+
+    if (activeSession) {
+      // Open the app in a new tab/window
+      window.open(`http://localhost:${activeSession.app_port}`, "_blank");
+    }
+  };
+
   if (error || sessionsError) {
     return (
       <div className="h-full flex flex-col">
@@ -384,73 +420,17 @@ export function Apps() {
                 const sessionCount = getAppSessionCount(app.id);
 
                 return (
-                  <div
+                  <AppCard
                     key={app.id}
-                    className="rounded-lg border bg-card text-card-foreground shadow-sm hover:shadow-md transition-shadow cursor-pointer"
-                  >
-                    <div className="p-6">
-                      <div className="flex items-start justify-between mb-4">
-                        <div
-                          className={`h-12 w-12 rounded-lg ${app.color} flex items-center justify-center text-white`}
-                        >
-                          <AppWindowMac className="h-6 w-6" />
-                        </div>
-                        <Button variant="ghost" size="sm">
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </div>
-
-                      <div className="mb-4">
-                        <h3 className="font-semibold text-lg mb-2">
-                          {app.name}
-                        </h3>
-                        <p className="text-sm text-muted-foreground">
-                          {app.description}
-                        </p>
-                      </div>
-
-                      <div className="flex items-center justify-between text-sm text-muted-foreground mb-4">
-                        <div className="flex items-center gap-1">
-                          <Calendar className="h-4 w-4" />
-                          {app.lastModified}
-                        </div>
-                        <div className="flex items-center gap-1">
-                          {sessionStatus === "active" ? (
-                            <Play className="h-4 w-4 text-green-500" />
-                          ) : (
-                            <Square className="h-4 w-4 text-gray-400" />
-                          )}
-                          <span className="text-xs">
-                            {sessionCount} session
-                            {sessionCount !== 1 ? "s" : ""}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <div
-                            className={`h-2 w-2 rounded-full ${
-                              sessionStatus === "active"
-                                ? "bg-green-500"
-                                : "bg-gray-400"
-                            }`}
-                          />
-                          <span className="text-sm capitalize">
-                            {sessionStatus}
-                          </span>
-                        </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleEditClick(app.id)}
-                          disabled={editLoadingAppId === app.id}
-                        >
-                          {editLoadingAppId === app.id ? "Loading..." : "Edit"}
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
+                    app={app}
+                    sessionStatus={sessionStatus}
+                    sessionCount={sessionCount}
+                    isEditLoading={editLoadingAppId === app.id}
+                    onEditClick={handleEditClick}
+                    onStopSession={handleStopSession}
+                    onViewSessions={handleViewSessions}
+                    onOpenApp={handleOpenApp}
+                  />
                 );
               })}
             </div>
