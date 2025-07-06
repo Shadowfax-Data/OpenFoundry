@@ -387,7 +387,7 @@ def write_binary_file(request: WriteBinaryFileRequest):
 
 
 @router.post("/upload")
-async def upload_file(
+def upload_file(
     file: UploadFile = File(...),
     path: str = Query(..., description="Target path for the uploaded file"),
 ):
@@ -409,8 +409,7 @@ async def upload_file(
 
     # Write the uploaded file
     with open(path, "wb") as f:
-        content = await file.read()
-        f.write(content)
+        f.write(file.file.read())
 
     file_info = get_file_info(path)
     logger.info(f"Successfully uploaded file: {path}")
