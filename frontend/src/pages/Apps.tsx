@@ -175,10 +175,13 @@ export function Apps() {
     const activeSession = appSessions.find((s) => s.status === "active");
     let sessionToGo: (typeof appSessions)[number] | null = null;
 
-    try {
+        try {
       if (activeSession) {
-        // Active session exists, use it
-        sessionToGo = activeSession;
+        // Active session exists, resume it to ensure it's properly started
+        const result = await dispatch(
+          resumeAppAgentSession({ appId, sessionId: activeSession.id }),
+        ).unwrap();
+        sessionToGo = result.session;
       } else if (appSessions.length > 0) {
         // Find latest session by created_on and resume it
         sessionToGo = [...appSessions].sort(
