@@ -33,6 +33,7 @@ export function CodePanel({
     null,
   );
   const [isFileBrowserOpen, setIsFileBrowserOpen] = useState(true);
+  const initialPath = "/workspace";
   const {
     files,
     loading,
@@ -45,7 +46,7 @@ export function CodePanel({
   } = useAgentSessionFiles({
     appId,
     sessionId,
-    initialPath: "/workspace",
+    initialPath,
   });
 
   // Update selected file when currentWriteFileInfo changes
@@ -137,7 +138,7 @@ export function CodePanel({
         {isFileBrowserOpen && <ResizableHandle withHandle />}
 
         <ResizablePanel defaultSize={70}>
-          <FileEditor selectedFile={selectedFile} />
+          <FileEditor selectedFile={selectedFile} initialPath={initialPath} />
         </ResizablePanel>
       </ResizablePanelGroup>
 
