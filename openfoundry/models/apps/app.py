@@ -1,3 +1,4 @@
+import os
 import uuid
 from pathlib import Path
 
@@ -6,6 +7,7 @@ from jinja2 import Environment, FileSystemLoader
 from sqlalchemy.dialects.postgresql import UUID as PostgresUUID
 from sqlalchemy.orm import Mapped, mapped_column
 
+from openfoundry.config import STORAGE_DIR
 from openfoundry.database import Base
 
 
@@ -22,19 +24,16 @@ class App(Base):
     def initialize_app_workspace(self):
         """Initialize the workspace directory structure for this app with initial files.
 
-        Creates: .storage/app/{app_id}/files/app.py inside the openfoundry root directory
+        Creates: {storage_dir}/app/{app_id}/files/app.py inside the openfoundry root directory
         """
-        # Get the current working directory (openfoundry root)
-        base_path = Path.cwd()
-
         # Create the directory path
-        app_dir = Path.joinpath(base_path, ".storage", "app", str(self.id), "files")
+        app_dir = os.path.join(STORAGE_DIR, "app", str(self.id), "files")
 
         # Create directories (including parent directories)
-        app_dir.mkdir(parents=True, exist_ok=True)
+        os.makedirs(app_dir, exist_ok=True)
 
         # Create the app.py file inside the files directory
-        app_file = Path(app_dir, "app.py")
+        app_file = os.path.join(app_dir, "app.py")
 
         # Setup Jinja2 environment
         template_dir = Path(__file__).parent
@@ -50,5 +49,4 @@ class App(Base):
 
     def get_workspace_directory(self):
         """Get the workspace directory for this app."""
-        base_path = Path.cwd()
-        return Path.joinpath(base_path, ".storage", "app", str(self.id), "files")
+        return os.path.join(STORAGE_DIR, "app", str(self.id), "files")

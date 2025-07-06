@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 
 from dotenv import load_dotenv
 
@@ -17,3 +18,5 @@ OPENAI_API_KEY = os.environ["OPENAI_API_KEY"]
 # Docker configuration
 SANDBOX_IMAGE = os.environ.get("SANDBOX_IMAGE", "openfoundry-sandbox:latest")
 SANDBOX_PORT = int(os.environ.get("SANDBOX_PORT", "8000"))
+
+STORAGE_DIR = os.environ.get("STORAGE_DIR", str(Path("storage").absolute()))
