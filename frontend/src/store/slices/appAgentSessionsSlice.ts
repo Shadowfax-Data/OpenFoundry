@@ -60,12 +60,15 @@ export const stopAppAgentSession = createAsyncThunk(
     { rejectWithValue },
   ) => {
     try {
-      const response = await fetch(`/api/apps/${appId}/sessions/${sessionId}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
+      const response = await fetch(
+        `/api/apps/${appId}/sessions/${sessionId}/stop`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
         },
-      });
+      );
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);

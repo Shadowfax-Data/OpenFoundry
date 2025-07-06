@@ -1,7 +1,6 @@
 import uuid
 from datetime import datetime
 
-import docker
 import httpx
 import uuid6
 from fastapi import APIRouter, Depends, HTTPException, Request, status
@@ -18,6 +17,7 @@ from openfoundry.models.agent_sessions import (
     AgentSessionStatus,
     AppAgentSession,
 )
+from openfoundry.models.agent_sessions.docker_utils import stop_docker_container
 from openfoundry.models.apps import App
 
 # Define terminal statuses for agent sessions
@@ -231,15 +231,13 @@ def get_app_agent_sessions(app_id: uuid.UUID, request: Request):
     return app_agent_sessions
 
 
-@router.put(
-    "/apps/{app_id}/sessions/{session_id}",
+@router.post(
+    "/apps/{app_id}/sessions/{session_id}/stop",
     response_model=AppAgentSessionModel,
     status_code=status.HTTP_200_OK,
 )
-def update_app_agent_session(
-    app_id: uuid.UUID, session_id: uuid.UUID, request: Request
-):
-    """Update an app agent session by stopping its Docker container."""
+def stop_app_agent_session(app_id: uuid.UUID, session_id: uuid.UUID, request: Request):
+    """Stop an app agent session by stopping its Docker container."""
     db: Session = request.state.db
 
     # Get the specific agent session for the app
@@ -267,28 +265,9 @@ def update_app_agent_session(
         )
 
     # Stop the Docker container
-    try:
-        docker_client = docker.from_env()
-        container = docker_client.containers.get(
-            app_agent_session.agent_session.container_id
-        )
-
-        logger.info(
-            f"Stopping Docker container {app_agent_session.agent_session.container_id} for session {session_id}"
-        )
-        container.stop()
-        logger.info(f"Docker container stopped for session {session_id}")
-
-    except docker.errors.NotFound:
-        # Container doesn't exist, but we can still update the status
-        logger.warning(
-            f"Container {app_agent_session.agent_session.container_id} not found, updating status anyway"
-        )
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to stop Docker container: {str(e)}",
-        )
+    stop_docker_container(
+        app_agent_session.agent_session.container_id, ignore_not_found=True
+    )
 
     # Update the agent session status to STOPPED
     app_agent_session.agent_session.status = AgentSessionStatus.STOPPED
