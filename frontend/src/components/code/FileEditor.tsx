@@ -8,9 +8,10 @@ import "highlight.js/styles/github.css";
 
 interface FileEditorProps {
   selectedFile: ReadFileResponse | null;
+  initialPath: string;
 }
 
-export function FileEditor({ selectedFile }: FileEditorProps) {
+export function FileEditor({ selectedFile, initialPath }: FileEditorProps) {
   const copyToClipboard = async () => {
     if (selectedFile?.content) {
       try {
@@ -138,8 +139,29 @@ export function FileEditor({ selectedFile }: FileEditorProps) {
       <div className="h-8 border-b px-3 py-2 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <File className="h-4 w-4" />
-          <span className="text-sm font-medium">
-            {selectedFile.file_info.name}
+          <span className="text-xs font-medium flex items-center gap-1">
+            {selectedFile.file_info.path
+              .replace(
+                new RegExp(
+                  `^/?${initialPath.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&")}/?`,
+                ),
+                "",
+              )
+              .split("/")
+              .map((segment, idx, arr) => (
+                <span key={idx} className="flex items-center gap-1">
+                  {idx < arr.length - 1 ? (
+                    <>
+                      <span className="text-muted-foreground">{segment}</span>
+                      <span className="mx-0.5 text-muted-foreground">/</span>
+                    </>
+                  ) : (
+                    <span className="font-semibold text-foreground">
+                      {segment}
+                    </span>
+                  )}
+                </span>
+              ))}
           </span>
           <Badge variant="secondary" className="text-xs">
             {language}

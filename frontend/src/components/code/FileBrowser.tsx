@@ -137,20 +137,7 @@ export function FileBrowser({
   };
 
   return (
-    <div className="h-full bg-background border-r flex flex-col">
-      <div className="h-8 border-b px-3 py-2 flex items-center justify-between flex-shrink-0">
-        <h3 className="text-sm font-medium">Files</h3>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-6 w-6 p-0"
-          onClick={onRefresh}
-          disabled={loading}
-          title="Refresh files"
-        >
-          <RefreshCw className={`h-3 w-3 ${loading ? "animate-spin" : ""}`} />
-        </Button>
-      </div>
+    <div className="h-full flex flex-col">
       <ScrollArea className="flex-1">
         <div className="py-2">
           {error ? (

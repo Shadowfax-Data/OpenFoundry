@@ -4,11 +4,19 @@ import {
   ResizablePanel,
   ResizableHandle,
 } from "@/components/ui/resizable";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { ArrowLeftToLine, ArrowRightToLine } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { FileBrowser } from "./FileBrowser";
 import { FileEditor } from "./FileEditor";
 import { CurrentWriteFileInfo } from "@/store/slices/appChatSlice";
 import { useAgentSessionFiles } from "@/hooks/useAgentSessionFiles";
 import { ReadFileResponse } from "@/types/files";
+import { RefreshCw } from "lucide-react";
 
 interface CodePanelProps {
   currentWriteFileInfo: CurrentWriteFileInfo | null;
@@ -24,6 +32,8 @@ export function CodePanel({
   const [selectedFile, setSelectedFile] = useState<ReadFileResponse | null>(
     null,
   );
+  const [isFileBrowserOpen, setIsFileBrowserOpen] = useState(true);
+  const initialPath = "/workspace";
   const {
     files,
     loading,
@@ -36,7 +46,7 @@ export function CodePanel({
   } = useAgentSessionFiles({
     appId,
     sessionId,
-    initialPath: "/workspace",
+    initialPath,
   });
 
   // Update selected file when currentWriteFileInfo changes
@@ -68,28 +78,82 @@ export function CodePanel({
   };
 
   return (
-    <div className="h-full bg-background">
+    <div className="h-full bg-background relative">
       <ResizablePanelGroup direction="horizontal">
-        <ResizablePanel defaultSize={30} minSize={20} maxSize={50}>
-          <FileBrowser
-            files={files}
-            loading={loading}
-            error={error}
-            selectedFile={selectedFile}
-            onFileSelect={handleFileSelect}
-            onRefresh={refreshFiles}
-            loadedFolders={loadedFolders}
-            loadingFolders={loadingFolders}
-            onLoadFolderContents={loadFolderContents}
-          />
+        <ResizablePanel
+          defaultSize={30}
+          minSize={isFileBrowserOpen ? 20 : 0}
+          maxSize={isFileBrowserOpen ? 50 : 0}
+        >
+          <Collapsible
+            open={isFileBrowserOpen}
+            onOpenChange={setIsFileBrowserOpen}
+            className="h-full"
+          >
+            <div className="h-full bg-background border-r flex flex-col">
+              <div className="h-8 border-b px-3 py-2 flex items-center justify-between flex-shrink-0">
+                <h3 className="text-sm font-medium">Files</h3>
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 w-6 p-0"
+                    onClick={refreshFiles}
+                    disabled={loading}
+                    title="Refresh files"
+                  >
+                    <RefreshCw
+                      className={`h-3 w-3 ${loading ? "animate-spin" : ""}`}
+                    />
+                  </Button>
+                  <CollapsibleTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 w-6 p-0"
+                      title="Collapse file browser"
+                    >
+                      <ArrowLeftToLine className="h-3 w-3" />
+                    </Button>
+                  </CollapsibleTrigger>
+                </div>
+              </div>
+              <CollapsibleContent className="flex-1">
+                <FileBrowser
+                  files={files}
+                  loading={loading}
+                  error={error}
+                  selectedFile={selectedFile}
+                  onFileSelect={handleFileSelect}
+                  onRefresh={refreshFiles}
+                  loadedFolders={loadedFolders}
+                  loadingFolders={loadingFolders}
+                  onLoadFolderContents={loadFolderContents}
+                />
+              </CollapsibleContent>
+            </div>
+          </Collapsible>
         </ResizablePanel>
 
-        <ResizableHandle withHandle />
+        {isFileBrowserOpen && <ResizableHandle withHandle />}
 
         <ResizablePanel defaultSize={70}>
-          <FileEditor selectedFile={selectedFile} />
+          <FileEditor selectedFile={selectedFile} initialPath={initialPath} />
         </ResizablePanel>
       </ResizablePanelGroup>
+
+      {/* Floating expand button when file browser is collapsed */}
+      {!isFileBrowserOpen && (
+        <Button
+          variant="outline"
+          size="sm"
+          className="absolute left-0 top-2 z-10 h-8 w-8 p-0 border-l-0 rounded-l-none"
+          onClick={() => setIsFileBrowserOpen(true)}
+          title="Expand file browser"
+        >
+          <ArrowRightToLine className="h-4 w-4" />
+        </Button>
+      )}
     </div>
   );
 }
