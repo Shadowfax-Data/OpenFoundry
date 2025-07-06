@@ -87,6 +87,40 @@ export const stopAppAgentSession = createAsyncThunk(
   },
 );
 
+// Async thunk for resuming an app agent session
+export const resumeAppAgentSession = createAsyncThunk(
+  "appAgentSessions/resumeAppAgentSession",
+  async (
+    { appId, sessionId }: { appId: string; sessionId: string },
+    { rejectWithValue },
+  ) => {
+    try {
+      const response = await fetch(
+        `/api/apps/${appId}/sessions/${sessionId}/resume`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const session: AppAgentSessionFromAPI = await response.json();
+      return { appId, session };
+    } catch (error) {
+      return rejectWithValue(
+        error instanceof Error
+          ? error.message
+          : "Failed to resume app agent session",
+      );
+    }
+  },
+);
+
 const initialState: AppAgentSessionsState = {
   sessions: {},
   loading: false,
@@ -161,6 +195,28 @@ const appAgentSessionsSlice = createSlice({
         state.loading = false;
         state.error =
           (action.payload as string) || "Failed to stop app agent session";
+      })
+      // Resume app agent session
+      .addCase(resumeAppAgentSession.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(resumeAppAgentSession.fulfilled, (state, action) => {
+        state.loading = false;
+        const { appId, session } = action.payload;
+        if (state.sessions[appId]) {
+          const sessionIndex = state.sessions[appId].findIndex(
+            (s) => s.id === session.id,
+          );
+          if (sessionIndex !== -1) {
+            state.sessions[appId][sessionIndex] = session;
+          }
+        }
+      })
+      .addCase(resumeAppAgentSession.rejected, (state, action) => {
+        state.loading = false;
+        state.error =
+          (action.payload as string) || "Failed to resume app agent session";
       });
   },
 });

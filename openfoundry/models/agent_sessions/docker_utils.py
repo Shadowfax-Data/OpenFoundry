@@ -139,3 +139,22 @@ def stop_docker_container(container_id: str, ignore_not_found: bool = False) -> 
                 f"Container {container_id} not found, updating status anyway"
             )
             raise
+
+
+def is_container_started(container_name: str) -> bool | None:
+    """Check if a Docker container is started by its name.
+
+    Args:
+        container_name: Name of the Docker container to check.
+
+    Returns:
+        True if container is started, False if stopped, None if container doesn't exist.
+
+    """
+    try:
+        docker_client = get_docker_client()
+        container = docker_client.containers.get(container_name)
+        container.reload()  # Refresh container info to get current status
+        return container.status == "running"
+    except docker.errors.NotFound:
+        return None

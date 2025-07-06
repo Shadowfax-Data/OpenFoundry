@@ -24,6 +24,7 @@ import {
   clearError as clearSessionsError,
   createAppAgentSession,
   stopAppAgentSession,
+  resumeAppAgentSession,
 } from "@/store/slices/appAgentSessionsSlice";
 
 export function Apps() {
@@ -173,31 +174,38 @@ export function Apps() {
     // Find active session
     const activeSession = appSessions.find((s) => s.status === "active");
     let sessionToGo: (typeof appSessions)[number] | null = null;
-    if (activeSession) {
-      sessionToGo = activeSession;
-    } else if (appSessions.length > 0) {
-      // Find latest session by created_on
-      sessionToGo = [...appSessions].sort(
-        (a, b) =>
-          new Date(b.created_on).getTime() - new Date(a.created_on).getTime(),
-      )[0];
-    }
+
     try {
-      if (!activeSession) {
-        // No active session, create one
+      if (activeSession) {
+        // Active session exists, use it
+        sessionToGo = activeSession;
+      } else if (appSessions.length > 0) {
+        // Find latest session by created_on and resume it
+        sessionToGo = [...appSessions].sort(
+          (a, b) =>
+            new Date(b.created_on).getTime() - new Date(a.created_on).getTime(),
+        )[0];
+
+        // Resume the existing session
+        const result = await dispatch(
+          resumeAppAgentSession({ appId, sessionId: sessionToGo.id }),
+        ).unwrap();
+        sessionToGo = result.session;
+      } else {
+        // No sessions exist, create a new one
         const result = await dispatch(createAppAgentSession(appId)).unwrap();
         sessionToGo = result.session;
       }
+
       if (sessionToGo) {
         navigate(`/apps/${appId}/sessions/${sessionToGo.id}/chat`);
       } else {
-        // No session found or created, fallback: create one
+        // Fallback: create a new session
         const result = await dispatch(createAppAgentSession(appId)).unwrap();
         navigate(`/apps/${appId}/sessions/${result.session.id}/chat`);
       }
     } catch (e) {
       // Optionally show error
-
       console.error("Failed to start or find session", e);
     } finally {
       setEditLoadingAppId(null);
