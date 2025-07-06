@@ -14,6 +14,7 @@ import { useAppDispatch, useAppSelector } from "@/store";
 import {
   fetchApps,
   createApp,
+  deleteApp,
   setSearchQuery,
   setStatusFilter,
   setSortBy,
@@ -91,10 +92,8 @@ export function Apps() {
 
     // Apply search filter
     if (searchQuery) {
-      filteredApps = filteredApps.filter(
-        (app) =>
-          app.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          app.description.toLowerCase().includes(searchQuery.toLowerCase()),
+      filteredApps = filteredApps.filter((app) =>
+        app.name.toLowerCase().includes(searchQuery.toLowerCase()),
       );
     }
 
@@ -258,6 +257,17 @@ export function Apps() {
         `${window.location.protocol}//${window.location.hostname}:${activeSession.app_port}`,
         "_blank",
       );
+    }
+  };
+
+  // Helper to handle Delete App action
+  const handleDeleteApp = async (appId: string) => {
+    try {
+      await dispatch(deleteApp(appId)).unwrap();
+      // App will be automatically removed from the state by the Redux reducer
+    } catch (error) {
+      console.error("Failed to delete app:", error);
+      // Error is handled by Redux state
     }
   };
 
@@ -444,6 +454,7 @@ export function Apps() {
                     onStopSession={handleStopSession}
                     onViewSessions={handleViewSessions}
                     onOpenApp={handleOpenApp}
+                    onDeleteApp={handleDeleteApp}
                   />
                 );
               })}

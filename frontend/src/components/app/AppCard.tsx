@@ -15,6 +15,7 @@ import {
   Pause,
   List,
   ExternalLink,
+  Trash2,
 } from "lucide-react";
 import { App } from "@/types/api";
 
@@ -27,6 +28,7 @@ interface AppCardProps {
   onStopSession?: (appId: string) => void;
   onViewSessions?: (appId: string) => void;
   onOpenApp?: (appId: string) => void;
+  onDeleteApp?: (appId: string) => void;
 }
 
 export function AppCard({
@@ -38,6 +40,7 @@ export function AppCard({
   onStopSession,
   onViewSessions,
   onOpenApp,
+  onDeleteApp,
 }: AppCardProps) {
   return (
     <div className="rounded-lg border bg-card text-card-foreground shadow-sm hover:shadow-md transition-shadow cursor-pointer">
@@ -80,6 +83,14 @@ export function AppCard({
                   View Sessions
                 </DropdownMenuItem>
               )}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => onDeleteApp?.(app.id)}
+                variant="destructive"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete App
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

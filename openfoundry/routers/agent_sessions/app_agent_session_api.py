@@ -17,7 +17,6 @@ from openfoundry.models.agent_sessions import (
     AgentSessionStatus,
     AppAgentSession,
 )
-from openfoundry.models.agent_sessions.docker_utils import stop_docker_container
 from openfoundry.models.apps import App
 
 # Define terminal statuses for agent sessions
@@ -145,8 +144,8 @@ def create_app_agent_session(request: Request, app_id: uuid.UUID):
     db: Session = request.state.db
     session_id = uuid6.uuid6()
 
-    # Verify the app exists
-    app = db.query(App).filter(App.id == app_id).first()
+    # Verify the app exists and is not deleted
+    app = db.query(App).filter(App.id == app_id, App.deleted_on.is_(None)).first()
     if not app:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -300,9 +299,7 @@ def stop_app_agent_session(app_id: uuid.UUID, session_id: uuid.UUID, request: Re
         )
 
     # Stop the Docker container
-    stop_docker_container(
-        app_agent_session.agent_session.container_id, ignore_not_found=True
-    )
+    app_agent_session.stop_in_docker()
 
     # Update the agent session status to STOPPED
     app_agent_session.agent_session.status = AgentSessionStatus.STOPPED

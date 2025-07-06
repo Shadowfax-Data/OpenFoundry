@@ -115,6 +115,28 @@ export const fetchApp = createAsyncThunk(
   },
 );
 
+// Async thunk for deleting an app
+export const deleteApp = createAsyncThunk(
+  "apps/deleteApp",
+  async (appId: string, { rejectWithValue }) => {
+    try {
+      const response = await fetch(`/api/apps/${appId}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      return appId;
+    } catch (error) {
+      return rejectWithValue(
+        error instanceof Error ? error.message : "Failed to delete app",
+      );
+    }
+  },
+);
+
 const initialState: AppsState = {
   apps: [],
   loading: false,
@@ -182,6 +204,20 @@ const appsSlice = createSlice({
         } else {
           state.apps.push(action.payload);
         }
+      })
+      // Delete app
+      .addCase(deleteApp.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(deleteApp.fulfilled, (state, action) => {
+        state.loading = false;
+        // Remove the deleted app from the state
+        state.apps = state.apps.filter((app) => app.id !== action.payload);
+      })
+      .addCase(deleteApp.rejected, (state, action) => {
+        state.loading = false;
+        state.error = (action.payload as string) || "Failed to delete app";
       });
   },
 });

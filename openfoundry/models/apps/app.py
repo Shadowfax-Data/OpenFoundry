@@ -1,9 +1,11 @@
 import os
 import uuid
+from datetime import datetime
 from pathlib import Path
 
 import uuid6
 from jinja2 import Environment, FileSystemLoader
+from sqlalchemy import DateTime, func
 from sqlalchemy.dialects.postgresql import UUID as PostgresUUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -20,6 +22,13 @@ class App(Base):
         PostgresUUID, primary_key=True, default=uuid6.uuid6
     )
     name: Mapped[str] = mapped_column(nullable=False)
+    deleted_on: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+
+    def soft_delete(self):
+        """Soft delete the app by setting deleted_on timestamp."""
+        self.deleted_on = func.now()
 
     def initialize_app_workspace(self):
         """Initialize the workspace directory structure for this app with initial files.

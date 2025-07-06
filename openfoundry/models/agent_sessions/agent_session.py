@@ -146,7 +146,6 @@ class AgentSessionBase(Base):
                 f"Sandbox port ({sandbox_port_key}) is required but not assigned"
             )
         assigned_sandbox_port = port_mappings[sandbox_port_key]
-
         logger.info(f"Docker container created for session {self.id}")
         return {
             "container_id": container_id,
@@ -173,10 +172,27 @@ class AgentSessionBase(Base):
                 f"Sandbox port ({sandbox_port_key}) is required but not assigned"
             )
         assigned_sandbox_port = port_mappings[sandbox_port_key]
-
         logger.info(f"Docker container resumed for session {self.id}")
         return {
             "container_id": container_id,
             "assigned_sandbox_port": assigned_sandbox_port,
             "port_mappings": port_mappings,
         }
+
+    def stop_in_docker(self) -> None:
+        """Stop Docker container for this agent session."""
+        logger.info(f"Stopping Docker container for session {self.id}")
+        docker_utils.stop_docker_container(
+            container_id=self.agent_session.container_id,
+            ignore_not_found=True,
+        )
+        logger.info(f"Docker container stopped for session {self.id}")
+
+    def remove_from_docker(self) -> None:
+        """Remove Docker container for this agent session."""
+        logger.info(f"Removing Docker container for session {self.id}")
+        docker_utils.remove_docker_container(
+            container_id=self.agent_session.container_id,
+            ignore_not_found=True,
+        )
+        logger.info(f"Docker container removed for session {self.id}")

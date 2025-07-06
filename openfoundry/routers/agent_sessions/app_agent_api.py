@@ -107,11 +107,12 @@ def get_conversation_messages(
     """Retrieve all messages from a conversation session."""
     db: Session = request.state.db
 
-    # Validate app exists
+    # Validate app exists and is not deleted
     app = (
         db.query(App)
         .filter(
             App.id == app_id,
+            App.deleted_on.is_(None),
         )
         .first()
     )
