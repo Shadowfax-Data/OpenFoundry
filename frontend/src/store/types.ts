@@ -1,4 +1,5 @@
 import { App, AppAgentSessionFromAPI } from "@/types/api";
+import { AppChatState } from "./slices/appChatSlice";
 
 // Apps slice state
 export interface AppsState {
@@ -21,5 +22,5 @@ export interface AppAgentSessionsState {
 export type RootState = {
   apps: AppsState;
   appAgentSessions: AppAgentSessionsState;
-  appChat: import("./slices/appChatSlice").AppChatState;
+  appChat: AppChatState;
 };

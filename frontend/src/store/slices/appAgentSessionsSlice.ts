@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
-import { AppAgentSessionFromAPI, AppAgentSessionsState } from "@/store/types";
+import { AppAgentSessionFromAPI } from "@/types/api";
+import { AppAgentSessionsState } from "@/store/types";
 
 // Async thunk for fetching app agent sessions for a specific app
 export const fetchAppAgentSessions = createAsyncThunk(
