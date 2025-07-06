@@ -88,3 +88,25 @@ def create_docker_container(
         "assigned_sandbox_port": assigned_sandbox_port,
         "port_mappings": port_mappings,
     }
+
+
+def stop_docker_container(container_id: str, ignore_not_found: bool = False) -> None:
+    """Stop a Docker container by its ID.
+
+    Args:
+        container_id: The ID of the container to stop
+        ignore_not_found: If True, do not raise an error if the container is not found
+
+    """
+    try:
+        docker_client = get_docker_client()
+        container = docker_client.containers.get(container_id)
+        logger.info(f"Stopping Docker container {container_id}")
+        container.stop()
+        logger.info(f"Docker container {container_id} stopped successfully")
+    except docker.errors.NotFound:
+        if not ignore_not_found:
+            logger.warning(
+                f"Container {container_id} not found, updating status anyway"
+            )
+            raise
