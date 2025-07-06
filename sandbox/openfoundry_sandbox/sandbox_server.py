@@ -12,10 +12,10 @@ from openhands_aci.editor import OHEditor
 from openhands_aci.editor.results import CLIResult
 from pydantic import BaseModel, Field
 
-from files_api import router as files_api_router
-from find_api import router as find_api_router
-from pcb_api import RunRequest, run_process_core
-from pcb_api import router as pcb_api_router
+from openfoundry_sandbox.files_api import router as files_api_router
+from openfoundry_sandbox.find_api import router as find_api_router
+from openfoundry_sandbox.pcb_api import RunRequest, run_process_core
+from openfoundry_sandbox.pcb_api import router as pcb_api_router
 
 # Configure logging
 logging.basicConfig(

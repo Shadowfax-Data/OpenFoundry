@@ -9,7 +9,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
  && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies with Poetry
-COPY pyproject.toml /app/
+COPY pyproject.toml poetry.lock /app/
 WORKDIR /app
 RUN pip install --upgrade pip poetry==2.1.2 \
  && poetry config virtualenvs.create false \
@@ -42,4 +42,4 @@ WORKDIR /app
 RUN mkdir -p /workspace
 
 # Set the default command to run the untrusted server
-CMD ["python", "-m", "uvicorn", "sandbox_server:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["python", "-m", "uvicorn", "openfoundry_sandbox.sandbox_server:app", "--host", "0.0.0.0", "--port", "8000"]

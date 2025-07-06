@@ -4,7 +4,7 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, Request, status
 from pydantic import BaseModel, Field
 
-from pcb import ProcessControlBlock, ProcessStatus
+from openfoundry_sandbox.pcb import ProcessControlBlock, ProcessStatus
 
 # --- New Process Management Endpoints ---
 
