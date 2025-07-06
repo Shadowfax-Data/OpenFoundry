@@ -8,17 +8,17 @@ from typing import Literal
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel
 
-router = APIRouter(prefix='/find')
+router = APIRouter(prefix="/find", tags=["find"])
 logger = logging.getLogger(__name__)
 
-WORKSPACE_DIR = '/workspace'
+WORKSPACE_DIR = "/workspace"
 
 
 def get_ignored_paths(root: str) -> set[str]:
     """Return a set of absolute paths for files/directories that are ignored by git."""
     try:
         out = subprocess.check_output(
-            ['git', 'ls-files', '--others', '--ignored', '--exclude-standard'],
+            ["git", "ls-files", "--others", "--ignored", "--exclude-standard"],
             cwd=root,
             text=True,
         )
@@ -28,14 +28,14 @@ def get_ignored_paths(root: str) -> set[str]:
 
 
 def is_skippable(path: str, ignored: set[str]) -> bool:
-    return os.path.basename(path) == '.git' or path in ignored
+    return os.path.basename(path) == ".git" or path in ignored
 
 
 class FindFileContentsRequest(BaseModel):
     search_path: str
     regex: str
     flags: int = re.MULTILINE | re.IGNORECASE | re.DOTALL
-    error_policy: Literal['strict', 'ignore', 'replace'] = 'ignore'
+    error_policy: Literal["strict", "ignore", "replace"] = "ignore"
     limit: int = 100
 
 
@@ -51,7 +51,7 @@ class FindFileContentsResponse(BaseModel):
     limit_exceeded: bool = False
 
 
-@router.post('/file_contents', response_model=FindFileContentsResponse)
+@router.post("/file_contents", response_model=FindFileContentsResponse)
 def find_file_contents(req: FindFileContentsRequest):
     """Search for regex matches in files or directories."""
     logger.info(
@@ -61,11 +61,11 @@ def find_file_contents(req: FindFileContentsRequest):
     # Validate absolute path
     if not os.path.isabs(req.search_path):
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail='Path must be absolute'
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Path must be absolute"
         )
     if not os.path.exists(req.search_path):
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail='File or directory not found'
+            status_code=status.HTTP_404_NOT_FOUND, detail="File or directory not found"
         )
 
     # Compile regex
@@ -74,7 +74,7 @@ def find_file_contents(req: FindFileContentsRequest):
     except re.error as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f'Invalid regex pattern: {e}',
+            detail=f"Invalid regex pattern: {e}",
         )
 
     ignored = get_ignored_paths(WORKSPACE_DIR)
@@ -82,29 +82,29 @@ def find_file_contents(req: FindFileContentsRequest):
 
     def search_file(path: str):
         try:
-            with open(path, 'r', encoding='utf-8', errors=req.error_policy) as f:
+            with open(path, "r", encoding="utf-8", errors=req.error_policy) as f:
                 content = f.read()
                 lines = content.splitlines(keepends=True)
         except Exception as e:
-            logger.warning(f'Skipping unreadable file {path}: {e}')
+            logger.warning(f"Skipping unreadable file {path}: {e}")
             return
 
         for m in pattern.finditer(content):
             start = m.start()
-            line_no = content[:start].count('\n') + 1
+            line_no = content[:start].count("\n") + 1
             text = m.group(0).strip()
 
             # Context: 2 lines before and after
             start_line = max(0, line_no - 3)
             end_line = min(len(lines), line_no + 2)
-            ctx = [f'{i+1}: {lines[i].rstrip()}' for i in range(start_line, end_line)]
+            ctx = [f"{i+1}: {lines[i].rstrip()}" for i in range(start_line, end_line)]
 
             matches.append(
                 FindFileContentsMatch(
                     file_path=path,
                     line_number=line_no,
                     matched_text=text,
-                    context='\n'.join(ctx),
+                    context="\n".join(ctx),
                 )
             )
 
@@ -145,7 +145,7 @@ class FindFileNamesResponse(BaseModel):
     limit_exceeded: bool = False
 
 
-@router.post('/file_names', response_model=FindFileNamesResponse)
+@router.post("/file_names", response_model=FindFileNamesResponse)
 def find_file_names(req: FindFileNamesRequest):
     """Search for files matching glob patterns in directories."""
     logger.info(
@@ -155,25 +155,25 @@ def find_file_names(req: FindFileNamesRequest):
     # Validate absolute path
     if not os.path.isabs(req.search_path):
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail='Path must be absolute'
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Path must be absolute"
         )
     if not os.path.exists(req.search_path):
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail='Directory not found'
+            status_code=status.HTTP_404_NOT_FOUND, detail="Directory not found"
         )
     if not os.path.isdir(req.search_path):
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail='Path must be a directory'
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Path must be a directory"
         )
 
     # Parse glob patterns (separated by "; ")
     glob_patterns = [
-        pattern.strip() for pattern in req.glob.split(';') if pattern.strip()
+        pattern.strip() for pattern in req.glob.split(";") if pattern.strip()
     ]
     if not glob_patterns:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail='At least one glob pattern must be provided',
+            detail="At least one glob pattern must be provided",
         )
 
     ignored = get_ignored_paths(WORKSPACE_DIR)

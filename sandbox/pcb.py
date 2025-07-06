@@ -14,11 +14,11 @@ import uuid6
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO, format='[%(asctime)s] %(message)s', datefmt='%Y-%m-%d %H:%M:%S'
+    level=logging.INFO, format="[%(asctime)s] %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
 )
 
 # Constants
-OUTPUT_DIR = '/tmp/pcb_logs'
+OUTPUT_DIR = "/tmp/pcb_logs"
 DEFAULT_LOG_LINES = 10
 MAX_LOG_LINES = 100
 TERM_TIMEOUT = 2.0  # seconds
@@ -30,15 +30,15 @@ KILL_EXIT_CODE = -9
 class ProcessStatus(str, Enum):
     """Enum for process status states."""
 
-    INITIALIZING = 'initializing'
-    RUNNING = 'running'
-    FINISHED_OK = 'finished_ok'
-    FINISHED_ERROR = 'finished_error'
-    TERMINATING = 'terminating'
-    TERMINATED = 'terminated'
-    ERROR_START = 'error_start'
-    ERROR_TERMINATE = 'error_terminate'
-    UNKNOWN = 'unknown'
+    INITIALIZING = "initializing"
+    RUNNING = "running"
+    FINISHED_OK = "finished_ok"
+    FINISHED_ERROR = "finished_error"
+    TERMINATING = "terminating"
+    TERMINATED = "terminated"
+    ERROR_START = "error_start"
+    ERROR_TERMINATE = "error_terminate"
+    UNKNOWN = "unknown"
 
 
 class ProcessControlBlock:
@@ -90,7 +90,7 @@ class ProcessControlBlock:
         self.stderr_offset = 0
 
         self.log_file_path = os.path.join(
-            OUTPUT_DIR, f'{self.identifier}_{self.run_id}.log'
+            OUTPUT_DIR, f"{self.identifier}_{self.run_id}.log"
         )
 
         # Concurrency control
@@ -117,7 +117,7 @@ class ProcessControlBlock:
         """
         if self._status != ProcessStatus.INITIALIZING:
             logging.warning(
-                f'[{self.identifier}_{self.run_id}] Process already started or in a non-initial state: {self._status}'
+                f"[{self.identifier}_{self.run_id}] Process already started or in a non-initial state: {self._status}"
             )
             return
 
@@ -131,7 +131,7 @@ class ProcessControlBlock:
             command_list = shlex.split(self.command_str)
             if not command_list:
                 raise ValueError(
-                    'Command string resulted in an empty command list after parsing.'
+                    "Command string resulted in an empty command list after parsing."
                 )
 
             effective_env = None
@@ -139,27 +139,27 @@ class ProcessControlBlock:
                 effective_env = os.environ.copy()
                 effective_env.update(self.custom_env)
                 logging.info(
-                    f'[{self.identifier}_{self.run_id}] Starting with custom environment variables (merged). Keys: {list(self.custom_env.keys())}'
+                    f"[{self.identifier}_{self.run_id}] Starting with custom environment variables (merged). Keys: {list(self.custom_env.keys())}"
                 )
             else:
                 logging.info(
-                    f'[{self.identifier}_{self.run_id}] Starting with inherited environment.'
+                    f"[{self.identifier}_{self.run_id}] Starting with inherited environment."
                 )
 
             # Create temporary files for stdout and stderr
             self.stdout_file = await asyncio.to_thread(
                 tempfile.NamedTemporaryFile,
-                prefix=f'{self.identifier}_{self.run_id}_stdout_',
-                suffix='.log',
+                prefix=f"{self.identifier}_{self.run_id}_stdout_",
+                suffix=".log",
                 delete=False,
-                mode='wb+',
+                mode="wb+",
             )
             self.stderr_file = await asyncio.to_thread(
                 tempfile.NamedTemporaryFile,
-                prefix=f'{self.identifier}_{self.run_id}_stderr_',
-                suffix='.log',
+                prefix=f"{self.identifier}_{self.run_id}_stderr_",
+                suffix=".log",
                 delete=False,
-                mode='wb+',
+                mode="wb+",
             )
             self.stdout_log_path = self.stdout_file.name
             self.stderr_log_path = self.stderr_file.name
@@ -177,22 +177,22 @@ class ProcessControlBlock:
 
             if self.pid is None:
                 raise RuntimeError(
-                    'Process failed to start - no PID assigned by asyncio'
+                    "Process failed to start - no PID assigned by asyncio"
                 )
 
             self._status = ProcessStatus.RUNNING
             logging.info(
-                f'[{self.identifier}_{self.run_id}] Process started successfully. PID={self.pid}, '
+                f"[{self.identifier}_{self.run_id}] Process started successfully. PID={self.pid}, "
                 f"CMD='{self.command_str}'"
             )
 
-            async with aiofiles.open(self.log_file_path, 'w', encoding='utf-8') as f:
-                await f.write(f'Process started: {self.command_str}\n')
+            async with aiofiles.open(self.log_file_path, "w", encoding="utf-8") as f:
+                await f.write(f"Process started: {self.command_str}\n")
                 await f.write(
-                    'Standard output and error are being written to separate files:\n'
+                    "Standard output and error are being written to separate files:\n"
                 )
-                await f.write(f'  - STDOUT: {self.stdout_log_path}\n')
-                await f.write(f'  - STDERR: {self.stderr_log_path}\n')
+                await f.write(f"  - STDOUT: {self.stdout_log_path}\n")
+                await f.write(f"  - STDERR: {self.stderr_log_path}\n")
 
             # Start task to monitor exit
             self._process_monitor_task = asyncio.create_task(
@@ -204,15 +204,15 @@ class ProcessControlBlock:
             self.end_time = time.time()
             error_msg = f"Failed to start process. CMD='{self.command_str}'. Error: {e}"
             logging.error(
-                f'[{self.identifier}_{self.run_id}] {error_msg}', exc_info=True
+                f"[{self.identifier}_{self.run_id}] {error_msg}", exc_info=True
             )
 
             # Write error to log file directly
             async with aiofiles.open(
-                self.log_file_path, 'a', encoding='utf-8'
+                self.log_file_path, "a", encoding="utf-8"
             ) as f_err:
                 await f_err.write(
-                    f'\n### PROCESS START FAILED ###\nCommand: {self.command_str}\nError: {e}\n'
+                    f"\n### PROCESS START FAILED ###\nCommand: {self.command_str}\nError: {e}\n"
                 )
             raise
         finally:
@@ -231,12 +231,12 @@ class ProcessControlBlock:
             exit_code_val = await self.proc.wait()
         except asyncio.CancelledError:
             logging.info(
-                f'[{self.identifier}_{self.run_id}] Process exit monitoring cancelled.'
+                f"[{self.identifier}_{self.run_id}] Process exit monitoring cancelled."
             )
             return
         except Exception as e:
             logging.error(
-                f'[{self.identifier}_{self.run_id}] Error waiting for process exit: {e}',
+                f"[{self.identifier}_{self.run_id}] Error waiting for process exit: {e}",
                 exc_info=True,
             )
             exit_code_val = UNKNOWN_EXIT_CODE
@@ -258,11 +258,11 @@ class ProcessControlBlock:
                         else ProcessStatus.FINISHED_ERROR
                     )
                     logging.info(
-                        f'[{self.identifier}_{self.run_id}] Process {self.pid} finished naturally. Status={self._status}, ExitCode={self.exit_code}'
+                        f"[{self.identifier}_{self.run_id}] Process {self.pid} finished naturally. Status={self._status}, ExitCode={self.exit_code}"
                     )
 
                 logging.info(
-                    f'[{self.identifier}_{self.run_id}] Process monitoring complete. Final status: {self._status}, Final exit code: {self.exit_code}'
+                    f"[{self.identifier}_{self.run_id}] Process monitoring complete. Final status: {self._status}, Final exit code: {self.exit_code}"
                 )
 
     async def kill(self) -> None:
@@ -285,19 +285,19 @@ class ProcessControlBlock:
             or not self.proc
         ):
             logging.info(
-                f'[{self.identifier}_{self.run_id}] Process {self.pid} is not running/initialising or proc object missing (status: {self._status}). Kill request ignored.'
+                f"[{self.identifier}_{self.run_id}] Process {self.pid} is not running/initialising or proc object missing (status: {self._status}). Kill request ignored."
             )
             return
 
         if self.proc.returncode is not None:  # Already exited
             logging.info(
-                f'[{self.identifier}_{self.run_id}] Process {self.pid} already exited with code {self.proc.returncode}. Kill request ignored.'
+                f"[{self.identifier}_{self.run_id}] Process {self.pid} already exited with code {self.proc.returncode}. Kill request ignored."
             )
             if (
                 self._status == ProcessStatus.RUNNING
             ):  # Status not yet updated by monitor
                 logging.info(
-                    f'[{self.identifier}_{self.run_id}] Updating status from RUNNING to reflect exit code {self.proc.returncode}'
+                    f"[{self.identifier}_{self.run_id}] Updating status from RUNNING to reflect exit code {self.proc.returncode}"
                 )
                 self._update_process_state_after_exit(self.proc.returncode)
             return
@@ -307,7 +307,7 @@ class ProcessControlBlock:
         try:
             # First, try SIGTERM
             logging.info(
-                f'[{self.identifier}_{self.run_id}] Attempting to terminate PID {self.pid} (SIGTERM).'
+                f"[{self.identifier}_{self.run_id}] Attempting to terminate PID {self.pid} (SIGTERM)."
             )
             self.proc.terminate()
             try:
@@ -316,12 +316,12 @@ class ProcessControlBlock:
                 )
                 self.exit_code = original_exit_code
                 logging.info(
-                    f'[{self.identifier}_{self.run_id}] Process {self.pid} terminated gracefully after SIGTERM. ExitCode={self.exit_code}'
+                    f"[{self.identifier}_{self.run_id}] Process {self.pid} terminated gracefully after SIGTERM. ExitCode={self.exit_code}"
                 )
             except asyncio.TimeoutError:
                 # SIGTERM didn't work, try SIGKILL
                 logging.info(
-                    f'[{self.identifier}_{self.run_id}] Process {self.pid} did not terminate after SIGTERM timeout ({TERM_TIMEOUT}s). Sending SIGKILL.'
+                    f"[{self.identifier}_{self.run_id}] Process {self.pid} did not terminate after SIGTERM timeout ({TERM_TIMEOUT}s). Sending SIGKILL."
                 )
                 self.proc.kill()
                 try:
@@ -331,24 +331,24 @@ class ProcessControlBlock:
                     self.exit_code = original_exit_code
                 except asyncio.TimeoutError:
                     logging.warning(
-                        f'[{self.identifier}_{self.run_id}] Process {self.pid} did not report exit code quickly after SIGKILL ({KILL_TIMEOUT}s).'
+                        f"[{self.identifier}_{self.run_id}] Process {self.pid} did not report exit code quickly after SIGKILL ({KILL_TIMEOUT}s)."
                     )
                     self.exit_code = KILL_EXIT_CODE
                 except Exception as e_kill_wait:
                     logging.error(
-                        f'[{self.identifier}_{self.run_id}] Error waiting for process after SIGKILL: {e_kill_wait}'
+                        f"[{self.identifier}_{self.run_id}] Error waiting for process after SIGKILL: {e_kill_wait}"
                     )
                     self.exit_code = KILL_EXIT_CODE
 
             self.end_time = time.time()
             self._status = ProcessStatus.TERMINATED
             logging.info(
-                f'[{self.identifier}_{self.run_id}] Kill sequence completed for PID {self.pid}. Final Status={self._status}, ExitCode={self.exit_code}'
+                f"[{self.identifier}_{self.run_id}] Kill sequence completed for PID {self.pid}. Final Status={self._status}, ExitCode={self.exit_code}"
             )
 
         except Exception as e:
             logging.error(
-                f'[{self.identifier}_{self.run_id}] Error during termination sequence of PID {self.pid}: {e}',
+                f"[{self.identifier}_{self.run_id}] Error during termination sequence of PID {self.pid}: {e}",
                 exc_info=True,
             )
             self._status = ProcessStatus.UNKNOWN
@@ -389,7 +389,7 @@ class ProcessControlBlock:
                 self.stderr_file.close()
         except Exception as e:
             logging.error(
-                f'[{self.identifier}_{self.run_id}] Error closing temporary files: {e}'
+                f"[{self.identifier}_{self.run_id}] Error closing temporary files: {e}"
             )
 
     def _update_process_state_after_exit(self, exit_code: int) -> None:
@@ -405,7 +405,7 @@ class ProcessControlBlock:
             self._status = ProcessStatus.FINISHED_ERROR
 
         logging.info(
-            f'[{self.identifier}_{self.run_id}] Updated process state after exit: Status={self._status}, ExitCode={self.exit_code}'
+            f"[{self.identifier}_{self.run_id}] Updated process state after exit: Status={self._status}, ExitCode={self.exit_code}"
         )
 
     def _update_on_exit_locked(self):
@@ -417,8 +417,8 @@ class ProcessControlBlock:
         if self.proc and self.proc.returncode is not None:
             if self._status in [ProcessStatus.RUNNING, ProcessStatus.INITIALIZING]:
                 logging.warning(
-                    f'[{self.identifier}_{self.run_id}] Internal status update: process ended (rc={self.proc.returncode}) '
-                    f'but status was {self._status}. Updating to reflect exit code {self.proc.returncode}.'
+                    f"[{self.identifier}_{self.run_id}] Internal status update: process ended (rc={self.proc.returncode}) "
+                    f"but status was {self._status}. Updating to reflect exit code {self.proc.returncode}."
                 )
                 self._update_process_state_after_exit(self.proc.returncode)
 
@@ -465,26 +465,26 @@ class ProcessControlBlock:
         pid_to_check = self.pid
 
         stats = {
-            'pid': pid_to_check,
-            'status': current_status_locked.value,
-            'cpu_percent': None,
-            'memory_rss_bytes': None,
-            'memory_vms_bytes': None,
-            'num_threads': None,
-            'create_time': self.start_time,
-            'psutil_status': None,
-            'error': None,
+            "pid": pid_to_check,
+            "status": current_status_locked.value,
+            "cpu_percent": None,
+            "memory_rss_bytes": None,
+            "memory_vms_bytes": None,
+            "num_threads": None,
+            "create_time": self.start_time,
+            "psutil_status": None,
+            "error": None,
         }
 
         # Add error information for finished-with-error processes
-        if current_status_locked == ProcessStatus.FINISHED_ERROR and not stats['error']:
+        if current_status_locked == ProcessStatus.FINISHED_ERROR and not stats["error"]:
             try:
-                stats['error'] = (
-                    f'Process finished with non-zero exit code: {self.exit_code}'
+                stats["error"] = (
+                    f"Process finished with non-zero exit code: {self.exit_code}"
                 )
             except Exception as e_log:
                 logging.error(
-                    f'[{self.identifier}_{self.run_id}] Error trying to get error message for stats: {e_log}'
+                    f"[{self.identifier}_{self.run_id}] Error trying to get error message for stats: {e_log}"
                 )
 
         # If process is running, get live stats
@@ -495,7 +495,7 @@ class ProcessControlBlock:
             stats.update(psutil_data)
 
             # Handle case where process not found by psutil but we think it's running
-            if psutil_data.get('error') == 'Process not found by psutil':
+            if psutil_data.get("error") == "Process not found by psutil":
                 logging.info(
                     f"[{self.identifier}_{self.run_id}] Correcting status to 'unknown' based on NoSuchProcess for PID {self.pid} during stats fetch."
                 )
@@ -504,19 +504,19 @@ class ProcessControlBlock:
                     self.exit_code = UNKNOWN_EXIT_CODE
                 if self.end_time is None:
                     self.end_time = time.time()
-                stats['status'] = self._status.value
+                stats["status"] = self._status.value
 
         return stats
 
     def _get_psutil_stats_sync(self, pid_to_check: int) -> Dict[str, Any]:
         """Synchronous helper to fetch psutil stats."""
         stats_dict = {
-            'cpu_percent': None,
-            'memory_rss_bytes': None,
-            'memory_vms_bytes': None,
-            'num_threads': None,
-            'psutil_status': None,
-            'error': None,
+            "cpu_percent": None,
+            "memory_rss_bytes": None,
+            "memory_vms_bytes": None,
+            "num_threads": None,
+            "psutil_status": None,
+            "error": None,
         }
         try:
             p = psutil.Process(pid_to_check)
@@ -538,19 +538,19 @@ class ProcessControlBlock:
 
                 stats_dict.update(
                     {
-                        'memory_rss_bytes': mem_info.rss,
-                        'memory_vms_bytes': mem_info.vms,
-                        'num_threads': p.num_threads(),
-                        'psutil_status': p.status(),
-                        'cpu_percent': cpu_percent_val,
+                        "memory_rss_bytes": mem_info.rss,
+                        "memory_vms_bytes": mem_info.vms,
+                        "num_threads": p.num_threads(),
+                        "psutil_status": p.status(),
+                        "cpu_percent": cpu_percent_val,
                     }
                 )
         except psutil.NoSuchProcess:
-            stats_dict['error'] = 'Process not found by psutil'
+            stats_dict["error"] = "Process not found by psutil"
         except Exception as e:
-            stats_dict['error'] = f'Error getting stats via psutil: {str(e)}'
+            stats_dict["error"] = f"Error getting stats via psutil: {str(e)}"
             logging.error(
-                f'[{self.identifier}_{self.run_id}] Sync error getting psutil stats for PID {pid_to_check}: {e}',
+                f"[{self.identifier}_{self.run_id}] Sync error getting psutil stats for PID {pid_to_check}: {e}",
                 exc_info=True,
             )
         return stats_dict
@@ -586,42 +586,42 @@ class ProcessControlBlock:
         # Check if process is running and stdin is available
         if not self.proc or not self.proc.stdin:
             logging.error(
-                f'[{self.identifier}_{self.run_id}] Process stdin is not available'
+                f"[{self.identifier}_{self.run_id}] Process stdin is not available"
             )
             return False
 
         if self._status != ProcessStatus.RUNNING:
             logging.warning(
-                f'[{self.identifier}_{self.run_id}] Process is not running (status: {self._status}). Cannot send stdin data.'
+                f"[{self.identifier}_{self.run_id}] Process is not running (status: {self._status}). Cannot send stdin data."
             )
             return False
 
         try:
             # Ensure data ends with newline if not already present
-            if not data.endswith('\n'):
-                data += '\n'
+            if not data.endswith("\n"):
+                data += "\n"
 
             # Write data as bytes to stdin and flush
-            encoded_data = data.encode('utf-8')
+            encoded_data = data.encode("utf-8")
             self.proc.stdin.write(encoded_data)
             await self.proc.stdin.drain()
             logging.info(
-                f'[{self.identifier}_{self.run_id}] Sent {len(data)} bytes to stdin: {data.strip()}'
+                f"[{self.identifier}_{self.run_id}] Sent {len(data)} bytes to stdin: {data.strip()}"
             )
             return True
         except ConnectionResetError:
             logging.warning(
-                f'[{self.identifier}_{self.run_id}] Connection reset when sending data to stdin'
+                f"[{self.identifier}_{self.run_id}] Connection reset when sending data to stdin"
             )
             raise
         except BrokenPipeError:
             logging.warning(
-                f'[{self.identifier}_{self.run_id}] Broken pipe when sending data to stdin'
+                f"[{self.identifier}_{self.run_id}] Broken pipe when sending data to stdin"
             )
             raise
         except Exception as e:
             logging.error(
-                f'[{self.identifier}_{self.run_id}] Error sending data to stdin: {e}',
+                f"[{self.identifier}_{self.run_id}] Error sending data to stdin: {e}",
                 exc_info=True,
             )
             raise
@@ -646,18 +646,18 @@ class ProcessControlBlock:
             A tuple containing (list of lines read, new offset position)
         """
         if not (0 < num_lines <= MAX_LOG_LINES):
-            raise ValueError(f'num_lines must be between 1 and {MAX_LOG_LINES}')
+            raise ValueError(f"num_lines must be between 1 and {MAX_LOG_LINES}")
         if not log_path or not await aiofiles.os.path.exists(log_path):
             return [], offset
 
         CHUNK_SIZE = 8192  # 8KB
         lines = []
-        partial_line = ''
+        partial_line = ""
         bytes_consumed = 0
-        encoding = 'utf-8'
+        encoding = "utf-8"
 
         async with aiofiles.open(
-            log_path, mode='r', encoding=encoding, errors='replace'
+            log_path, mode="r", encoding=encoding, errors="replace"
         ) as f:
             await f.seek(offset)
             while len(lines) < num_lines:
@@ -667,14 +667,14 @@ class ProcessControlBlock:
                 data = partial_line + chunk
                 all_lines = data.splitlines(keepends=True)
                 # If the chunk doesn't end with a newline, the last line is incomplete
-                if chunk and not chunk.endswith('\n'):
+                if chunk and not chunk.endswith("\n"):
                     partial_line = all_lines[-1]
                     all_lines = all_lines[:-1]
                 else:
-                    partial_line = ''
+                    partial_line = ""
                 for line in all_lines:
                     if len(lines) < num_lines:
-                        lines.append(line.rstrip('\n'))
+                        lines.append(line.rstrip("\n"))
                         bytes_consumed += len(line.encode(encoding))
                     if len(lines) >= num_lines:
                         break
@@ -682,7 +682,7 @@ class ProcessControlBlock:
                     break
             # If we reach EOF with a pending partial line, include it
             if partial_line and len(lines) < num_lines:
-                lines.append(partial_line.rstrip('\n'))
+                lines.append(partial_line.rstrip("\n"))
                 bytes_consumed += len(partial_line.encode(encoding))
         new_offset = offset + bytes_consumed
         return lines, new_offset
@@ -716,7 +716,7 @@ class ProcessControlBlock:
             return lines
         except Exception as e:
             logging.error(
-                f'[{self.identifier}_{self.run_id}] Error reading stdout lines: {e}',
+                f"[{self.identifier}_{self.run_id}] Error reading stdout lines: {e}",
                 exc_info=True,
             )
             raise
@@ -750,7 +750,7 @@ class ProcessControlBlock:
             return lines
         except Exception as e:
             logging.error(
-                f'[{self.identifier}_{self.run_id}] Error reading stderr lines: {e}',
+                f"[{self.identifier}_{self.run_id}] Error reading stderr lines: {e}",
                 exc_info=True,
             )
             raise
@@ -768,7 +768,7 @@ class ProcessControlBlock:
             List of strings representing the last lines from the file
         """
         if not (0 < num_lines <= MAX_LOG_LINES):
-            raise ValueError(f'num_lines must be between 1 and {MAX_LOG_LINES}')
+            raise ValueError(f"num_lines must be between 1 and {MAX_LOG_LINES}")
 
         if not log_path or not await aiofiles.os.path.exists(log_path):
             return []
@@ -782,10 +782,10 @@ class ProcessControlBlock:
         all_lines = []
 
         async with aiofiles.open(
-            log_path, mode='r', encoding='utf-8', errors='replace'
+            log_path, mode="r", encoding="utf-8", errors="replace"
         ) as f:
             # Start by reading the entire file in chunks
-            content = ''
+            content = ""
             await f.seek(0)
 
             while True:
@@ -817,7 +817,7 @@ class ProcessControlBlock:
             return await self.tail_log_file(self.stdout_log_path, num_lines)
         except Exception as e:
             logging.error(
-                f'[{self.identifier}_{self.run_id}] Error tailing stdout: {e}',
+                f"[{self.identifier}_{self.run_id}] Error tailing stdout: {e}",
                 exc_info=True,
             )
             raise
@@ -836,7 +836,7 @@ class ProcessControlBlock:
             return await self.tail_log_file(self.stderr_log_path, num_lines)
         except Exception as e:
             logging.error(
-                f'[{self.identifier}] Error tailing stderr: {e}', exc_info=True
+                f"[{self.identifier}] Error tailing stderr: {e}", exc_info=True
             )
             raise
 
@@ -846,15 +846,15 @@ class ProcessControlBlock:
             if not self.stdout_log_path or not await aiofiles.os.path.exists(
                 self.stdout_log_path
             ):
-                return ''
+                return ""
 
             async with aiofiles.open(
-                self.stdout_log_path, mode='r', encoding='utf-8', errors='replace'
+                self.stdout_log_path, mode="r", encoding="utf-8", errors="replace"
             ) as f:
                 return await f.read()
         except Exception as e:
             logging.error(
-                f'[{self.identifier}] Error reading full stdout log: {e}', exc_info=True
+                f"[{self.identifier}] Error reading full stdout log: {e}", exc_info=True
             )
             raise
 
@@ -864,14 +864,14 @@ class ProcessControlBlock:
             if not self.stderr_log_path or not await aiofiles.os.path.exists(
                 self.stderr_log_path
             ):
-                return ''
+                return ""
 
             async with aiofiles.open(
-                self.stderr_log_path, mode='r', encoding='utf-8', errors='replace'
+                self.stderr_log_path, mode="r", encoding="utf-8", errors="replace"
             ) as f:
                 return await f.read()
         except Exception as e:
             logging.error(
-                f'[{self.identifier}] Error reading full stderr log: {e}', exc_info=True
+                f"[{self.identifier}] Error reading full stderr log: {e}", exc_info=True
             )
             raise

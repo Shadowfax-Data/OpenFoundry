@@ -22,13 +22,13 @@ repos:
     hooks:
       - id: ruff
         args: [--fix]
-        files: ^(openfoundry|alembic)/.*\.py$
+        files: ^(openfoundry|alembic|sandbox)/.*\.py$
       - id: ruff
         name: ruff-import-sort
         args: [--select, I, --fix]
-        files: ^(openfoundry|alembic)/.*\.py$
+        files: ^(openfoundry|alembic|sandbox)/.*\.py$
       - id: ruff-format
-        files: ^(openfoundry|alembic)/.*\.py$
+        files: ^(openfoundry|alembic|sandbox)/.*\.py$
 
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.8.0
