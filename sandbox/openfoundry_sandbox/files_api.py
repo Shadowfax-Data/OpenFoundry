@@ -9,7 +9,7 @@ from fastapi import APIRouter, File, HTTPException, Query, UploadFile, status
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
-from openfoundry_sandbox.config import MAX_FILE_SIZE
+from openfoundry_sandbox.config import MAX_FILE_SIZE, WORKSPACE_DIR
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/files", tags=["files"])
@@ -166,7 +166,7 @@ def is_text_file(file_path: str) -> bool:
 
 @router.get("/list", response_model=DirectoryListing)
 def list_directory(
-    path: str = Query(".", description="Directory path to list"),
+    path: str = Query(WORKSPACE_DIR, description="Directory path to list"),
     include_hidden: bool = Query(
         False, description="Include hidden files and directories"
     ),

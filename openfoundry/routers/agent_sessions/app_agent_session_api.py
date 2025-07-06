@@ -1,9 +1,8 @@
 import uuid
 from datetime import datetime
 
-import httpx
 import uuid6
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from pydantic import BaseModel
 from sqlalchemy.orm import Session, joinedload
 
@@ -43,22 +42,58 @@ class AppAgentSessionModel(BaseModel):
         from_attributes = True
 
 
+class DirectoryEntry(BaseModel):
+    """Represents a file or directory entry."""
+
+    name: str
+    path: str
+    is_directory: bool
+    modified_time: float | None = None
+    is_binary: bool | None = None
+
+
 class ListFilesResponse(BaseModel):
-    files: list[str]
+    """Response model for directory listing."""
+
+    path: str
+    entries: list[DirectoryEntry]
+    parent_path: str | None = None
+
+
+class FileInfo(BaseModel):
+    """Information about a file."""
+
+    path: str
+    name: str
+    size: int
+    is_directory: bool
+    modified_time: float
+    mime_type: str | None = None
 
 
 class ReadFileResponse(BaseModel):
-    file_path: str
+    """Response model for reading a file."""
+
+    path: str
     content: str
+    is_binary: bool
+    encoding: str | None = None
+    file_info: FileInfo
 
 
 class WriteFileRequest(BaseModel):
-    file_path: str
+    """Request model for writing a file."""
+
+    path: str
     content: str
+    encoding: str = "utf-8"
 
 
 class WriteFileResponse(BaseModel):
+    """Response model for writing a file."""
+
     message: str
+    file_info: FileInfo
 
 
 def get_app_agent_run_context(
@@ -294,24 +329,22 @@ async def list_files_in_sandbox(
     app_id: uuid.UUID,
     session_id: uuid.UUID,
     request: Request,
+    path: str = Query(None, description="Directory path to list"),
+    include_hidden: bool = Query(
+        False, description="Include hidden files and directories"
+    ),
     run_context: AppAgentRunContext = Depends(get_app_agent_run_context),
 ):
     """List all files in the sandbox workspace."""
     async with run_context.get_sandbox_client() as client:
-        try:
-            response = await client.get("/list_files")
-            response.raise_for_status()
-            return ListFilesResponse.model_validate(response.json())
-        except httpx.HTTPStatusError as e:
-            raise HTTPException(
-                status_code=e.response.status_code,
-                detail=f"Sandbox API error: {e.response.text}",
-            )
-        except httpx.RequestError as e:
-            raise HTTPException(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail=f"Could not connect to sandbox: {e}",
-            )
+        params: dict
+        params = {"include_hidden": include_hidden}
+        if path is not None:
+            params["path"] = path
+
+        response = await client.get("/files/list", params=params)
+        response.raise_for_status()
+        return ListFilesResponse.model_validate(response.json())
 
 
 @router.get(
@@ -322,25 +355,16 @@ async def read_file_from_sandbox(
     request: Request,
     app_id: uuid.UUID,
     session_id: uuid.UUID,
-    file_path: str,
+    path: str = Query(..., description="File path to read"),
+    encoding: str = Query("utf-8", description="File encoding for text files"),
     run_context: AppAgentRunContext = Depends(get_app_agent_run_context),
 ):
     """Read a file from the sandbox."""
     async with run_context.get_sandbox_client() as client:
-        try:
-            response = await client.get("/read_file", params={"file_path": file_path})
-            response.raise_for_status()
-            return ReadFileResponse.model_validate(response.json())
-        except httpx.HTTPStatusError as e:
-            raise HTTPException(
-                status_code=e.response.status_code,
-                detail=f"Sandbox API error: {e.response.text}",
-            )
-        except httpx.RequestError as e:
-            raise HTTPException(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail=f"Could not connect to sandbox: {e}",
-            )
+        params = {"path": path, "encoding": encoding}
+        response = await client.get("/files/read", params=params)
+        response.raise_for_status()
+        return ReadFileResponse.model_validate(response.json())
 
 
 @router.post(
@@ -356,17 +380,6 @@ async def write_file_to_sandbox(
 ):
     """Write a file to the sandbox."""
     async with run_context.get_sandbox_client() as client:
-        try:
-            response = await client.post("/write_file", json=write_request.model_dump())
-            response.raise_for_status()
-            return WriteFileResponse.model_validate(response.json())
-        except httpx.HTTPStatusError as e:
-            raise HTTPException(
-                status_code=e.response.status_code,
-                detail=f"Sandbox API error: {e.response.text}",
-            )
-        except httpx.RequestError as e:
-            raise HTTPException(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail=f"Could not connect to sandbox: {e}",
-            )
+        response = await client.post("/files/write", json=write_request.model_dump())
+        response.raise_for_status()
+        return WriteFileResponse.model_validate(response.json())
