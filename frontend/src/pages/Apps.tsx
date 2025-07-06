@@ -243,7 +243,10 @@ export function Apps() {
 
     if (activeSession) {
       // Open the app in a new tab/window
-      window.open(`http://localhost:${activeSession.app_port}`, "_blank");
+      window.open(
+        `${window.location.protocol}//${window.location.hostname}:${activeSession.app_port}`,
+        "_blank",
+      );
     }
   };
 
