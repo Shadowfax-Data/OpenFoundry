@@ -15,6 +15,7 @@ import {
   Pause,
   List,
   ExternalLink,
+  Trash2,
 } from "lucide-react";
 import { App } from "@/types/api";
 
@@ -27,6 +28,7 @@ interface AppCardProps {
   onStopSession?: (appId: string) => void;
   onViewSessions?: (appId: string) => void;
   onOpenApp?: (appId: string) => void;
+  onDeleteApp?: (appId: string) => void;
 }
 
 export function AppCard({
@@ -38,6 +40,7 @@ export function AppCard({
   onStopSession,
   onViewSessions,
   onOpenApp,
+  onDeleteApp,
 }: AppCardProps) {
   return (
     <div className="rounded-lg border bg-card text-card-foreground shadow-sm hover:shadow-md transition-shadow cursor-pointer">
@@ -57,11 +60,17 @@ export function AppCard({
             <DropdownMenuContent align="end">
               {sessionStatus === "active" ? (
                 <>
-                  <DropdownMenuItem onClick={() => onOpenApp?.(app.id)}>
+                  <DropdownMenuItem
+                    onClick={() => onOpenApp?.(app.id)}
+                    className="cursor-pointer"
+                  >
                     <ExternalLink className="h-4 w-4 mr-2" />
                     Open App
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => onViewSessions?.(app.id)}>
+                  <DropdownMenuItem
+                    onClick={() => onViewSessions?.(app.id)}
+                    className="cursor-pointer"
+                  >
                     <List className="h-4 w-4 mr-2" />
                     View Sessions
                   </DropdownMenuItem>
@@ -69,17 +78,30 @@ export function AppCard({
                   <DropdownMenuItem
                     onClick={() => onStopSession?.(app.id)}
                     variant="destructive"
+                    className="cursor-pointer"
                   >
                     <Pause className="h-4 w-4 mr-2" />
                     Stop Session
                   </DropdownMenuItem>
                 </>
               ) : (
-                <DropdownMenuItem onClick={() => onViewSessions?.(app.id)}>
+                <DropdownMenuItem
+                  onClick={() => onViewSessions?.(app.id)}
+                  className="cursor-pointer"
+                >
                   <List className="h-4 w-4 mr-2" />
                   View Sessions
                 </DropdownMenuItem>
               )}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => onDeleteApp?.(app.id)}
+                variant="destructive"
+                className="cursor-pointer"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete App
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

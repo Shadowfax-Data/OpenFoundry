@@ -141,20 +141,41 @@ def stop_docker_container(container_id: str, ignore_not_found: bool = False) -> 
             raise
 
 
-def is_container_started(container_name: str) -> bool | None:
-    """Check if a Docker container is started by its name.
+def remove_docker_container(container_id: str, ignore_not_found: bool = False) -> None:
+    """Remove a Docker container by its ID.
 
     Args:
-        container_name: Name of the Docker container to check.
-
-    Returns:
-        True if container is started, False if stopped, None if container doesn't exist.
+        container_id: The ID of the container to remove
+        ignore_not_found: If True, do not raise an error if the container is not found
 
     """
     try:
         docker_client = get_docker_client()
-        container = docker_client.containers.get(container_name)
-        container.reload()  # Refresh container info to get current status
-        return container.status == "running"
+        container = docker_client.containers.get(container_id)
+        logger.info(f"Removing Docker container {container_id}")
+        container.remove()
+        logger.info(f"Docker container {container_id} removed successfully")
     except docker.errors.NotFound:
-        return None
+        if not ignore_not_found:
+            logger.warning(
+                f"Container {container_id} not found, updating status anyway"
+            )
+            raise
+
+
+def container_exists(container_id: str) -> bool:
+    """Check if a Docker container exists by its ID.
+
+    Args:
+        container_id: The ID of the container to check.
+
+    Returns:
+        True if container exists, False otherwise.
+
+    """
+    try:
+        docker_client = get_docker_client()
+        docker_client.containers.get(container_id)
+        return True
+    except docker.errors.NotFound:
+        return False
