@@ -60,11 +60,17 @@ export function AppCard({
             <DropdownMenuContent align="end">
               {sessionStatus === "active" ? (
                 <>
-                  <DropdownMenuItem onClick={() => onOpenApp?.(app.id)}>
+                  <DropdownMenuItem
+                    onClick={() => onOpenApp?.(app.id)}
+                    className="cursor-pointer"
+                  >
                     <ExternalLink className="h-4 w-4 mr-2" />
                     Open App
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => onViewSessions?.(app.id)}>
+                  <DropdownMenuItem
+                    onClick={() => onViewSessions?.(app.id)}
+                    className="cursor-pointer"
+                  >
                     <List className="h-4 w-4 mr-2" />
                     View Sessions
                   </DropdownMenuItem>
@@ -72,13 +78,17 @@ export function AppCard({
                   <DropdownMenuItem
                     onClick={() => onStopSession?.(app.id)}
                     variant="destructive"
+                    className="cursor-pointer"
                   >
                     <Pause className="h-4 w-4 mr-2" />
                     Stop Session
                   </DropdownMenuItem>
                 </>
               ) : (
-                <DropdownMenuItem onClick={() => onViewSessions?.(app.id)}>
+                <DropdownMenuItem
+                  onClick={() => onViewSessions?.(app.id)}
+                  className="cursor-pointer"
+                >
                   <List className="h-4 w-4 mr-2" />
                   View Sessions
                 </DropdownMenuItem>
@@ -87,6 +97,7 @@ export function AppCard({
               <DropdownMenuItem
                 onClick={() => onDeleteApp?.(app.id)}
                 variant="destructive"
+                className="cursor-pointer"
               >
                 <Trash2 className="h-4 w-4 mr-2" />
                 Delete App
