@@ -7,8 +7,14 @@ from fastapi import APIRouter, HTTPException, Request, status
 from pydantic import BaseModel
 from sqlalchemy.orm import Session, joinedload
 
+from openfoundry.config import SANDBOX_IMAGE
 from openfoundry.models.agent_sessions import AgentSessionStatus, AppAgentSession
-from openfoundry.models.agent_sessions.docker_utils import container_exists
+from openfoundry.models.agent_sessions.docker_utils import (
+    container_exists,
+    create_docker_container,
+    remove_docker_container,
+    stop_docker_container,
+)
 from openfoundry.models.apps import App
 
 router = APIRouter(prefix="/api")
@@ -26,6 +32,7 @@ class AppModel(BaseModel):
     created_on: datetime
     updated_on: datetime
     deleted_on: datetime | None
+    deployment_port: int | None
 
     class Config:
         from_attributes = True
@@ -136,3 +143,100 @@ def delete_app(app_id: uuid.UUID, request: Request):
     db.commit()
 
     return None
+
+
+@router.post("/apps/{app_id}/deploy", status_code=status.HTTP_200_OK)
+def deploy_app(app_id: uuid.UUID, request: Request):
+    """Deploy an app by creating a Docker container."""
+    db: Session = request.state.db
+
+    # Get the specific non-deleted app
+    app = db.query(App).filter(App.id == app_id, App.deleted_on.is_(None)).first()
+
+    if not app:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"App with id {app_id} not found",
+        )
+
+    # Container name
+    container_name = f"app-{app_id}"
+
+    # Check if there's already a deployment and clean up existing container
+    if app.deployment_port is not None:
+        logger.info(
+            f"App {app_id} already has deployment_port {app.deployment_port}, cleaning up existing container"
+        )
+
+        # Stop the existing container
+        stop_docker_container(container_name, ignore_not_found=True)
+        logger.info(f"Stopped existing container {container_name}")
+
+        # Remove the existing container
+        remove_docker_container(container_name, ignore_not_found=True)
+        logger.info(f"Removed existing container {container_name}")
+
+    # Docker configuration
+    docker_config = {
+        "image": SANDBOX_IMAGE,
+        "ports": {
+            "8501/tcp": None,  # app port
+        },
+    }
+
+    # Initialization data with streamlit command
+    initialization_data = {
+        "streamlit_run_config": {
+            "identifier": "streamlit_app",
+            "command_str": (
+                "streamlit run app.py "
+                "--server.port 8501 "
+                "--server.address 0.0.0.0 "
+                "--server.headless true "
+                "--server.enableCORS false "
+                "--server.enableXsrfProtection false "
+                "--browser.gatherUsageStats false "
+            ),
+            "cwd": "/workspace",
+        },
+    }
+
+    # Get workspace directory
+    workspace_dir = app.get_workspace_directory()
+
+    try:
+        # Create Docker container
+        container_id, port_mappings = create_docker_container(
+            docker_config=docker_config,
+            initialization_data=initialization_data,
+            container_name=container_name,
+            workspace_dir=workspace_dir,
+        )
+
+        # Extract the app port from port mappings
+        app_port = port_mappings.get("8501/tcp")
+        if not app_port:
+            raise RuntimeError("App port (8501/tcp) is required but not assigned")
+
+        # Save the deployment port to the app
+        app.deployment_port = app_port
+        db.commit()
+        db.refresh(app)
+
+        logger.info(
+            f"App {app_id} deployed successfully with container {container_id} on port {app_port}"
+        )
+
+        return {
+            "message": "App deployed successfully",
+            "container_id": container_id,
+            "deployment_port": app_port,
+            "app": AppModel.model_validate(app),
+        }
+
+    except Exception as e:
+        logger.error(f"Failed to deploy app {app_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to deploy app: {str(e)}",
+        )

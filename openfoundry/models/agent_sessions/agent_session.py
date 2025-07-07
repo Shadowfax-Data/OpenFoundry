@@ -183,7 +183,7 @@ class AgentSessionBase(Base):
         """Stop Docker container for this agent session."""
         logger.info(f"Stopping Docker container for session {self.id}")
         docker_utils.stop_docker_container(
-            container_id=self.agent_session.container_id,
+            container_name=self.get_container_name(),
             ignore_not_found=True,
         )
         logger.info(f"Docker container stopped for session {self.id}")
@@ -192,7 +192,7 @@ class AgentSessionBase(Base):
         """Remove Docker container for this agent session."""
         logger.info(f"Removing Docker container for session {self.id}")
         docker_utils.remove_docker_container(
-            container_id=self.agent_session.container_id,
+            container_name=self.get_container_name(),
             ignore_not_found=True,
         )
         logger.info(f"Docker container removed for session {self.id}")

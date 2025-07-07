@@ -25,6 +25,7 @@ class App(Base):
     deleted_on: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+    deployment_port: Mapped[int | None] = mapped_column(nullable=True)
 
     def soft_delete(self):
         """Soft delete the app by setting deleted_on timestamp."""
