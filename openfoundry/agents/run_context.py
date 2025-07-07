@@ -45,6 +45,12 @@ class AgentRunContext:
         async with self._get_httpx_client(self.sandbox_url) as client:
             yield client
 
+    async def check_sandbox_url(self):
+        """Check if the sandbox url is reachable."""
+        async with self.get_sandbox_client() as client:
+            response = await client.get("/health")
+            response.raise_for_status()
+
     async def on_turn_start(self):
         """Called when a turn starts."""
         pass
@@ -61,4 +67,10 @@ class AppAgentRunContext(AgentRunContext):
     Uses the base AgentRunContext functionality.
     """
 
-    pass
+    app_url: str
+
+    async def check_app_url(self) -> None:
+        """Check if the app url is reachable."""
+        async with self._get_httpx_client(self.app_url) as client:
+            response = await client.get("/")
+            response.raise_for_status()
