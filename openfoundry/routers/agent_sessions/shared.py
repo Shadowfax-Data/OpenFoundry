@@ -1,7 +1,7 @@
 import asyncio
 import json
 import time
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
 from agents import (
@@ -102,7 +102,7 @@ def validate_and_mark_agent_session_running(
     if (
         agent_session.agent_session.is_running_on
         and agent_session.agent_session.is_running_on
-        > datetime.now() - timedelta(seconds=30)
+        > datetime.now(UTC) - timedelta(seconds=30)
     ):
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
@@ -162,7 +162,11 @@ async def send_agent_chat_message(
         sandbox_url=f"http://localhost:{agent_session.agent_session.port}",
     )
 
-    # TODO: initialize the server
+    # Initialize the sandbox server
+    await initialize_context_and_sandbox_server(
+        agent_session=agent_session,
+        run_context=context,
+    )
 
     input_items: list[TResponseInputItem] = [new_input_item]
     current_agent: Agent = NAME_TO_AGENT_FACTORY[current_agent_name](
@@ -285,6 +289,33 @@ async def run_agent_turn(
         )
         logger.info(
             f"Agent session {session_id} turn ended in {time.monotonic() - start_time:.2f} seconds"
+        )
+
+
+async def initialize_context_and_sandbox_server(
+    agent_session: AgentSessionBase,
+    run_context: AgentRunContext,
+) -> None:
+    """Initialize the sandbox server with all initialization data.
+
+    Args:
+        agent_session: The agent session
+        run_context: The run context with API tokens and URLs
+
+    Raises:
+        HTTPException: If initialization fails
+
+    """
+    initialization_data = await asyncio.to_thread(
+        agent_session.get_initialization_data,
+    )
+
+    # Initialize sandbox server
+    async with run_context.get_sandbox_client() as client:
+        response = await client.post("/initialize", json=initialization_data)
+        response.raise_for_status()
+        logger.info(
+            f"Successfully initialized agent session {agent_session.id}, status: {response.status_code}"
         )
 
 
