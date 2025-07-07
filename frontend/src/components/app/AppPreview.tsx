@@ -13,8 +13,6 @@ export const AppPreview: React.FC<AppPreviewProps> = ({
   sessionId,
 }) => {
   const [iframeKey, setIframeKey] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
-  const [loadError, setLoadError] = useState<string | null>(null);
   const [isAppReady, setIsAppReady] = useState(false);
 
   // Health check polling
@@ -55,14 +53,6 @@ export const AppPreview: React.FC<AppPreviewProps> = ({
     return () => clearInterval(intervalId);
   }, [previewUrl, appId, sessionId]);
 
-  // Reset loading state when URL changes or iframe is manually refreshed
-  useEffect(() => {
-    if (previewUrl && isAppReady) {
-      setIsLoading(true);
-      setLoadError(null);
-    }
-  }, [previewUrl, iframeKey, isAppReady]);
-
   const handleRefresh = () => {
     if (previewUrl) {
       setIframeKey((k) => k + 1);
@@ -73,15 +63,6 @@ export const AppPreview: React.FC<AppPreviewProps> = ({
     if (previewUrl) {
       window.open(previewUrl, "_blank");
     }
-  };
-
-  const handleIframeLoad = () => {
-    setIsLoading(false);
-  };
-
-  const handleIframeError = () => {
-    setLoadError("Failed to load preview");
-    setIsLoading(false);
   };
 
   return (
@@ -138,40 +119,13 @@ export const AppPreview: React.FC<AppPreviewProps> = ({
             <p className="text-xs mt-1">URL: {previewUrl}</p>
           </div>
         ) : (
-          <>
-            {/* Loader Overlay */}
-            {isLoading && (
-              <div className="absolute inset-0 w-full h-full flex flex-col items-center justify-center text-muted-foreground bg-white z-10">
-                <Loader2 className="h-8 w-8 mb-2 animate-spin" />
-                <p>Waiting for app preview...</p>
-                <p className="text-xs mt-1">URL: {previewUrl}</p>
-              </div>
-            )}
-            {/* Error State */}
-            {loadError && !isLoading && (
-              <div className="absolute inset-0 w-full h-full flex flex-col items-center justify-center text-red-500 bg-white z-10">
-                <p className="text-sm font-medium">Failed to load preview</p>
-                <p className="text-xs mt-1">{loadError}</p>
-                <button
-                  onClick={handleRefresh}
-                  className="mt-2 px-3 py-1 text-xs bg-red-100 hover:bg-red-200 rounded"
-                >
-                  Retry
-                </button>
-              </div>
-            )}
-            {/* Single Iframe */}
-            <iframe
-              key={iframeKey}
-              title="App Web Preview"
-              src={previewUrl}
-              onLoad={handleIframeLoad}
-              onError={handleIframeError}
-              className="w-full h-full border-0 bg-white"
-              style={{ visibility: isLoading ? "hidden" : "visible" }}
-              sandbox="allow-scripts allow-same-origin"
-            />
-          </>
+          <iframe
+            key={iframeKey}
+            title="App Web Preview"
+            src={previewUrl}
+            className="w-full h-full border-0 bg-white"
+            sandbox="allow-scripts allow-same-origin"
+          />
         )}
       </div>
     </div>
