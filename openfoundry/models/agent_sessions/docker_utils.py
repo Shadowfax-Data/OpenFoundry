@@ -176,46 +176,48 @@ def start_docker_container(container_name: str) -> tuple[str, dict[str, int]]:
     return container_id, port_mappings
 
 
-def stop_docker_container(container_id: str, ignore_not_found: bool = False) -> None:
+def stop_docker_container(container_name: str, ignore_not_found: bool = False) -> None:
     """Stop a Docker container by its ID.
 
     Args:
-        container_id: The ID of the container to stop
+        container_name: The ID of the container to stop
         ignore_not_found: If True, do not raise an error if the container is not found
 
     """
     try:
         docker_client = get_docker_client()
-        container = docker_client.containers.get(container_id)
-        logger.info(f"Stopping Docker container {container_id}")
+        container = docker_client.containers.get(container_name)
+        logger.info(f"Stopping Docker container {container_name}")
         container.stop()
-        logger.info(f"Docker container {container_id} stopped successfully")
+        logger.info(f"Docker container {container_name} stopped successfully")
     except docker.errors.NotFound:
         if not ignore_not_found:
             logger.warning(
-                f"Container {container_id} not found, updating status anyway"
+                f"Container {container_name} not found, updating status anyway"
             )
             raise
 
 
-def remove_docker_container(container_id: str, ignore_not_found: bool = False) -> None:
+def remove_docker_container(
+    container_name: str, ignore_not_found: bool = False
+) -> None:
     """Remove a Docker container by its ID.
 
     Args:
-        container_id: The ID of the container to remove
+        container_name: The ID of the container to remove
         ignore_not_found: If True, do not raise an error if the container is not found
 
     """
     try:
         docker_client = get_docker_client()
-        container = docker_client.containers.get(container_id)
-        logger.info(f"Removing Docker container {container_id}")
+        container = docker_client.containers.get(container_name)
+        logger.info(f"Removing Docker container {container_name}")
         container.remove()
-        logger.info(f"Docker container {container_id} removed successfully")
+        logger.info(f"Docker container {container_name} removed successfully")
     except docker.errors.NotFound:
         if not ignore_not_found:
             logger.warning(
-                f"Container {container_id} not found, updating status anyway"
+                f"Container {container_name} not found, updating status anyway"
             )
             raise
 
