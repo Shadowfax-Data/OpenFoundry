@@ -1,5 +1,4 @@
 import { useEffect, useMemo } from "react";
-import { useNavigate } from "react-router";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -18,19 +17,10 @@ import {
   clearConnectionsError,
 } from "@/store/slices/connectionsSlice";
 import { ConnectionCard } from "@/components/connections/ConnectionCard";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { IconBrandSnowflake } from "@tabler/icons-react";
+import { NewConnectionDialog } from "@/components/connections/NewConnectionDialog";
 
 export function Connections() {
   const dispatch = useAppDispatch();
-  const navigate = useNavigate();
   const { connections, loading, error, searchQuery, sortBy } = useAppSelector(
     (state) => state.connections,
   );
@@ -134,38 +124,12 @@ export function Connections() {
                   Manage your data source connections
                 </p>
               </div>
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button className="flex items-center gap-2">
-                    <Plus className="h-4 w-4" />
-                    New Connection
-                  </Button>
-                </DialogTrigger>
-                <DialogContent showCloseButton={false}>
-                  <DialogHeader>
-                    <DialogTitle>Add New Connection</DialogTitle>
-                    <DialogDescription>
-                      Select a connection type to add.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="grid gap-2">
-                    <div
-                      className="p-4 border rounded-md cursor-pointer hover:bg-muted"
-                      onClick={() => navigate("/connections/snowflake/new")}
-                    >
-                      <div className="flex items-center gap-3">
-                        <IconBrandSnowflake />
-                        <div>
-                          <span className="font-semibold">Snowflake</span>
-                          <p className="text-sm text-muted-foreground">
-                            Connect to a Snowflake data warehouse.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </DialogContent>
-              </Dialog>
+              <NewConnectionDialog>
+                <Button className="flex items-center gap-2">
+                  <Plus className="h-4 w-4" />
+                  New Connection
+                </Button>
+              </NewConnectionDialog>
             </div>
 
             {/* Search and filters */}
@@ -231,38 +195,12 @@ export function Connections() {
                     ? "Get started by creating your first connection"
                     : "Try adjusting your search or filter criteria"}
                 </p>
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Button>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Create Connection
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Add New Connection</DialogTitle>
-                      <DialogDescription>
-                        Select a connection type to add.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="grid gap-2">
-                      <div
-                        className="p-4 border rounded-md cursor-pointer hover:bg-muted"
-                        onClick={() => navigate("/connections/snowflake/new")}
-                      >
-                        <div className="flex items-center gap-3">
-                          <IconBrandSnowflake />
-                          <div>
-                            <span className="font-semibold">Snowflake</span>
-                            <p className="text-sm text-muted-foreground">
-                              Connect to a Snowflake data warehouse.
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </DialogContent>
-                </Dialog>
+                <NewConnectionDialog>
+                  <Button>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create Connection
+                  </Button>
+                </NewConnectionDialog>
               </div>
             </div>
           )}
