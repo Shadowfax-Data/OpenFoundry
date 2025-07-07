@@ -51,6 +51,7 @@ seaborn = "^0.13.2"
 plotly = "^6.2.0"
 altair = {extras = ["all"], version = "^5.5.0"}
 python-multipart = "^0.0.20"
+snowflake-connector-python = "^3.16.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = ">=7.0.0"

@@ -22,6 +22,8 @@ httpx-retries = "^0.4.0"
 pyyaml = "^6.0.2"
 numpy = "^2.3.1"
 pandas = "^2.3.0"
+cryptography = "^45.0.5"
+snowflake-connector-python = "^3.16.0"
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.8.0"

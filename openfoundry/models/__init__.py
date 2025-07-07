@@ -8,6 +8,7 @@ from openfoundry.models.agent_sessions import (
     AppAgentSession,
 )
 from openfoundry.models.apps import App
+from openfoundry.models.connections import Connection, SnowflakeConnection
 from openfoundry.models.conversation_item import ConversationItem
 
 __all__ = [
@@ -19,4 +20,6 @@ __all__ = [
     "AgentSessionType",
     "AppAgentSession",
     "ConversationItem",
+    "Connection",
+    "SnowflakeConnection",
 ]

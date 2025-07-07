@@ -20,6 +20,7 @@ import {
   Plus,
   Home,
   AppWindow,
+  Database,
 } from "lucide-react";
 
 export function AppSidebar() {
@@ -56,10 +57,21 @@ export function AppSidebar() {
                     <SidebarMenuButton asChild>
                       <Link
                         to="/apps"
-                        className={`w-full ${location.pathname === "/apps" ? "bg-sidebar-accent text-sidebar-accent-foreground" : ""}`}
+                        className={`w-full ${location.pathname.startsWith("/apps") ? "bg-sidebar-accent text-sidebar-accent-foreground" : ""}`}
                       >
                         <AppWindow className="mr-2 h-4 w-4" />
                         Apps
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild>
+                      <Link
+                        to="/connections"
+                        className={`w-full ${location.pathname.startsWith("/connections") ? "bg-sidebar-accent text-sidebar-accent-foreground" : ""}`}
+                      >
+                        <Database className="mr-2 h-4 w-4" />
+                        Connections
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
