@@ -160,7 +160,7 @@ def deploy_app(app_id: uuid.UUID, request: Request):
         )
 
     # Container name
-    container_name = f"app-{app_id}"
+    container_name = app.get_container_name()
 
     # Check if there's already a deployment and clean up existing container
     if app.deployment_port is not None:

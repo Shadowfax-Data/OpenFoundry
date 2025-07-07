@@ -60,3 +60,7 @@ class App(Base):
     def get_workspace_directory(self):
         """Get the workspace directory for this app."""
         return os.path.join(STORAGE_DIR, "app", str(self.id), "files")
+
+    def get_container_name(self):
+        """Generate a container name based on the app's ID."""
+        return f"app_{self.id}"
