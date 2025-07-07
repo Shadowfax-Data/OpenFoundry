@@ -1,3 +1,6 @@
+import snowflake.connector
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import serialization
 from sqlalchemy.orm import (
     Mapped,
     mapped_column,
@@ -69,3 +72,24 @@ class SnowflakeConnection(ConnectionBase):
             "SNOWFLAKE_SCHEMA": self.schema,
             "SNOWFLAKE_PRIVATE_KEY": format_private_key_for_snowflake(self.private_key),
         }
+
+    def check_connection(self) -> None:
+        """Check the connection to the SnowflakeConnection."""
+        private_key_bytes = self.private_key.encode("utf-8")
+        p_key = serialization.load_pem_private_key(
+            private_key_bytes,
+            password=None,
+            backend=default_backend(),
+        )
+
+        with snowflake.connector.connect(
+            user=self.user,
+            account=self.account,
+            private_key=p_key,
+            role=self.role,
+            database=self.database,
+            warehouse=self.warehouse,
+            schema=self.schema,
+        ) as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT 1")

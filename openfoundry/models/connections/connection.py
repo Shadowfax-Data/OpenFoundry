@@ -51,7 +51,7 @@ class ConnectionBase(Base):
     name: Mapped[str] = mapped_column(nullable=False)
 
     @declared_attr
-    def connection_obj(cls) -> Mapped[Connection]:
+    def connection(cls) -> Mapped[Connection]:
         return relationship(Connection)
 
     def as_connection(self) -> Connection:
@@ -61,6 +61,11 @@ class ConnectionBase(Base):
             type=self.type,
             name=self.name,
         )
+
+    @abstractmethod
+    def check_connection(self) -> None:
+        """Check the connection to the Connection. Raise Exception if the connection is not successful."""
+        raise NotImplementedError
 
     @abstractmethod
     def get_env_vars(self) -> dict[str, str]:
