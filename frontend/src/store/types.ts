@@ -1,4 +1,4 @@
-import { App, AppAgentSessionFromAPI } from "@/types/api";
+import { App, AppAgentSessionFromAPI, Connection } from "@/types/api";
 import { AppChatState } from "./slices/appChatSlice";
 
 // Apps slice state
@@ -8,6 +8,17 @@ export interface AppsState {
   error: string | null;
   searchQuery: string;
   statusFilter: "all" | "active" | "stopped";
+  sortBy: "recent" | "name";
+}
+
+// Connections slice state
+export interface ConnectionsState {
+  connections: Connection[];
+  loading: boolean;
+  error: string | null;
+  searchQuery: string;
+  // Add any other filters like type, etc. if needed
+  // statusFilter: "all" | "active" | "failed";
   sortBy: "recent" | "name";
 }
 
@@ -23,4 +34,5 @@ export type RootState = {
   apps: AppsState;
   appAgentSessions: AppAgentSessionsState;
   appChat: AppChatState;
+  connections: ConnectionsState;
 };

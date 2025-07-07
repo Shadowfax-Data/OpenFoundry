@@ -29,3 +29,20 @@ export interface AppAgentSessionFromAPI {
 export interface CreateAppRequest {
   name: string;
 }
+
+export interface Connection {
+  id: string;
+  name: string;
+  connection_type: string;
+}
+
+export interface SnowflakeConnectionCreate {
+  name: string;
+  account: string;
+  user: string;
+  role: string;
+  database: string;
+  warehouse: string;
+  schema: string;
+  private_key: string;
+}
