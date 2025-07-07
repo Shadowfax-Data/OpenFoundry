@@ -163,7 +163,7 @@ def deploy_app(app_id: uuid.UUID, request: Request):
     container_name = app.get_container_name()
 
     # Check if there's already a deployment and clean up existing container
-    if app.deployment_port is not None:
+    if app.deployment_port:
         logger.info(
             f"App {app_id} already has deployment_port {app.deployment_port}, cleaning up existing container"
         )
@@ -184,54 +184,37 @@ def deploy_app(app_id: uuid.UUID, request: Request):
         },
     }
 
-    # Initialization data with streamlit command
-    initialization_data = {
-        "streamlit_run_config": {
-            "identifier": "streamlit_app",
-            "command_str": (
-                "streamlit run app.py "
-                "--server.port 8501 "
-                "--server.address 0.0.0.0 "
-                "--server.headless true "
-                "--server.enableCORS false "
-                "--server.enableXsrfProtection false "
-                "--browser.gatherUsageStats false "
-            ),
-            "cwd": "/workspace",
-        },
-    }
+    command = (
+        "streamlit run app.py "
+        "--server.port 8501 "
+        "--server.address 0.0.0.0 "
+        "--server.headless true "
+        "--server.enableCORS false "
+        "--server.enableXsrfProtection false "
+        "--browser.gatherUsageStats false "
+    )
 
     # Get workspace directory
     workspace_dir = app.get_workspace_directory()
 
-    try:
-        # Create Docker container
-        container_id, port_mappings = create_docker_container(
-            docker_config=docker_config,
-            initialization_data=initialization_data,
-            container_name=container_name,
-            workspace_dir=workspace_dir,
-        )
+    # Create Docker container
+    container_id, port_mappings = create_docker_container(
+        docker_config=docker_config,
+        initialization_data={},
+        container_name=container_name,
+        workspace_dir=workspace_dir,
+        auto_remove=True,
+        working_dir="/workspace",
+        command=command,
+    )
 
-        # Extract the app port from port mappings
-        app_port = port_mappings.get("8501/tcp")
-        if not app_port:
-            raise RuntimeError("App port (8501/tcp) is required but not assigned")
+    # Save the deployment port to the app
+    app.deployment_port = port_mappings["8501/tcp"]
+    db.commit()
+    db.refresh(app)
 
-        # Save the deployment port to the app
-        app.deployment_port = app_port
-        db.commit()
-        db.refresh(app)
+    logger.info(
+        f"App {app_id} deployed successfully with container {container_id} on http://localhost:{app.deployment_port}"
+    )
 
-        logger.info(
-            f"App {app_id} deployed successfully with container {container_id} on port {app_port}"
-        )
-
-        return AppModel.model_validate(app)
-
-    except Exception as e:
-        logger.error(f"Failed to deploy app {app_id}: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to deploy app: {str(e)}",
-        )
+    return AppModel.model_validate(app)

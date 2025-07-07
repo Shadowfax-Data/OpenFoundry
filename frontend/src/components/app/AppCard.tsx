@@ -7,15 +7,20 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   MoreVertical,
   Calendar,
   AppWindowMac,
   Play,
   Square,
   Pause,
-  List,
   ExternalLink,
   Trash2,
+  Rocket,
 } from "lucide-react";
 import { App } from "@/types/api";
 
@@ -24,11 +29,12 @@ interface AppCardProps {
   sessionStatus: "active" | "stopped";
   sessionCount: number;
   isEditLoading: boolean;
+  isDeployLoading?: boolean;
   onEditClick: (appId: string) => void;
   onStopSession?: (appId: string) => void;
-  onViewSessions?: (appId: string) => void;
   onOpenApp?: (appId: string) => void;
   onDeleteApp?: (appId: string) => void;
+  onDeployApp?: (appId: string) => void;
 }
 
 export function AppCard({
@@ -36,21 +42,38 @@ export function AppCard({
   sessionStatus,
   sessionCount,
   isEditLoading,
+  isDeployLoading = false,
   onEditClick,
   onStopSession,
-  onViewSessions,
   onOpenApp,
   onDeleteApp,
+  onDeployApp,
 }: AppCardProps) {
   return (
-    <div className="rounded-lg border bg-card text-card-foreground shadow-sm hover:shadow-md transition-shadow cursor-pointer">
+    <div className="rounded-lg border bg-card text-card-foreground shadow-sm hover:shadow-md transition-shadow">
       <div className="p-6">
         <div className="flex items-start justify-between mb-4">
-          <div
-            className={`h-12 w-12 rounded-lg ${app.color} flex items-center justify-center text-white`}
-          >
-            <AppWindowMac className="h-6 w-6" />
-          </div>
+          {app.deployment_port ? (
+            <div
+              className={`h-12 w-12 rounded-lg ${app.color} flex items-center justify-center text-white cursor-pointer hover:opacity-80 transition-opacity`}
+              onClick={() => onOpenApp?.(app.id)}
+            >
+              <AppWindowMac className="h-6 w-6" />
+            </div>
+          ) : (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div
+                  className={`h-12 w-12 rounded-lg ${app.color} flex items-center justify-center text-white`}
+                >
+                  <AppWindowMac className="h-6 w-6" />
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>App is not deployed</p>
+              </TooltipContent>
+            </Tooltip>
+          )}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="sm">
@@ -58,22 +81,29 @@ export function AppCard({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              {sessionStatus === "active" ? (
+              {app.deployment_port && (
+                <DropdownMenuItem
+                  onClick={() => onOpenApp?.(app.id)}
+                  className="cursor-pointer"
+                >
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  Open App
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuItem
+                onClick={() => onDeployApp?.(app.id)}
+                className="cursor-pointer"
+                disabled={isDeployLoading}
+              >
+                <Rocket className="h-4 w-4 mr-2" />
+                {isDeployLoading
+                  ? "Deploying..."
+                  : app.deployment_port
+                    ? "Redeploy App"
+                    : "Deploy App"}
+              </DropdownMenuItem>
+              {sessionStatus === "active" && (
                 <>
-                  <DropdownMenuItem
-                    onClick={() => onOpenApp?.(app.id)}
-                    className="cursor-pointer"
-                  >
-                    <ExternalLink className="h-4 w-4 mr-2" />
-                    Open App
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => onViewSessions?.(app.id)}
-                    className="cursor-pointer"
-                  >
-                    <List className="h-4 w-4 mr-2" />
-                    View Sessions
-                  </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     onClick={() => onStopSession?.(app.id)}
@@ -84,14 +114,6 @@ export function AppCard({
                     Stop Session
                   </DropdownMenuItem>
                 </>
-              ) : (
-                <DropdownMenuItem
-                  onClick={() => onViewSessions?.(app.id)}
-                  className="cursor-pointer"
-                >
-                  <List className="h-4 w-4 mr-2" />
-                  View Sessions
-                </DropdownMenuItem>
               )}
               <DropdownMenuSeparator />
               <DropdownMenuItem
@@ -100,7 +122,7 @@ export function AppCard({
                 className="cursor-pointer"
               >
                 <Trash2 className="h-4 w-4 mr-2" />
-                Delete App
+                Delete
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -126,6 +148,14 @@ export function AppCard({
             </span>
           </div>
         </div>
+
+        {/* Deployment status */}
+        {app.deployment_port && (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
+            <Rocket className="h-4 w-4 text-blue-500" />
+            <span>Deployed on port {app.deployment_port}</span>
+          </div>
+        )}
 
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
