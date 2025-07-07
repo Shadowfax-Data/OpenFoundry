@@ -1,7 +1,0 @@
-{
-  "dependencies": {
-    "@radix-ui/react-dialog": "^1.1.14",
-    "@radix-ui/react-popover": "^1.1.14",
-    "react-router-dom": "^7.6.3"
-  }
-}

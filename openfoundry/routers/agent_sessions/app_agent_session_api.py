@@ -141,6 +141,7 @@ def get_app_agent_run_context(
         session_id=agent_session.id,
         version=agent_session.version,
         sandbox_url=f"http://localhost:{agent_session.port}",
+        app_url=f"http://localhost:{app_agent_session.app_port}",
     )
 
 
@@ -399,6 +400,34 @@ def resume_app_agent_session(
     setattr(app_agent_session, "container_id", agent_session.container_id)
 
     return AppAgentSessionModel.model_validate(app_agent_session)
+
+
+@router.get(
+    "/apps/{app_id}/sessions/{session_id}/app_health",
+)
+async def check_app_health(
+    app_id: uuid.UUID,
+    session_id: uuid.UUID,
+    request: Request,
+    run_context: AppAgentRunContext = Depends(get_app_agent_run_context),
+):
+    """Check the health of the app preview by verifying if the app URL is reachable."""
+    await run_context.check_app_url()
+    return {"status": "healthy"}
+
+
+@router.get(
+    "/apps/{app_id}/sessions/{session_id}/sandbox_health",
+)
+async def check_sandbox_health(
+    app_id: uuid.UUID,
+    session_id: uuid.UUID,
+    request: Request,
+    run_context: AppAgentRunContext = Depends(get_app_agent_run_context),
+):
+    """Check the health of the sandbox by verifying if the sandbox URL is reachable."""
+    await run_context.check_sandbox_url()
+    return {"status": "healthy"}
 
 
 @router.get(

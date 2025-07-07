@@ -11,6 +11,7 @@ interface ChatConversationProps {
   onSendMessage: (message: string) => Promise<void> | void;
   placeholder?: string;
   className?: string;
+  disabled?: boolean;
 }
 
 export function ChatConversation({
@@ -21,6 +22,7 @@ export function ChatConversation({
   onSendMessage,
   placeholder = "Type your message…",
   className = "",
+  disabled = false,
 }: ChatConversationProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const prevMessagesLengthRef = useRef<number>(messages.length);
@@ -76,6 +78,7 @@ export function ChatConversation({
         onSendMessage={onSendMessage}
         error={error}
         placeholder={placeholder}
+        disabled={disabled}
       />
     </div>
   );

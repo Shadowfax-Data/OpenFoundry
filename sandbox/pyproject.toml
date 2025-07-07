@@ -41,8 +41,8 @@ playwright = "^1.52.0"
 openhands-aci = "^0.3.1"
 
 # Basic data processing
-pandas = "^2.2.3"
-numpy = "^2.2.6"
+numpy = "^2.3.1"
+pandas = "^2.3.0"
 
 # Streamlit for app visualization
 streamlit = "^1.45.1"
@@ -52,6 +52,7 @@ plotly = "^6.2.0"
 altair = {extras = ["all"], version = "^5.5.0"}
 python-multipart = "^0.0.20"
 snowflake-connector-python = "^3.16.0"
+pyarrow = "^18.1.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = ">=7.0.0"

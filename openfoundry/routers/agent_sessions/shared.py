@@ -42,6 +42,7 @@ from openfoundry.models.agent_sessions.agent_session import (
     AgentSessionBase,
     AgentSessionStatus,
 )
+from openfoundry.models.agent_sessions.app_agent_session import AppAgentSession
 from openfoundry.models.conversation_item import ConversationItem
 
 set_tracing_export_api_key(OPENAI_API_KEY)
@@ -156,11 +157,15 @@ async def send_agent_chat_message(
     )
 
     # Create appropriate context
-    context = AppAgentRunContext(
-        session_id=session_id,
-        version=agent_session.agent_session.version,
-        sandbox_url=f"http://localhost:{agent_session.agent_session.port}",
-    )
+    if isinstance(agent_session, AppAgentSession):
+        context = AppAgentRunContext(
+            session_id=session_id,
+            version=agent_session.agent_session.version,
+            sandbox_url=f"http://localhost:{agent_session.agent_session.port}",
+            app_url=f"http://localhost:{agent_session.app_port}",
+        )
+    else:
+        raise ValueError(f"Agent session {agent_session.id} is not supported")
 
     # Initialize the sandbox server
     await initialize_context_and_sandbox_server(
