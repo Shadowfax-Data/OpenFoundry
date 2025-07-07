@@ -163,7 +163,7 @@ def deploy_app(app_id: uuid.UUID, request: Request):
     container_name = app.get_container_name()
 
     # Check if there's already a deployment and clean up existing container
-    if app.deployment_port is not None:
+    if app.deployment_port:
         logger.info(
             f"App {app_id} already has deployment_port {app.deployment_port}, cleaning up existing container"
         )
@@ -214,7 +214,7 @@ def deploy_app(app_id: uuid.UUID, request: Request):
     db.refresh(app)
 
     logger.info(
-        f"App {app_id} deployed successfully with container {container_id} on port {app.deployment_port}"
+        f"App {app_id} deployed successfully with container {container_id} on http://localhost:{app.deployment_port}"
     )
 
     return AppModel.model_validate(app)

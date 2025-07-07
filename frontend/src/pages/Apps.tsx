@@ -236,22 +236,6 @@ export function Apps() {
     }
   };
 
-  // Helper to handle View Sessions action
-  const handleViewSessions = (appId: string) => {
-    // For now, just navigate to the first session or create one
-    const appSessions = sessions[appId] || [];
-    if (appSessions.length > 0) {
-      const latestSession = [...appSessions].sort(
-        (a, b) =>
-          new Date(b.created_on).getTime() - new Date(a.created_on).getTime(),
-      )[0];
-      navigate(`/apps/${appId}/sessions/${latestSession.id}/chat`);
-    } else {
-      // No sessions, create one
-      handleEditClick(appId);
-    }
-  };
-
   // Helper to handle Open App action
   const handleOpenApp = (appId: string) => {
     const app = apps.find((a) => a.id === appId);
@@ -481,7 +465,6 @@ export function Apps() {
                     isDeployLoading={deployLoadingAppId === app.id}
                     onEditClick={handleEditClick}
                     onStopSession={handleStopSession}
-                    onViewSessions={handleViewSessions}
                     onOpenApp={handleOpenApp}
                     onDeleteApp={handleDeleteApp}
                     onDeployApp={handleDeployApp}

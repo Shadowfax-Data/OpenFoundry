@@ -13,7 +13,6 @@ import {
   Play,
   Square,
   Pause,
-  List,
   ExternalLink,
   Trash2,
   Rocket,
@@ -28,7 +27,6 @@ interface AppCardProps {
   isDeployLoading?: boolean;
   onEditClick: (appId: string) => void;
   onStopSession?: (appId: string) => void;
-  onViewSessions?: (appId: string) => void;
   onOpenApp?: (appId: string) => void;
   onDeleteApp?: (appId: string) => void;
   onDeployApp?: (appId: string) => void;
@@ -42,7 +40,6 @@ export function AppCard({
   isDeployLoading = false,
   onEditClick,
   onStopSession,
-  onViewSessions,
   onOpenApp,
   onDeleteApp,
   onDeployApp,
@@ -63,42 +60,15 @@ export function AppCard({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              {sessionStatus === "active" ? (
-                <>
-                  <DropdownMenuItem
-                    onClick={() => onOpenApp?.(app.id)}
-                    className="cursor-pointer"
-                  >
-                    <ExternalLink className="h-4 w-4 mr-2" />
-                    {app.deployment_port ? "Open Deployed App" : "Open App"}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => onViewSessions?.(app.id)}
-                    className="cursor-pointer"
-                  >
-                    <List className="h-4 w-4 mr-2" />
-                    View Sessions
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onClick={() => onStopSession?.(app.id)}
-                    variant="destructive"
-                    className="cursor-pointer"
-                  >
-                    <Pause className="h-4 w-4 mr-2" />
-                    Stop Session
-                  </DropdownMenuItem>
-                </>
-              ) : (
+              {app.deployment_port && (
                 <DropdownMenuItem
-                  onClick={() => onViewSessions?.(app.id)}
+                  onClick={() => onOpenApp?.(app.id)}
                   className="cursor-pointer"
                 >
-                  <List className="h-4 w-4 mr-2" />
-                  View Sessions
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  Open App
                 </DropdownMenuItem>
               )}
-              <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={() => onDeployApp?.(app.id)}
                 className="cursor-pointer"
@@ -111,6 +81,19 @@ export function AppCard({
                     ? "Redeploy App"
                     : "Deploy App"}
               </DropdownMenuItem>
+              {sessionStatus === "active" && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => onStopSession?.(app.id)}
+                    variant="destructive"
+                    className="cursor-pointer"
+                  >
+                    <Pause className="h-4 w-4 mr-2" />
+                    Stop Session
+                  </DropdownMenuItem>
+                </>
+              )}
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={() => onDeleteApp?.(app.id)}
@@ -118,7 +101,7 @@ export function AppCard({
                 className="cursor-pointer"
               >
                 <Trash2 className="h-4 w-4 mr-2" />
-                Delete App
+                Delete
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
