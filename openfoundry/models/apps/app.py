@@ -63,4 +63,4 @@ class App(Base):
 
     def get_container_name(self):
         """Generate a container name based on the app's ID."""
-        return f"app_{self.id}"
+        return f"app-{self.id}"
