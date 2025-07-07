@@ -81,6 +81,63 @@ def create_docker_container(
     return container_id, port_mappings
 
 
+def export_workspace_from_container(
+    container_id: str, local_workspace_dir: str, container_path: str = "/workspace"
+) -> None:
+    """Export files from a Docker container directory to the local filesystem.
+
+    Args:
+        container_id: The ID of the container to export from.
+        local_workspace_dir: Local directory to save the exported files.
+        container_path: Path in the container to export from (default: "/workspace").
+
+    """
+    try:
+        docker_client = get_docker_client()
+        container = docker_client.containers.get(container_id)
+
+        logger.info(
+            f"Exporting files from container {container_id}:{container_path} to {local_workspace_dir}"
+        )
+
+        # Get the tar archive from the specified container directory
+        tar_stream, _ = container.get_archive(container_path)
+
+        # Create a BytesIO object from the tar stream
+        tar_data = io.BytesIO()
+        for chunk in tar_stream:
+            tar_data.write(chunk)
+        tar_data.seek(0)
+
+        # Extract the tar archive to the local directory
+        # We need to extract only the contents of the container directory, not the directory itself
+        container_dir_name = container_path.strip("/").split("/")[-1]
+        with tarfile.open(fileobj=tar_data, mode="r") as tar:
+            # Get all members and filter out the container directory itself
+            members = tar.getmembers()
+            for member in members:
+                if member.name == container_dir_name and member.isdir():
+                    continue
+                # Remove the container directory prefix from the path
+                prefix = f"{container_dir_name}/"
+                if member.name.startswith(prefix):
+                    member.name = member.name[len(prefix) :]
+                    tar.extract(member, path=local_workspace_dir)
+
+        logger.info(
+            f"Successfully exported files from container {container_id}:{container_path} to {local_workspace_dir}"
+        )
+
+    except docker.errors.NotFound:
+        logger.error(f"Container {container_id} not found")
+        raise
+    except Exception as e:
+        logger.error(
+            f"Failed to export workspace from container {container_id}: {str(e)}"
+        )
+        raise
+
+
 def start_docker_container(container_name: str) -> tuple[str, dict[str, int]]:
     """Start a Docker container by its name and return container information.
 

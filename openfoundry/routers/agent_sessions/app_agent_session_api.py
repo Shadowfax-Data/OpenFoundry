@@ -17,6 +17,9 @@ from openfoundry.models.agent_sessions import (
     AgentSessionStatus,
     AppAgentSession,
 )
+from openfoundry.models.agent_sessions.docker_utils import (
+    export_workspace_from_container,
+)
 from openfoundry.models.apps import App
 
 # Define terminal statuses for agent sessions
@@ -94,6 +97,13 @@ class WriteFileResponse(BaseModel):
 
     message: str
     file_info: FileInfo
+
+
+class SaveWorkspaceResponse(BaseModel):
+    """Response model for saving workspace files."""
+
+    message: str
+    workspace_path: str
 
 
 def get_app_agent_run_context(
@@ -453,3 +463,80 @@ async def write_file_to_sandbox(
         response = await client.post("/files/write", json=write_request.model_dump())
         response.raise_for_status()
         return WriteFileResponse.model_validate(response.json())
+
+
+@router.post(
+    "/apps/{app_id}/sessions/{session_id}/save",
+    response_model=SaveWorkspaceResponse,
+)
+def save_workspace_from_container(
+    app_id: uuid.UUID, session_id: uuid.UUID, request: Request
+):
+    """Save workspace files from the Docker container to local storage."""
+    db: Session = request.state.db
+
+    # Get the app to access its workspace directory
+    app = db.query(App).filter(App.id == app_id, App.deleted_on.is_(None)).first()
+    if not app:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"App with id {app_id} not found",
+        )
+
+    # Get the specific agent session for the app
+    app_agent_session = (
+        db.query(AppAgentSession)
+        .options(joinedload(AppAgentSession.agent_session))
+        .filter(
+            AppAgentSession.id == session_id,
+            AppAgentSession.app_id == app_id,
+        )
+        .first()
+    )
+
+    if not app_agent_session:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Session with id {session_id} not found for app {app_id}",
+        )
+
+    # Check if the session has a container
+    agent_session = app_agent_session.agent_session
+    if not agent_session.container_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Session {session_id} does not have an associated container",
+        )
+
+    # Check if the session is active
+    if agent_session.status != AgentSessionStatus.ACTIVE:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Session {session_id} is not active",
+        )
+
+    try:
+        # Get the app's workspace directory
+        workspace_path = app.get_workspace_directory()
+
+        # Export workspace files from container to local storage
+        export_workspace_from_container(
+            container_id=agent_session.container_id, local_workspace_dir=workspace_path
+        )
+
+        return SaveWorkspaceResponse(
+            message=f"Workspace files successfully saved to {workspace_path}",
+            workspace_path=workspace_path,
+        )
+
+    except docker.errors.NotFound:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Docker container for session {session_id} not found",
+        )
+    except Exception as e:
+        logger.error(f"Failed to save workspace for session {session_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to save workspace files: {str(e)}",
+        )
