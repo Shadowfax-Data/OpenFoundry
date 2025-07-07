@@ -1,7 +1,5 @@
 import { useState, useEffect } from "react";
 import { useParams } from "react-router";
-import { Button } from "@/components/ui/button";
-import { Eye, Code, MoreVertical } from "lucide-react";
 import { ChatConversation } from "@/components/chat/ChatConversation";
 import {
   ResizablePanelGroup,
@@ -9,21 +7,19 @@ import {
   ResizableHandle,
 } from "@/components/ui/resizable";
 import { useAppChat } from "@/hooks/useAppChat";
-import { AppPreview } from "@/components/app/AppPreview";
-import { CodePanel } from "@/components/code/CodePanel";
 import { useAppSelector, useAppDispatch } from "@/store";
 import {
   selectAppAgentSessionById,
   fetchAppAgentSessions,
 } from "@/store/slices/appAgentSessionsSlice";
+import { AppBuilderPanel } from "@/components/app/AppBuilderPanel";
 
 export function AppChat() {
   const { appId, sessionId } = useParams<{
     appId: string;
     sessionId: string;
   }>();
-  const [activeTab, setActiveTab] = useState<"preview" | "code">("preview");
-
+  const [isSandboxReady, setIsSandboxReady] = useState(false);
   const { messages, isStreaming, error, sendMessage, currentWriteFileInfo } =
     useAppChat({
       appId: appId!,
@@ -43,6 +39,42 @@ export function AppChat() {
       dispatch(fetchAppAgentSessions(appId));
     }
   }, [appId, sessionId, session, dispatch]);
+
+  // Health check for sandbox
+  useEffect(() => {
+    if (!appId || !sessionId || messages.length === 0 || error) {
+      return;
+    }
+
+    setIsSandboxReady(false);
+
+    const checkSandboxHealth = async () => {
+      const response = await fetch(
+        `/api/apps/${appId}/sessions/${sessionId}/sandbox_health`,
+      );
+      if (response.ok) {
+        setIsSandboxReady(true);
+        return true;
+      }
+      return false;
+    };
+
+    const intervalId = setInterval(async () => {
+      const isReady = await checkSandboxHealth();
+      if (isReady) {
+        clearInterval(intervalId);
+      }
+    }, 2000);
+
+    // Initial check
+    checkSandboxHealth().then((isReady) => {
+      if (isReady) {
+        clearInterval(intervalId);
+      }
+    });
+
+    return () => clearInterval(intervalId);
+  }, [appId, sessionId, messages.length, error]);
 
   const handleSendMessage = (message: string) => {
     sendMessage(message);
@@ -84,6 +116,7 @@ export function AppChat() {
           placeholder="Type your message..."
           title="Conversation"
           className="h-full border-0 rounded-l-lg"
+          disabled={!isSandboxReady || isStreaming}
         />
       </ResizablePanel>
 
@@ -91,53 +124,21 @@ export function AppChat() {
 
       {/* Right Panel - Preview/Code Tabs */}
       <ResizablePanel defaultSize={70}>
-        <div className="h-full bg-background rounded-r-lg border-0 flex flex-col">
-          {/* Top Navigation Tabs */}
-          <div className="border-b px-4 py-2 flex items-center h-10">
-            <div className="flex items-center justify-between w-full">
-              <div className="flex items-center gap-4">
-                <h1 className="text-sm font-semibold">App Builder</h1>
-                <div className="flex bg-muted rounded-lg p-1">
-                  <Button
-                    variant={activeTab === "preview" ? "default" : "ghost"}
-                    size="sm"
-                    onClick={() => setActiveTab("preview")}
-                    className="h-6 text-xs"
-                  >
-                    <Eye className="h-3 w-3 mr-1" />
-                    Preview
-                  </Button>
-                  <Button
-                    variant={activeTab === "code" ? "default" : "ghost"}
-                    size="sm"
-                    onClick={() => setActiveTab("code")}
-                    className="h-6 text-xs"
-                  >
-                    <Code className="h-3 w-3 mr-1" />
-                    Code
-                  </Button>
-                </div>
-              </div>
-              <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
-                <MoreVertical className="h-3 w-3" />
-              </Button>
+        {!isSandboxReady ? (
+          <div className="h-full flex items-center justify-center">
+            <div className="text-center text-muted-foreground">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+              <p>Waiting for sandbox to become ready...</p>
             </div>
           </div>
-
-          {/* Tab Content Area */}
-          <div className="flex-1">
-            <div className={activeTab === "preview" ? "h-full" : "hidden"}>
-              <AppPreview previewUrl={previewUrl} />
-            </div>
-            <div className={activeTab === "code" ? "h-full" : "hidden"}>
-              <CodePanel
-                currentWriteFileInfo={currentWriteFileInfo}
-                appId={appId!}
-                sessionId={sessionId!}
-              />
-            </div>
-          </div>
-        </div>
+        ) : (
+          <AppBuilderPanel
+            previewUrl={previewUrl}
+            appId={appId!}
+            sessionId={sessionId!}
+            currentWriteFileInfo={currentWriteFileInfo}
+          />
+        )}
       </ResizablePanel>
     </ResizablePanelGroup>
   );

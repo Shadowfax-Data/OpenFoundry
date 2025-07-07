@@ -9,6 +9,7 @@ interface ChatInputProps {
   error?: string | null;
   onSendMessage: (message: string) => Promise<void> | void;
   placeholder?: string;
+  disabled?: boolean;
 }
 
 export function ChatInput({
@@ -16,6 +17,7 @@ export function ChatInput({
   error,
   onSendMessage,
   placeholder = "Type your message…",
+  disabled = false,
 }: ChatInputProps) {
   const [inputMessage, setInputMessage] = useState<string>("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -28,7 +30,7 @@ export function ChatInput({
   }, [inputMessage]);
 
   const handleSendMessage = async () => {
-    if (!inputMessage.trim() || isStreaming) return;
+    if (!inputMessage.trim() || isStreaming || disabled) return;
     const result = onSendMessage(inputMessage);
     if (result instanceof Promise) {
       await result;
@@ -56,7 +58,7 @@ export function ChatInput({
         onKeyDown={handleKeyDown}
         placeholder={isStreaming ? "Agent is thinking…" : placeholder}
         rows={1}
-        disabled={isStreaming}
+        disabled={isStreaming || disabled}
       />
       <div className="flex items-center justify-between p-2 mt-1">
         <div className="flex items-center gap-2">
@@ -73,7 +75,7 @@ export function ChatInput({
           </Button>
           <Button
             onClick={handleSendMessage}
-            disabled={!inputMessage.trim() || isStreaming}
+            disabled={!inputMessage.trim() || isStreaming || disabled}
             className="px-3 h-8 bg-black hover:bg-gray-900 text-white rounded-md"
           >
             <ArrowUp className="h-4 w-4" />

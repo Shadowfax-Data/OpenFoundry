@@ -3,20 +3,65 @@ import { Eye, RefreshCw, ExternalLink, Loader2 } from "lucide-react";
 
 interface AppPreviewProps {
   previewUrl?: string;
+  appId?: string;
+  sessionId?: string;
 }
 
-export const AppPreview: React.FC<AppPreviewProps> = ({ previewUrl }) => {
+export const AppPreview: React.FC<AppPreviewProps> = ({
+  previewUrl,
+  appId,
+  sessionId,
+}) => {
   const [iframeKey, setIframeKey] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [isAppReady, setIsAppReady] = useState(false);
+
+  // Health check polling
+  useEffect(() => {
+    if (!previewUrl || !appId || !sessionId) {
+      setIsAppReady(false);
+      return;
+    }
+
+    // Reset app ready state for new URLs
+    setIsAppReady(false);
+
+    const checkHealth = async () => {
+      const response = await fetch(
+        `/api/apps/${appId}/sessions/${sessionId}/app_health`,
+      );
+      if (response.ok) {
+        setIsAppReady(true);
+        return true;
+      }
+      return false;
+    };
+
+    const intervalId = setInterval(async () => {
+      const isReady = await checkHealth();
+      if (isReady) {
+        clearInterval(intervalId);
+      }
+    }, 2000);
+
+    // Initial check
+    checkHealth().then((isReady) => {
+      if (isReady) {
+        clearInterval(intervalId);
+      }
+    });
+
+    return () => clearInterval(intervalId);
+  }, [previewUrl, appId, sessionId]);
 
   // Reset loading state when URL changes or iframe is manually refreshed
   useEffect(() => {
-    if (previewUrl) {
+    if (previewUrl && isAppReady) {
       setIsLoading(true);
       setLoadError(null);
     }
-  }, [previewUrl, iframeKey]);
+  }, [previewUrl, iframeKey, isAppReady]);
 
   const handleRefresh = () => {
     if (previewUrl) {
@@ -62,7 +107,7 @@ export const AppPreview: React.FC<AppPreviewProps> = ({ previewUrl }) => {
             onClick={handleRefresh}
             className="p-1 rounded hover:bg-accent"
             title="Refresh Preview"
-            disabled={!previewUrl}
+            disabled={!previewUrl || !isAppReady}
           >
             <RefreshCw className="h-4 w-4 text-muted-foreground" />
           </button>
@@ -70,7 +115,7 @@ export const AppPreview: React.FC<AppPreviewProps> = ({ previewUrl }) => {
             onClick={handleOpenInNewTab}
             className="p-1 rounded hover:bg-accent"
             title="Open in New Tab"
-            disabled={!previewUrl}
+            disabled={!previewUrl || !isAppReady}
           >
             <ExternalLink className="h-4 w-4 text-muted-foreground" />
           </button>
@@ -78,7 +123,21 @@ export const AppPreview: React.FC<AppPreviewProps> = ({ previewUrl }) => {
       </div>
       {/* Iframe Preview */}
       <div className="flex-1 overflow-hidden relative">
-        {previewUrl ? (
+        {!previewUrl ? (
+          <div className="h-full w-full flex flex-col items-center justify-center text-muted-foreground">
+            <Eye className="h-8 w-8 mb-2" />
+            <p>Preview will appear here</p>
+            <p className="text-sm">
+              Start a conversation to see your app preview
+            </p>
+          </div>
+        ) : !isAppReady ? (
+          <div className="absolute inset-0 w-full h-full flex flex-col items-center justify-center text-muted-foreground bg-white z-10">
+            <Loader2 className="h-8 w-8 mb-2 animate-spin" />
+            <p>Waiting for app to become ready...</p>
+            <p className="text-xs mt-1">URL: {previewUrl}</p>
+          </div>
+        ) : (
           <>
             {/* Loader Overlay */}
             {isLoading && (
@@ -113,14 +172,6 @@ export const AppPreview: React.FC<AppPreviewProps> = ({ previewUrl }) => {
               sandbox="allow-scripts allow-same-origin"
             />
           </>
-        ) : (
-          <div className="h-full w-full flex flex-col items-center justify-center text-muted-foreground">
-            <Eye className="h-8 w-8 mb-2" />
-            <p>Preview will appear here</p>
-            <p className="text-sm">
-              Start a conversation to see your app preview
-            </p>
-          </div>
         )}
       </div>
     </div>
