@@ -227,12 +227,7 @@ def deploy_app(app_id: uuid.UUID, request: Request):
             f"App {app_id} deployed successfully with container {container_id} on port {app_port}"
         )
 
-        return {
-            "message": "App deployed successfully",
-            "container_id": container_id,
-            "deployment_port": app_port,
-            "app": AppModel.model_validate(app),
-        }
+        return AppModel.model_validate(app)
 
     except Exception as e:
         logger.error(f"Failed to deploy app {app_id}: {str(e)}")
