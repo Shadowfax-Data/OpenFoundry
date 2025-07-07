@@ -7,6 +7,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   MoreVertical,
   Calendar,
   AppWindowMac,
@@ -45,14 +50,30 @@ export function AppCard({
   onDeployApp,
 }: AppCardProps) {
   return (
-    <div className="rounded-lg border bg-card text-card-foreground shadow-sm hover:shadow-md transition-shadow cursor-pointer">
+    <div className="rounded-lg border bg-card text-card-foreground shadow-sm hover:shadow-md transition-shadow">
       <div className="p-6">
         <div className="flex items-start justify-between mb-4">
-          <div
-            className={`h-12 w-12 rounded-lg ${app.color} flex items-center justify-center text-white`}
-          >
-            <AppWindowMac className="h-6 w-6" />
-          </div>
+          {app.deployment_port ? (
+            <div
+              className={`h-12 w-12 rounded-lg ${app.color} flex items-center justify-center text-white cursor-pointer hover:opacity-80 transition-opacity`}
+              onClick={() => onOpenApp?.(app.id)}
+            >
+              <AppWindowMac className="h-6 w-6" />
+            </div>
+          ) : (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div
+                  className={`h-12 w-12 rounded-lg ${app.color} flex items-center justify-center text-white`}
+                >
+                  <AppWindowMac className="h-6 w-6" />
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>App is not deployed</p>
+              </TooltipContent>
+            </Tooltip>
+          )}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="sm">
