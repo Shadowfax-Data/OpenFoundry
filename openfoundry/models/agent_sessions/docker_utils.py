@@ -24,6 +24,9 @@ def create_docker_container(
     initialization_data: dict,
     container_name: str,
     workspace_dir: str,
+    command: str | None = None,
+    working_dir: str | None = None,
+    auto_remove: bool = False,
 ) -> tuple[str, dict[str, int]]:
     """Create Docker container for an agent session.
 
@@ -32,6 +35,9 @@ def create_docker_container(
         initialization_data: Data to be stored as environment variables.
         container_name: Name for the Docker container.
         workspace_dir: Workspace directory to copy to container.
+        command: Command to run in the container.
+        working_dir: Working directory in the container.
+        auto_remove: If True, the container will be removed after it stops.
 
     Returns:
         Tuple of (container_id, port_mappings).
@@ -51,6 +57,9 @@ def create_docker_container(
         detach=True,
         name=container_name,
         environment=env_vars,
+        command=command,
+        working_dir=working_dir,
+        auto_remove=auto_remove,
     )
     # Get container information
     container.reload()  # Refresh container info to get port mapping

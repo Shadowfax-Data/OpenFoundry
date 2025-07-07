@@ -16,6 +16,7 @@ import {
   List,
   ExternalLink,
   Trash2,
+  Rocket,
 } from "lucide-react";
 import { App } from "@/types/api";
 
@@ -24,11 +25,13 @@ interface AppCardProps {
   sessionStatus: "active" | "stopped";
   sessionCount: number;
   isEditLoading: boolean;
+  isDeployLoading?: boolean;
   onEditClick: (appId: string) => void;
   onStopSession?: (appId: string) => void;
   onViewSessions?: (appId: string) => void;
   onOpenApp?: (appId: string) => void;
   onDeleteApp?: (appId: string) => void;
+  onDeployApp?: (appId: string) => void;
 }
 
 export function AppCard({
@@ -36,11 +39,13 @@ export function AppCard({
   sessionStatus,
   sessionCount,
   isEditLoading,
+  isDeployLoading = false,
   onEditClick,
   onStopSession,
   onViewSessions,
   onOpenApp,
   onDeleteApp,
+  onDeployApp,
 }: AppCardProps) {
   return (
     <div className="rounded-lg border bg-card text-card-foreground shadow-sm hover:shadow-md transition-shadow cursor-pointer">
@@ -65,7 +70,7 @@ export function AppCard({
                     className="cursor-pointer"
                   >
                     <ExternalLink className="h-4 w-4 mr-2" />
-                    Open App
+                    {app.deployment_port ? "Open Deployed App" : "Open App"}
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => onViewSessions?.(app.id)}
@@ -93,6 +98,19 @@ export function AppCard({
                   View Sessions
                 </DropdownMenuItem>
               )}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => onDeployApp?.(app.id)}
+                className="cursor-pointer"
+                disabled={isDeployLoading}
+              >
+                <Rocket className="h-4 w-4 mr-2" />
+                {isDeployLoading
+                  ? "Deploying..."
+                  : app.deployment_port
+                    ? "Redeploy App"
+                    : "Deploy App"}
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={() => onDeleteApp?.(app.id)}
@@ -126,6 +144,14 @@ export function AppCard({
             </span>
           </div>
         </div>
+
+        {/* Deployment status */}
+        {app.deployment_port && (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
+            <Rocket className="h-4 w-4 text-blue-500" />
+            <span>Deployed on port {app.deployment_port}</span>
+          </div>
+        )}
 
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">

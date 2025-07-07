@@ -15,6 +15,7 @@ import {
   fetchApps,
   createApp,
   deleteApp,
+  deployApp,
   setSearchQuery,
   setStatusFilter,
   setSortBy,
@@ -43,6 +44,11 @@ export function Apps() {
 
   // Track loading state for Edit button per app
   const [editLoadingAppId, setEditLoadingAppId] = useState<string | null>(null);
+
+  // Track loading state for Deploy button per app
+  const [deployLoadingAppId, setDeployLoadingAppId] = useState<string | null>(
+    null,
+  );
 
   // Fetch apps on component mount
   useEffect(() => {
@@ -248,11 +254,19 @@ export function Apps() {
 
   // Helper to handle Open App action
   const handleOpenApp = (appId: string) => {
+    const app = apps.find((a) => a.id === appId);
     const appSessions = sessions[appId] || [];
     const activeSession = appSessions.find((s) => s.status === "active");
 
-    if (activeSession) {
-      // Open the app in a new tab/window
+    // Use deployment port if available, otherwise use session app_port
+    if (app?.deployment_port) {
+      // Open the deployed app in a new tab/window
+      window.open(
+        `${window.location.protocol}//${window.location.hostname}:${app.deployment_port}`,
+        "_blank",
+      );
+    } else if (activeSession) {
+      // Fall back to session app_port if no deployment
       window.open(
         `${window.location.protocol}//${window.location.hostname}:${activeSession.app_port}`,
         "_blank",
@@ -268,6 +282,20 @@ export function Apps() {
     } catch (error) {
       console.error("Failed to delete app:", error);
       // Error is handled by Redux state
+    }
+  };
+
+  // Helper to handle Deploy App action
+  const handleDeployApp = async (appId: string) => {
+    setDeployLoadingAppId(appId);
+    try {
+      await dispatch(deployApp(appId)).unwrap();
+      // App will be automatically updated in the state by the Redux reducer
+    } catch (error) {
+      console.error("Failed to deploy app:", error);
+      // Error is handled by Redux state
+    } finally {
+      setDeployLoadingAppId(null);
     }
   };
 
@@ -450,11 +478,13 @@ export function Apps() {
                     sessionStatus={sessionStatus}
                     sessionCount={sessionCount}
                     isEditLoading={editLoadingAppId === app.id}
+                    isDeployLoading={deployLoadingAppId === app.id}
                     onEditClick={handleEditClick}
                     onStopSession={handleStopSession}
                     onViewSessions={handleViewSessions}
                     onOpenApp={handleOpenApp}
                     onDeleteApp={handleDeleteApp}
+                    onDeployApp={handleDeployApp}
                   />
                 );
               })}
