@@ -9,7 +9,12 @@ from openfoundry.agents.bash_tools import (
     run_shell_command,
     tail_process_logs,
 )
-from openfoundry.agents.common_tools import list_files, read_file, write_file
+from openfoundry.agents.common_tools import (
+    list_files,
+    read_file,
+    visualize_app,
+    write_file,
+)
 from openfoundry.agents.run_context import AppAgentRunContext
 
 STREAMLIT_APP_CODING_AGENT_NAME = "streamlit_app_coding_agent"
@@ -32,6 +37,7 @@ You are an expert software engineer and conversation facilitator, specialized in
 - May list processes with the `list_processes` tool
 - May run shell commands with the `run_shell_command` tool
 - May tail process logs with the `tail_process_logs` tool
+- May visualize the current state of the app with the `visualize_app` tool
     """
 
     return Agent(
@@ -44,6 +50,7 @@ You are an expert software engineer and conversation facilitator, specialized in
             list_processes,
             run_shell_command,
             tail_process_logs,
+            visualize_app,
         ],
         model="o4-mini",
         model_settings=ModelSettings(

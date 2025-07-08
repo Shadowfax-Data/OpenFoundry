@@ -177,3 +177,23 @@ async def list_files(
             raise Exception(f"Failed to list files: {response.text}")
 
         return response.json()["files"]
+
+
+@function_tool
+async def visualize_app(
+    wrapper: RunContextWrapper[AgentRunContext],
+    thought: str,
+):
+    """Visualize the current state of the app.
+
+    Args:
+        wrapper: The agent run context wrapper for accessing sandbox client.
+        thought: Your thought process for using this tool. It will be displayed in the chat to the user. Talk in first person and present reasoning as to why you are using this tool.
+
+    """
+    async with wrapper.context.get_sandbox_client() as client:
+        response = await client.post("/visualize_app")
+        if response.is_error:
+            raise Exception(f"Failed to visualize app: {response.text}")
+
+        return response.json()["content"]
