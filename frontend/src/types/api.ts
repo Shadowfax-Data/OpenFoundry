@@ -4,6 +4,7 @@ export interface AppFromAPI {
   name: string;
   created_on: string; // ISO datetime string
   updated_on: string; // ISO datetime string
+  deployment_port: number | null; // Port where the app is deployed
 }
 
 // Frontend app type with computed UI properties

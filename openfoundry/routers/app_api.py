@@ -13,7 +13,6 @@ from openfoundry.models.agent_sessions.docker_utils import (
     container_exists,
     create_docker_container,
     remove_docker_container,
-    start_docker_container,
     stop_docker_container,
 )
 from openfoundry.models.apps import App
@@ -164,7 +163,7 @@ def deploy_app(app_id: uuid.UUID, request: Request):
     container_name = app.get_container_name()
 
     # Check if there's already a deployment and clean up existing container
-    if app.deployment_port is not None:
+    if app.deployment_port:
         logger.info(
             f"App {app_id} already has deployment_port {app.deployment_port}, cleaning up existing container"
         )
@@ -185,98 +184,35 @@ def deploy_app(app_id: uuid.UUID, request: Request):
         },
     }
 
-    # Initialization data with streamlit command
-    initialization_data = {
-        "streamlit_run_config": {
-            "identifier": "streamlit_app",
-            "command_str": (
-                "streamlit run app.py "
-                "--server.port 8501 "
-                "--server.address 0.0.0.0 "
-                "--server.headless true "
-                "--server.enableCORS false "
-                "--server.enableXsrfProtection false "
-                "--browser.gatherUsageStats false "
-            ),
-            "cwd": "/workspace",
-        },
-    }
+    command = (
+        "streamlit run app.py "
+        "--server.port 8501 "
+        "--server.address 0.0.0.0 "
+        "--server.headless true "
+        "--server.enableCORS false "
+        "--server.enableXsrfProtection false "
+        "--browser.gatherUsageStats false "
+    )
 
     # Get workspace directory
     workspace_dir = app.get_workspace_directory()
 
-    try:
-        # Create Docker container
-        container_id, port_mappings = create_docker_container(
-            docker_config=docker_config,
-            initialization_data=initialization_data,
-            container_name=container_name,
-            workspace_dir=workspace_dir,
-        )
+    # Create Docker container
+    container_id, port_mappings = create_docker_container(
+        docker_config=docker_config,
+        initialization_data={},
+        container_name=container_name,
+        workspace_dir=workspace_dir,
+        working_dir="/workspace",
+        command=command,
+    )
 
-        # Extract the app port from port mappings
-        app_port = port_mappings.get("8501/tcp")
-        if not app_port:
-            raise RuntimeError("App port (8501/tcp) is required but not assigned")
-
-        # Save the deployment port to the app
-        app.deployment_port = app_port
-        db.commit()
-        db.refresh(app)
-
-        logger.info(
-            f"App {app_id} deployed successfully with container {container_id} on port {app_port}"
-        )
-
-        return AppModel.model_validate(app)
-
-    except Exception as e:
-        logger.error(f"Failed to deploy app {app_id}: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to deploy app: {str(e)}",
-        )
-
-
-@router.post("/apps/{app_id}/resume", status_code=status.HTTP_200_OK)
-def resume_app_deployment(app_id: uuid.UUID, request: Request):
-    """Resume an app deployment by starting its existing Docker container."""
-    db: Session = request.state.db
-
-    # Get the specific non-deleted app
-    app = db.query(App).filter(App.id == app_id, App.deleted_on.is_(None)).first()
-
-    if not app:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"App with id {app_id} not found",
-        )
-
-    # Check if the app has a deployment_port (meaning it was previously deployed)
-    if app.deployment_port is None:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"App {app_id} has not been deployed yet",
-        )
-
-    # Container name
-    container_name = app.get_container_name()
-
-    # Start the existing Docker container
-    container_id, port_mappings = start_docker_container(container_name)
-
-    # Extract the app port from port mappings
-    app_port = port_mappings.get("8501/tcp")
-    if not app_port:
-        raise RuntimeError("App port (8501/tcp) is required but not assigned")
-
-    # Update the deployment port in case it changed
-    app.deployment_port = app_port
+    # Save the deployment port to the app
+    app.deployment_port = port_mappings["8501/tcp"]
     db.commit()
     db.refresh(app)
 
     logger.info(
-        f"App {app_id} resumed successfully with container {container_id} on port {app_port}"
+        f"App {app_id} deployed successfully with container {container_id} on http://localhost:{app.deployment_port}"
     )
-
     return AppModel.model_validate(app)

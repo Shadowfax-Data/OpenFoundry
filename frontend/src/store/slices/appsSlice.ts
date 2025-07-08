@@ -137,6 +137,29 @@ export const deleteApp = createAsyncThunk(
   },
 );
 
+// Async thunk for deploying an app
+export const deployApp = createAsyncThunk(
+  "apps/deployApp",
+  async (appId: string, { rejectWithValue }) => {
+    try {
+      const response = await fetch(`/api/apps/${appId}/deploy`, {
+        method: "POST",
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const apiApp: AppFromAPI = await response.json();
+      return transformAppFromAPI(apiApp);
+    } catch (error) {
+      return rejectWithValue(
+        error instanceof Error ? error.message : "Failed to deploy app",
+      );
+    }
+  },
+);
+
 const initialState: AppsState = {
   apps: [],
   loading: false,
@@ -218,6 +241,19 @@ const appsSlice = createSlice({
       .addCase(deleteApp.rejected, (state, action) => {
         state.loading = false;
         state.error = (action.payload as string) || "Failed to delete app";
+      })
+      // Deploy app
+      .addCase(deployApp.fulfilled, (state, action) => {
+        // Update the app in the state with the new deployment info
+        const index = state.apps.findIndex(
+          (app) => app.id === action.payload.id,
+        );
+        if (index !== -1) {
+          state.apps[index] = action.payload;
+        }
+      })
+      .addCase(deployApp.rejected, (state, action) => {
+        state.error = (action.payload as string) || "Failed to deploy app";
       });
   },
 });
