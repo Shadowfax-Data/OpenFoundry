@@ -1,7 +1,9 @@
+import io
 import json
 import logging
 import os
 import subprocess
+import time
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Literal
@@ -10,6 +12,9 @@ from fastapi import FastAPI, HTTPException, Query, status
 from fastapi.responses import JSONResponse
 from openhands_aci.editor import OHEditor
 from openhands_aci.editor.results import CLIResult
+from pdfminer.high_level import extract_text
+from pdfminer.layout import LAParams
+from playwright.sync_api import sync_playwright
 from pydantic import BaseModel, Field
 
 from openfoundry_sandbox.config import WORKSPACE_DIR
@@ -321,6 +326,111 @@ def run_shell(request: RunShellRequest):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to execute command: {e}",
         )
+
+
+# Visualize App (Combined PDF capture + markdown conversion)
+@app.post("/visualize_app")
+def visualize_app():
+    """
+    Capture a web page as PDF and convert it to markdown text in one operation.
+    """
+    url = "localhost:8501"
+    logger.info(f"Visualize App URL: {url!r}")
+
+    # Step 1: Capture PDF using Playwright
+    with sync_playwright() as pw:
+        browser = pw.chromium.launch(
+            headless=True, args=["--no-sandbox", "--disable-setuid-sandbox"]
+        )
+        page = browser.new_page()
+
+        # Set a reasonable viewport size to ensure proper rendering
+        page.set_viewport_size({"width": 1280, "height": 1024})
+
+        page.goto(url, wait_until="domcontentloaded", timeout=30_000)
+
+        # wait for network to settle - 30 seconds
+        page.wait_for_load_state("networkidle", timeout=30_000)
+
+        # Additional wait for dynamic content to fully initialize
+        time.sleep(3.0)
+
+        # Scroll to bottom to trigger lazy loading and ensure all content is loaded
+        page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+        time.sleep(2.0)  # Wait for any lazy-loaded content
+
+        # Scroll back to top for consistent starting point
+        page.evaluate("window.scrollTo(0, 0)")
+
+        # Final wait for everything to settle after scrolling
+        time.sleep(2.0)
+
+        # Generate PDF with options to capture full content
+        pdf_bytes = page.pdf(
+            format="A0",
+            print_background=True,
+            margin={
+                "top": "0",
+                "right": "0",
+                "bottom": "0",
+                "left": "0",
+            },
+        )
+        browser.close()
+
+    logger.info(f"Successfully captured PDF of {url}")
+
+    # Step 2: Convert PDF to markdown using pdfminer
+    pdf_stream = io.BytesIO(pdf_bytes)
+
+    # Extract text using pdfminer with layout parameters for better formatting
+    laparams = LAParams(
+        line_margin=1.0,
+        word_margin=0.5,
+        char_margin=3.0,
+        boxes_flow=0.5,
+        all_texts=False,
+    )
+
+    extracted_text = extract_text(pdf_stream, laparams=laparams)
+
+    # Basic markdown formatting
+    # Split into lines and clean up
+    lines = extracted_text.split("\n")
+    markdown_lines = []
+
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue
+
+        # Convert common patterns to markdown
+        # Headers (lines that are all caps or start with common header patterns)
+        if len(line) > 0 and (
+            line.isupper()
+            or any(
+                line.startswith(prefix)
+                for prefix in [
+                    "Chapter",
+                    "Section",
+                    "Part",
+                    "Introduction",
+                    "Conclusion",
+                ]
+            )
+        ):
+            markdown_lines.append(f"## {line}")
+        # Regular text
+        else:
+            markdown_lines.append(line)
+
+    # Join with appropriate spacing
+    markdown_text = "\n\n".join(markdown_lines)
+
+    logger.info(
+        f"Successfully converted PDF to markdown: {len(markdown_text)} characters"
+    )
+    return {"content": markdown_text.strip()}
 
 
 # --- Helper Functions ---
