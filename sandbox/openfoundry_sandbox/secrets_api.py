@@ -48,12 +48,12 @@ def put_secret(payload: SecretPayload = Body(...)):
 
 
 @router.delete("/")
-def delete_secret(payload: SecretPayload = Body(...)):
-    secret_dir = get_secret_dir(payload.prefix, payload.name)
+def delete_secret(prefix: str = Body(...), name: str = Body(...)):
+    secret_dir = get_secret_dir(prefix, name)
     if secret_dir.exists():
         shutil.rmtree(secret_dir)
     return {
-        "message": f"Secret '{payload.name}' deleted (if existed).",
+        "message": f"Secret '{name}' deleted (if existed).",
         "path": str(secret_dir),
     }
 
@@ -74,4 +74,4 @@ def list_secrets():
                 # Relative path from SECRETS_BASE
                 rel_path = dir_path.relative_to(SECRETS_BASE)
                 secrets.append(str(rel_path))
-    return {"secrets": secrets}
+    return secrets

@@ -61,34 +61,22 @@ def create_docker_container(
     }
     logger.info(f"Environment variables: {env_vars}")
 
-    # Create and start the container
-    container = docker_client.containers.run(
+    # Step 1: Create the container (do not start it yet)
+    container = docker_client.containers.create(
         image=docker_config["image"],
         ports=docker_config["ports"],
-        detach=True,
         name=container_name,
         environment=env_vars,
         command=command,
         working_dir=working_dir,
         auto_remove=auto_remove,
+        detach=True,  # detach is ignored for create, but keep for clarity
     )
-    # Get container information
-    container.reload()  # Refresh container info to get port mapping
     container_id = container.id
     actual_container_name = container.name
-    logger.info(
-        f"Container ID: {container_id}, Container Name: {actual_container_name}"
-    )
+    logger.info(f"Container created. ID: {container_id}, Name: {actual_container_name}")
 
-    # Get assigned ports
-    port_mappings = {}
-    for container_port in docker_config["ports"]:
-        if container_port in container.ports:
-            host_port = container.ports[container_port][0]["HostPort"]
-            port_mappings[container_port] = int(host_port)
-            logger.info(f"Assigned port for {container_port}: {host_port}")
-
-    # Copy workspace files to container
+    # Step 2: Copy workspace files to container
     logger.info(f"Copying workspace files from {workspace_dir} to container /workspace")
     tar_stream = io.BytesIO()
     with tarfile.open(fileobj=tar_stream, mode="w") as t:
@@ -111,6 +99,20 @@ def create_docker_container(
             tar_bytes.seek(0)
             container.put_archive("/etc/secrets", tar_bytes.read())
         logger.info("Successfully copied secrets to container /etc/secrets")
+
+    # Step 3: Start the container
+    logger.info(f"Starting Docker container {container_name}")
+    container.start()
+    logger.info(f"Docker container {container_name} started successfully")
+
+    # Get container information (reload to get port mapping)
+    container.reload()
+    port_mappings = {}
+    for container_port in docker_config["ports"]:
+        if container_port in container.ports and container.ports[container_port]:
+            host_port = container.ports[container_port][0]["HostPort"]
+            port_mappings[container_port] = int(host_port)
+            logger.info(f"Assigned port for {container_port}: {host_port}")
 
     # Return container information
     return container_id, port_mappings
