@@ -2,6 +2,7 @@ import { Outlet } from "react-router";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "./app-sidebar";
 import { Navbar } from "./navbar";
+import { Toaster } from "@/components/ui/sonner";
 
 export function Layout() {
   return (
@@ -20,6 +21,7 @@ export function Layout() {
             </div>
           </main>
         </div>
+        <Toaster />
       </div>
     </SidebarProvider>
   );

@@ -99,13 +99,6 @@ class WriteFileResponse(BaseModel):
     file_info: FileInfo
 
 
-class SaveWorkspaceResponse(BaseModel):
-    """Response model for saving workspace files."""
-
-    message: str
-    workspace_path: str
-
-
 def get_app_agent_run_context(
     request: Request,
     app_id: uuid.UUID,
@@ -496,7 +489,6 @@ async def write_file_to_sandbox(
 
 @router.post(
     "/apps/{app_id}/sessions/{session_id}/save",
-    response_model=SaveWorkspaceResponse,
 )
 def save_workspace_from_container(
     app_id: uuid.UUID, session_id: uuid.UUID, request: Request
@@ -504,22 +496,13 @@ def save_workspace_from_container(
     """Save workspace files from the Docker container to local storage."""
     db: Session = request.state.db
 
-    # Get the app to access its workspace directory
-    app = db.query(App).filter(App.id == app_id, App.deleted_on.is_(None)).first()
-    if not app:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"App with id {app_id} not found",
-        )
-
     # Get the specific agent session for the app
     app_agent_session = (
         db.query(AppAgentSession)
-        .options(joinedload(AppAgentSession.agent_session))
-        .filter(
-            AppAgentSession.id == session_id,
-            AppAgentSession.app_id == app_id,
+        .options(
+            joinedload(AppAgentSession.agent_session), joinedload(AppAgentSession.app)
         )
+        .filter(AppAgentSession.id == session_id, AppAgentSession.app_id == app_id)
         .first()
     )
 
@@ -544,28 +527,12 @@ def save_workspace_from_container(
             detail=f"Session {session_id} is not active",
         )
 
-    try:
-        # Get the app's workspace directory
-        workspace_path = app.get_workspace_directory()
+    app = app_agent_session.app
+    # Get the app's workspace directory
+    workspace_path = app.get_workspace_directory()
 
-        # Export workspace files from container to local storage
-        export_workspace_from_container(
-            container_id=agent_session.container_id, local_workspace_dir=workspace_path
-        )
-
-        return SaveWorkspaceResponse(
-            message=f"Workspace files successfully saved to {workspace_path}",
-            workspace_path=workspace_path,
-        )
-
-    except docker.errors.NotFound:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Docker container for session {session_id} not found",
-        )
-    except Exception as e:
-        logger.error(f"Failed to save workspace for session {session_id}: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to save workspace files: {str(e)}",
-        )
+    # Export workspace files from container to local storage
+    export_workspace_from_container(
+        container_id=agent_session.container_id, local_workspace_dir=workspace_path
+    )
+    return {"message": f"Workspace files successfully saved to {workspace_path}"}
