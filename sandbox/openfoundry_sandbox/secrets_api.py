@@ -65,7 +65,7 @@ def list_secrets():
     """
     secrets = []
     if not SECRETS_BASE.exists():
-        return {"secrets": []}
+        return secrets
     for root, dirs, _ in os.walk(SECRETS_BASE):
         # Only include leaf directories (those with files inside)
         for d in dirs:
