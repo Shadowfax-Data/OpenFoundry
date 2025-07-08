@@ -5,6 +5,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from openfoundry.config import SANDBOX_IMAGE, SANDBOX_PORT
 from openfoundry.logger import logger
+from openfoundry.models.agent_sessions.docker_utils import SecretPayload
 from openfoundry.models.apps import App
 
 from .agent_session import AgentSessionBase, AgentSessionType
@@ -62,17 +63,20 @@ class AppAgentSession(AgentSessionBase):
         """Get the container name for app sessions."""
         return f"app-session-{self.id}"
 
-    def create_in_docker(self, workspace_dir: str) -> dict:
+    def create_in_docker(
+        self, workspace_dir: str, secrets: list[SecretPayload] | None = None
+    ) -> dict:
         """Create Docker container with app-specific configuration.
 
         Args:
             workspace_dir: Workspace directory to copy to container.
+            secrets: Secrets to materialize into the container.
 
         Returns:
             Dict containing container_id, assigned_sandbox_port, app_port, and agent.
 
         """
-        result = super().create_in_docker(workspace_dir)
+        result = super().create_in_docker(workspace_dir, secrets)
 
         # Extract the app port from port mappings
         app_port = result["port_mappings"].get("8501/tcp")

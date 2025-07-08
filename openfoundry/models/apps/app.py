@@ -2,15 +2,20 @@ import os
 import uuid
 from datetime import datetime
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import uuid6
 from jinja2 import Environment, FileSystemLoader
 from sqlalchemy import DateTime, func
 from sqlalchemy.dialects.postgresql import UUID as PostgresUUID
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from openfoundry.config import STORAGE_DIR
 from openfoundry.database import Base
+from openfoundry.models.apps.app_connection import app_connection
+
+if TYPE_CHECKING:
+    from openfoundry.models.connections import Connection
 
 
 class App(Base):
@@ -26,6 +31,10 @@ class App(Base):
         DateTime(timezone=True), nullable=True
     )
     deployment_port: Mapped[int | None] = mapped_column(nullable=True)
+
+    connections: Mapped[list["Connection"]] = relationship(
+        "Connection", secondary=app_connection
+    )
 
     def soft_delete(self):
         """Soft delete the app by setting deleted_on timestamp."""

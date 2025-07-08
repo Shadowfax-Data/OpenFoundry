@@ -95,9 +95,10 @@ def create_docker_container(
             tar_bytes = io.BytesIO()
             with tarfile.open(fileobj=tar_bytes, mode="w") as t:
                 for item in tmp_secrets_path.rglob("*"):
-                    t.add(str(item), arcname=str(item.relative_to(tmp_secrets_path)))
+                    arcname = Path("secrets") / item.relative_to(tmp_secrets_path)
+                    t.add(str(item), arcname=str(arcname))
             tar_bytes.seek(0)
-            container.put_archive("/etc/secrets", tar_bytes.read())
+            container.put_archive("/etc", tar_bytes.read())
         logger.info("Successfully copied secrets to container /etc/secrets")
 
     # Step 3: Start the container
