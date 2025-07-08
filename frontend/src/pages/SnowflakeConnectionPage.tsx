@@ -1,35 +1,18 @@
 import { SnowflakeConnectionForm } from "@/components/connections/SnowflakeConnectionForm";
 import { IconBrandSnowflake } from "@tabler/icons-react";
 import SnowflakeConnectionGuide from "@/components/connections/SnowflakeConnectionGuide";
+import { ConnectionPageLayout } from "@/components/connections/ConnectionPageLayout";
 
 export function SnowflakeConnectionPage() {
   return (
-    <div className="h-full flex flex-col">
-      <div className="overflow-y-auto">
-        <div className="p-8 mx-auto max-w-6xl">
-          <div className="flex gap-12">
-            {/* Left: Form */}
-            <div className="flex-1 min-w-0">
-              <div className="mb-8">
-                <div className="flex items-center gap-4">
-                  <IconBrandSnowflake className="h-12 w-12 text-blue-500 flex-shrink-0" />
-                  <div className="flex flex-col justify-center">
-                    <h1 className="text-3xl font-bold leading-tight">
-                      New Snowflake Connection
-                    </h1>
-                    <p className="text-muted-foreground mt-1">
-                      Fill in the details to create a new Snowflake connection.
-                    </p>
-                  </div>
-                </div>
-              </div>
-              <SnowflakeConnectionForm />
-            </div>
-            {/* Right: Guide */}
-            <SnowflakeConnectionGuide />
-          </div>
-        </div>
-      </div>
-    </div>
+    <ConnectionPageLayout
+      icon={
+        <IconBrandSnowflake className="h-12 w-12 text-blue-500 flex-shrink-0" />
+      }
+      title="New Snowflake Connection"
+      subtitle="Fill in the details to create a new Snowflake connection."
+      form={<SnowflakeConnectionForm />}
+      guide={<SnowflakeConnectionGuide />}
+    />
   );
 }
