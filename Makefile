@@ -36,6 +36,17 @@ install-frontend:
 # Setup pre-commit hooks
 setup-precommit:
 	@echo "Setting up pre-commit hooks..."
+	@echo "Checking if ggshield is installed..."
+	@if ! command -v ggshield >/dev/null 2>&1; then \
+		echo "❌ ggshield is not installed. Please install it first:"; \
+		echo "   Visit: https://github.com/GitGuardian/ggshield"; \
+		echo "   Or install on Linux:"; \
+		echo "     wget https://github.com/GitGuardian/ggshield/releases/download/v1.41.0/ggshield_1.41.0-1_amd64.deb"; \
+		echo "     sudo dpkg -i ggshield_1.41.0-1_amd64.deb"; \
+		echo "   Or install on macOS:"; \
+		echo "     brew install ggshield"; \
+		exit 1; \
+	fi
 	poetry run pre-commit install
 	@echo "Pre-commit hooks installed successfully!"
 

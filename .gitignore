@@ -271,5 +271,6 @@ tmp/
 temp/
 .tmp/
 .temp/
+.cache_ggshield
 
 storage/
