@@ -22,6 +22,8 @@ from openfoundry_sandbox.files_api import router as files_api_router
 from openfoundry_sandbox.find_api import router as find_api_router
 from openfoundry_sandbox.pcb_api import RunRequest, run_process_core
 from openfoundry_sandbox.pcb_api import router as pcb_api_router
+from openfoundry_sandbox.secrets_api import SecretPayload, store_secret
+from openfoundry_sandbox.secrets_api import router as secrets_api_router
 
 # Configure logging
 logging.basicConfig(
@@ -49,6 +51,9 @@ class InitializeRequest(BaseModel):
     )
     streamlit_run_config: RunConfig | None = Field(
         None, description="Streamlit configuration for starting apps"
+    )
+    secrets: list[SecretPayload] | None = Field(
+        None, description="List of secrets to initialize in the container"
     )
 
 
@@ -135,6 +140,7 @@ app = FastAPI(lifespan=lifespan)
 app.include_router(pcb_api_router)
 app.include_router(find_api_router)
 app.include_router(files_api_router)
+app.include_router(secrets_api_router)
 
 
 @app.get("/health")
@@ -437,7 +443,12 @@ def visualize_app():
 
 
 async def _perform_initialization(request: InitializeRequest):
-    """Perform initialization including file templates and streamlit startup."""
+    """Perform initialization including file templates, secrets, and streamlit startup."""
+
+    # Handle secrets initialization if present
+    if request.secrets:
+        for secret in request.secrets:
+            store_secret(secret)
 
     # Handle streamlit startup if streamlit_run_config is present
     if request.streamlit_run_config:

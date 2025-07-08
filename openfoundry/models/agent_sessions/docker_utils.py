@@ -1,11 +1,20 @@
 import io
 import json
 import tarfile
+import tempfile
 from functools import cache
+from pathlib import Path
+from typing import NamedTuple
 
 import docker
 
 from openfoundry.logger import logger
+
+
+class SecretPayload(NamedTuple):
+    name: str
+    secrets: dict[str, str]
+    prefix: str | None = None
 
 
 @cache
@@ -27,6 +36,7 @@ def create_docker_container(
     command: str | None = None,
     working_dir: str | None = None,
     auto_remove: bool = False,
+    secrets: list[SecretPayload] | None = None,
 ) -> tuple[str, dict[str, int]]:
     """Create Docker container for an agent session.
 
@@ -38,6 +48,7 @@ def create_docker_container(
         command: Command to run in the container.
         working_dir: Working directory in the container.
         auto_remove: If True, the container will be removed after it stops.
+        secrets: List of SecretPayload to materialize into /etc/secrets in the container.
 
     Returns:
         Tuple of (container_id, port_mappings).
@@ -50,34 +61,22 @@ def create_docker_container(
     }
     logger.info(f"Environment variables: {env_vars}")
 
-    # Create and start the container
-    container = docker_client.containers.run(
+    # Step 1: Create the container (do not start it yet)
+    container = docker_client.containers.create(
         image=docker_config["image"],
         ports=docker_config["ports"],
-        detach=True,
         name=container_name,
         environment=env_vars,
         command=command,
         working_dir=working_dir,
         auto_remove=auto_remove,
+        detach=True,  # detach is ignored for create, but keep for clarity
     )
-    # Get container information
-    container.reload()  # Refresh container info to get port mapping
     container_id = container.id
     actual_container_name = container.name
-    logger.info(
-        f"Container ID: {container_id}, Container Name: {actual_container_name}"
-    )
+    logger.info(f"Container created. ID: {container_id}, Name: {actual_container_name}")
 
-    # Get assigned ports
-    port_mappings = {}
-    for container_port in docker_config["ports"]:
-        if container_port in container.ports:
-            host_port = container.ports[container_port][0]["HostPort"]
-            port_mappings[container_port] = int(host_port)
-            logger.info(f"Assigned port for {container_port}: {host_port}")
-
-    # Copy workspace files to container
+    # Step 2: Copy workspace files to container
     logger.info(f"Copying workspace files from {workspace_dir} to container /workspace")
     tar_stream = io.BytesIO()
     with tarfile.open(fileobj=tar_stream, mode="w") as t:
@@ -85,6 +84,35 @@ def create_docker_container(
     tar_stream.seek(0)
     container.put_archive("/workspace", tar_stream.read())
     logger.info("Successfully copied workspace files to container")
+
+    # If secrets are provided, materialize and copy them to /etc/secrets
+    if secrets:
+        logger.info("Materializing secrets and copying to container /etc/secrets")
+        with tempfile.TemporaryDirectory() as tmp_secrets_dir:
+            tmp_secrets_path = Path(tmp_secrets_dir)
+            materialize_secrets(secrets, base_dir=tmp_secrets_path)
+            # Tar up the secrets dir
+            tar_bytes = io.BytesIO()
+            with tarfile.open(fileobj=tar_bytes, mode="w") as t:
+                for item in tmp_secrets_path.rglob("*"):
+                    t.add(str(item), arcname=str(item.relative_to(tmp_secrets_path)))
+            tar_bytes.seek(0)
+            container.put_archive("/etc/secrets", tar_bytes.read())
+        logger.info("Successfully copied secrets to container /etc/secrets")
+
+    # Step 3: Start the container
+    logger.info(f"Starting Docker container {container_name}")
+    container.start()
+    logger.info(f"Docker container {container_name} started successfully")
+
+    # Get container information (reload to get port mapping)
+    container.reload()
+    port_mappings = {}
+    for container_port in docker_config["ports"]:
+        if container_port in container.ports and container.ports[container_port]:
+            host_port = container.ports[container_port][0]["HostPort"]
+            port_mappings[container_port] = int(host_port)
+            logger.info(f"Assigned port for {container_port}: {host_port}")
 
     # Return container information
     return container_id, port_mappings
@@ -247,3 +275,23 @@ def container_exists(container_id: str) -> bool:
         return True
     except docker.errors.NotFound:
         return False
+
+
+# --- Secret Materialization Logic ---
+def materialize_secrets(
+    secrets: list[SecretPayload], base_dir: Path = Path("/etc/secrets")
+):
+    """Materialize a list of SecretPayloads into the file system under /etc/secrets.
+
+    Each secret is a folder, each key is a file with the value as content.
+    """
+    for secret in secrets:
+        if secret.prefix:
+            secret_dir = base_dir / secret.prefix / secret.name
+        else:
+            secret_dir = base_dir / secret.name
+        secret_dir.mkdir(parents=True, exist_ok=True)
+        for k, v in secret.secrets.items():
+            key_path = secret_dir / k
+            with open(key_path, "w", encoding="utf-8") as f:
+                f.write(v)
