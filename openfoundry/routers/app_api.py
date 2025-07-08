@@ -203,7 +203,6 @@ def deploy_app(app_id: uuid.UUID, request: Request):
         initialization_data={},
         container_name=container_name,
         workspace_dir=workspace_dir,
-        auto_remove=True,
         working_dir="/workspace",
         command=command,
     )
@@ -216,5 +215,4 @@ def deploy_app(app_id: uuid.UUID, request: Request):
     logger.info(
         f"App {app_id} deployed successfully with container {container_id} on http://localhost:{app.deployment_port}"
     )
-
     return AppModel.model_validate(app)
