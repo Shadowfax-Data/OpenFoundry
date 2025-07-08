@@ -20,11 +20,17 @@ export function AppChat() {
     sessionId: string;
   }>();
   const [isSandboxReady, setIsSandboxReady] = useState(false);
-  const { messages, isStreaming, error, sendMessage, currentWriteFileInfo } =
-    useAppChat({
-      appId: appId!,
-      sessionId: sessionId!,
-    });
+  const {
+    messages,
+    isStreaming,
+    error,
+    currentWriteFileInfo,
+    saveWorkspace,
+    sendMessage,
+  } = useAppChat({
+    appId: appId!,
+    sessionId: sessionId!,
+  });
 
   const session = useAppSelector(selectAppAgentSessionById(appId!, sessionId!));
   const previewUrl = session?.app_port
@@ -137,6 +143,7 @@ export function AppChat() {
             appId={appId!}
             sessionId={sessionId!}
             currentWriteFileInfo={currentWriteFileInfo}
+            saveWorkspace={saveWorkspace}
           />
         )}
       </ResizablePanel>

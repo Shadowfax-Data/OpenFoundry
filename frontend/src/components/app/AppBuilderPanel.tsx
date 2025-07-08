@@ -1,15 +1,23 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Eye, Code, MoreVertical } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Eye, Code, Save, Rocket } from "lucide-react";
 import { AppPreview } from "@/components/app/AppPreview";
 import { CodePanel } from "@/components/code/CodePanel";
 import { CurrentWriteFileInfo } from "@/store/slices/chatSliceFactory";
+import { useAppDispatch } from "@/store";
+import { deployApp } from "@/store/slices/appsSlice";
 
 interface AppBuilderPanelProps {
   previewUrl?: string;
   appId: string;
   sessionId: string;
   currentWriteFileInfo: CurrentWriteFileInfo | null;
+  saveWorkspace: () => Promise<void>;
 }
 
 export const AppBuilderPanel: React.FC<AppBuilderPanelProps> = ({
@@ -17,8 +25,26 @@ export const AppBuilderPanel: React.FC<AppBuilderPanelProps> = ({
   appId,
   sessionId,
   currentWriteFileInfo,
+  saveWorkspace,
 }) => {
   const [activeTab, setActiveTab] = useState<"preview" | "code">("preview");
+  const [isDeploying, setIsDeploying] = useState(false);
+  const dispatch = useAppDispatch();
+
+  const handleSaveAndDeploy = async () => {
+    try {
+      // First save the workspace and wait for it to complete
+      await saveWorkspace();
+
+      // Then deploy the app
+      setIsDeploying(true);
+      await dispatch(deployApp(appId)).unwrap();
+    } catch (error) {
+      console.error("Failed to save and deploy:", error);
+    } finally {
+      setIsDeploying(false);
+    }
+  };
 
   return (
     <div className="h-full bg-background rounded-r-lg border-0 flex flex-col">
@@ -48,9 +74,37 @@ export const AppBuilderPanel: React.FC<AppBuilderPanelProps> = ({
               </Button>
             </div>
           </div>
-          <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
-            <MoreVertical className="h-3 w-3" />
-          </Button>
+          <div className="flex items-center gap-2">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 w-7 p-0"
+                  onClick={saveWorkspace}
+                >
+                  <Save className="h-3 w-3" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Save workspace</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 w-7 p-0"
+                  onClick={handleSaveAndDeploy}
+                  disabled={isDeploying}
+                >
+                  <Rocket className="h-3 w-3" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                {isDeploying ? "Deploying..." : "Save and deploy"}
+              </TooltipContent>
+            </Tooltip>
+          </div>
         </div>
       </div>
 

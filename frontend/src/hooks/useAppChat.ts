@@ -7,6 +7,7 @@ import {
 import { RootState } from "@/store/types";
 
 import { useBaseChat } from "./useBaseChat";
+import { toast } from "sonner";
 
 interface UseAppChatProps {
   appId: string;
@@ -92,11 +93,27 @@ export const useAppChat = ({ appId, sessionId }: UseAppChatProps) => {
     }
   };
 
+  const saveWorkspace = async () => {
+    const response = await fetch(
+      `/api/apps/${appId}/sessions/${sessionId}/save`,
+      {
+        method: "POST",
+      },
+    );
+    if (response.ok) {
+      toast.success("Workspace saved successfully.");
+    } else {
+      const errorData = await response.json();
+      toast.error(`Failed to save workspace: ${errorData.detail}`);
+    }
+  };
+
   return {
     ...chatProps,
     appPreviewUrl,
     appPreviewToken,
     deployApp,
     createAgentSession,
+    saveWorkspace,
   };
 };

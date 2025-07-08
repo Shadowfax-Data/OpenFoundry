@@ -38,7 +38,8 @@ class AppAgentSession(AgentSessionBase):
                         "--server.enableCORS false "
                         "--server.enableXsrfProtection false "
                         "--browser.gatherUsageStats false "
-                        "--server.runOnSave true"
+                        "--server.runOnSave true "
+                        "--client.toolbarMode viewer "
                     ),
                     "cwd": "/workspace",
                 },

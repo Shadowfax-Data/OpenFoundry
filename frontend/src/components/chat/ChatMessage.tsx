@@ -19,7 +19,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
       {/* Avatar */}
       <div className="flex-shrink-0 mt-0.5">
         <div
-          className={`w-8 h-8 rounded-full flex items-center justify-center ${
+          className={`w-5 h-5 rounded-full flex items-center justify-center ${
             isUser
               ? "bg-primary text-primary-foreground"
               : "bg-muted text-muted-foreground"
