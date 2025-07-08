@@ -25,6 +25,8 @@ install:
 	poetry install --with dev
 	@$(MAKE) install-frontend
 	@$(MAKE) setup-precommit
+	@echo "Installing Python dependencies for sandbox with Poetry..."
+	cd sandbox && poetry install --with dev
 
 # Install frontend dependencies
 install-frontend:
