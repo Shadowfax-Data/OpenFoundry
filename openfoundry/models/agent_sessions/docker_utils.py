@@ -1,11 +1,20 @@
 import io
 import json
 import tarfile
+import tempfile
 from functools import cache
+from pathlib import Path
+from typing import NamedTuple
 
 import docker
 
 from openfoundry.logger import logger
+
+
+class SecretPayload(NamedTuple):
+    name: str
+    secrets: dict[str, str]
+    prefix: str | None = None
 
 
 @cache
@@ -27,6 +36,7 @@ def create_docker_container(
     command: str | None = None,
     working_dir: str | None = None,
     auto_remove: bool = False,
+    secrets: list[SecretPayload] | None = None,
 ) -> tuple[str, dict[str, int]]:
     """Create Docker container for an agent session.
 
@@ -38,6 +48,7 @@ def create_docker_container(
         command: Command to run in the container.
         working_dir: Working directory in the container.
         auto_remove: If True, the container will be removed after it stops.
+        secrets: List of SecretPayload to materialize into /etc/secrets in the container.
 
     Returns:
         Tuple of (container_id, port_mappings).
@@ -85,6 +96,21 @@ def create_docker_container(
     tar_stream.seek(0)
     container.put_archive("/workspace", tar_stream.read())
     logger.info("Successfully copied workspace files to container")
+
+    # If secrets are provided, materialize and copy them to /etc/secrets
+    if secrets:
+        logger.info("Materializing secrets and copying to container /etc/secrets")
+        with tempfile.TemporaryDirectory() as tmp_secrets_dir:
+            tmp_secrets_path = Path(tmp_secrets_dir)
+            materialize_secrets(secrets, base_dir=tmp_secrets_path)
+            # Tar up the secrets dir
+            tar_bytes = io.BytesIO()
+            with tarfile.open(fileobj=tar_bytes, mode="w") as t:
+                for item in tmp_secrets_path.rglob("*"):
+                    t.add(str(item), arcname=str(item.relative_to(tmp_secrets_path)))
+            tar_bytes.seek(0)
+            container.put_archive("/etc/secrets", tar_bytes.read())
+        logger.info("Successfully copied secrets to container /etc/secrets")
 
     # Return container information
     return container_id, port_mappings
@@ -247,3 +273,23 @@ def container_exists(container_id: str) -> bool:
         return True
     except docker.errors.NotFound:
         return False
+
+
+# --- Secret Materialization Logic ---
+def materialize_secrets(
+    secrets: list[SecretPayload], base_dir: Path = Path("/etc/secrets")
+):
+    """Materialize a list of SecretPayloads into the file system under /etc/secrets.
+
+    Each secret is a folder, each key is a file with the value as content.
+    """
+    for secret in secrets:
+        if secret.prefix:
+            secret_dir = base_dir / secret.prefix / secret.name
+        else:
+            secret_dir = base_dir / secret.name
+        secret_dir.mkdir(parents=True, exist_ok=True)
+        for k, v in secret.secrets.items():
+            key_path = secret_dir / k
+            with open(key_path, "w", encoding="utf-8") as f:
+                f.write(v)
