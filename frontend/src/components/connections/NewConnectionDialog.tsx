@@ -7,7 +7,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { IconBrandSnowflake } from "@tabler/icons-react";
+import { IconBrandSnowflake, IconBrandDatabricks } from "@tabler/icons-react";
 
 interface NewConnectionDialogProps {
   children: React.ReactNode;
@@ -32,11 +32,25 @@ export function NewConnectionDialog({ children }: NewConnectionDialogProps) {
             onClick={() => navigate("/connections/snowflake/new")}
           >
             <div className="flex items-center gap-3">
-              <IconBrandSnowflake />
+              <IconBrandSnowflake className="text-blue-500" />
               <div>
                 <span className="font-semibold">Snowflake</span>
                 <p className="text-sm text-muted-foreground">
                   Connect to a Snowflake data warehouse.
+                </p>
+              </div>
+            </div>
+          </div>
+          <div
+            className="p-4 border rounded-md cursor-pointer hover:bg-muted"
+            onClick={() => navigate("/connections/databricks/new")}
+          >
+            <div className="flex items-center gap-3">
+              <IconBrandDatabricks className="text-orange-500" />
+              <div>
+                <span className="font-semibold">Databricks</span>
+                <p className="text-sm text-muted-foreground">
+                  Connect to a Databricks SQL warehouse.
                 </p>
               </div>
             </div>

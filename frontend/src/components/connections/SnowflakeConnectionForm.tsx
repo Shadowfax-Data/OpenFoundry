@@ -51,96 +51,109 @@ export function SnowflakeConnectionForm() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-4">
-        <div className="grid grid-cols-4 items-center gap-4">
-          <Label htmlFor="name" className="text-right">
-            Name
-          </Label>
+    <div className="space-y-8">
+      <div className="space-y-6">
+        <div className="space-y-1.5">
+          <Label htmlFor="name">Name</Label>
           <Input
             id="name"
             value={snowflakeForm.name}
             onChange={handleInputChange}
-            className="col-span-3"
+            placeholder="My Snowflake Warehouse"
           />
+          <p className="text-xs text-muted-foreground">
+            A name to identify this warehouse
+          </p>
         </div>
-        <div className="grid grid-cols-4 items-center gap-4">
-          <Label htmlFor="account" className="text-right">
-            Account
-          </Label>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="account">Account</Label>
           <Input
             id="account"
             value={snowflakeForm.account}
             onChange={handleInputChange}
-            className="col-span-3"
+            placeholder="org-account"
           />
+          <p className="text-xs text-muted-foreground">
+            Your Snowflake account name
+          </p>
         </div>
-        <div className="grid grid-cols-4 items-center gap-4">
-          <Label htmlFor="user" className="text-right">
-            User
-          </Label>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="user">User</Label>
           <Input
             id="user"
             value={snowflakeForm.user}
             onChange={handleInputChange}
-            className="col-span-3"
+            placeholder="SNOWFLAKE_USER"
           />
+          <p className="text-xs text-muted-foreground">
+            Your Snowflake username
+          </p>
         </div>
-        <div className="grid grid-cols-4 items-center gap-4">
-          <Label htmlFor="role" className="text-right">
-            Role
-          </Label>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="role">Role</Label>
           <Input
             id="role"
             value={snowflakeForm.role}
             onChange={handleInputChange}
-            className="col-span-3"
+            placeholder="ACCOUNTADMIN"
           />
+          <p className="text-xs text-muted-foreground">Your Snowflake role</p>
         </div>
-        <div className="grid grid-cols-4 items-center gap-4">
-          <Label htmlFor="database" className="text-right">
-            Database
-          </Label>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="database">Database</Label>
           <Input
             id="database"
             value={snowflakeForm.database}
             onChange={handleInputChange}
-            className="col-span-3"
+            placeholder="MY_DATABASE"
           />
+          <p className="text-xs text-muted-foreground">
+            Your Snowflake database name
+          </p>
         </div>
-        <div className="grid grid-cols-4 items-center gap-4">
-          <Label htmlFor="warehouse" className="text-right">
-            Warehouse
-          </Label>
-          <Input
-            id="warehouse"
-            value={snowflakeForm.warehouse}
-            onChange={handleInputChange}
-            className="col-span-3"
-          />
-        </div>
-        <div className="grid grid-cols-4 items-center gap-4">
-          <Label htmlFor="schema" className="text-right">
-            Schema
-          </Label>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="schema">Schema</Label>
           <Input
             id="schema"
             value={snowflakeForm.schema}
             onChange={handleInputChange}
-            className="col-span-3"
+            placeholder="PUBLIC"
           />
+          <p className="text-xs text-muted-foreground">
+            Your Snowflake schema name
+          </p>
         </div>
-        <div className="grid grid-cols-4 items-start gap-4">
-          <Label htmlFor="private_key" className="text-right pt-2">
-            Private Key
-          </Label>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="warehouse">Warehouse</Label>
+          <Input
+            id="warehouse"
+            value={snowflakeForm.warehouse}
+            onChange={handleInputChange}
+            placeholder="COMPUTE_WH"
+          />
+          <p className="text-xs text-muted-foreground">
+            Your Snowflake warehouse name
+          </p>
+        </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="private_key">Private Key</Label>
           <textarea
             id="private_key"
             value={snowflakeForm.private_key}
             onChange={handleInputChange}
-            className="col-span-3 border rounded-md p-2 h-32 text-sm bg-background text-foreground placeholder:text-muted-foreground focus:border-gray-300 focus:outline-none focus:ring-0 w-full"
+            className="border rounded-md p-2 h-32 text-sm bg-background text-foreground placeholder:text-muted-foreground focus:border-gray-300 focus:outline-none focus:ring-0 w-full"
             placeholder="Paste your private key here..."
           />
+          <p className="text-xs text-muted-foreground">
+            Private key for key-pair authentication
+          </p>
         </div>
       </div>
       <div className="flex justify-end gap-2">
@@ -148,7 +161,7 @@ export function SnowflakeConnectionForm() {
           Cancel
         </Button>
         <Button onClick={handleSaveConnection} disabled={isSaving}>
-          {isSaving ? "Saving..." : "Save Connection"}
+          {isSaving ? "Saving..." : "Create Snowflake Connection"}
         </Button>
       </div>
     </div>
