@@ -13,6 +13,7 @@ import {
   fetchAppAgentSessions,
 } from "@/store/slices/appAgentSessionsSlice";
 import { AppBuilderPanel } from "@/components/app/AppBuilderPanel";
+import { toast } from "sonner";
 
 export function AppChat() {
   const { appId, sessionId } = useParams<{
@@ -86,6 +87,17 @@ export function AppChat() {
     sendMessage(message);
   };
 
+  const handleSaveWorkspace = async () => {
+    try {
+      await saveWorkspace();
+      toast.success("Workspace saved successfully.");
+    } catch (error) {
+      toast.error(
+        `Failed to save workspace: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
+    }
+  };
+
   // Show loading state while chat history is being fetched
   if (messages.length === 0 && !error) {
     return (
@@ -143,7 +155,7 @@ export function AppChat() {
             appId={appId!}
             sessionId={sessionId!}
             currentWriteFileInfo={currentWriteFileInfo}
-            saveWorkspace={saveWorkspace}
+            saveWorkspace={handleSaveWorkspace}
           />
         )}
       </ResizablePanel>
