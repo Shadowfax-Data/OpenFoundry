@@ -4,6 +4,11 @@ DOCKER_FILE := Dockerfile
 SANDBOX_IMAGE_NAME := openfoundry-sandbox:latest
 SANDBOX_DOCKER_FILE := sandbox/Dockerfile
 
+# Colors
+GREEN=$(shell tput -Txterm setaf 2)
+YELLOW=$(shell tput -Txterm setaf 3)
+RESET=$(shell tput -Txterm sgr0)
+
 # Build the Docker image
 docker-images:
 	@echo "Building Docker image: $(IMAGE_NAME)"
@@ -78,4 +83,16 @@ lint-frontend:
 	@echo "Linting and formatting frontend code..."
 	cd frontend && npm run lint:fix
 
-.PHONY: start-backend install install-frontend setup-precommit lint format update-hooks start-frontend build-frontend lint-frontend docker-sandbox-images
+# Run development server for backend and frontend
+run-openfoundry:
+	@echo "$(YELLOW)Running alembic database migrations...$(RESET)"
+	@poetry run alembic upgrade head
+	@$(MAKE) build-frontend
+	@echo "$(YELLOW)Starting openfoundry backend...$(RESET)"
+	@poetry run uvicorn openfoundry.server:app --host 0.0.0.0 --port 8000 --reload --reload-dir="openfoundry" &
+	@echo "$(YELLOW)Waiting for the backend to start...$(RESET)"
+	@until nc -z localhost 8000; do sleep 0.1; done
+	@echo "$(GREEN)Backend started successfully.$(RESET)"
+	@$(MAKE) start-frontend
+
+.PHONY: start-backend install install-frontend setup-precommit lint format update-hooks start-frontend build-frontend lint-frontend docker-sandbox-images run-openfoundry
