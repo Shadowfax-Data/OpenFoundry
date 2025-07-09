@@ -5,6 +5,7 @@ import {
   ListFilesResponse,
   WriteFileRequest,
   WriteFileResponse,
+  UploadFileResponse,
 } from "@/types/files";
 
 const API_BASE = "/api/apps";
@@ -110,6 +111,36 @@ export const useAgentSessionFiles = ({
     [appId, sessionId],
   );
 
+  const uploadFile = useCallback(
+    async (file: File, path: string): Promise<UploadFileResponse> => {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const params = new URLSearchParams();
+      params.append("path", path);
+
+      const response = await fetch(
+        `${API_BASE}/${appId}/sessions/${sessionId}/files/upload?${params}`,
+        {
+          method: "POST",
+          body: formData,
+        },
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(
+          `Failed to upload file: ${response.statusText} - ${
+            errorData.detail || "Unknown error"
+          }`,
+        );
+      }
+
+      return response.json();
+    },
+    [appId, sessionId],
+  );
+
   const loadFiles = useCallback(
     async (path?: string) => {
       const targetPath = path || currentPath;
@@ -198,6 +229,7 @@ export const useAgentSessionFiles = ({
     loadFolderContents,
     readFile: readFileHandler,
     writeFile,
+    uploadFile,
     refreshFiles,
   };
 };
