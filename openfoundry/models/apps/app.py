@@ -51,9 +51,6 @@ class App(Base):
         # Create directories (including parent directories)
         os.makedirs(app_dir, exist_ok=True)
 
-        # Create the app.py file inside the files directory
-        app_file = os.path.join(app_dir, "app.py")
-
         # Extract available connection types from the app's connections
         available_connection_types = set()
         if self.connections:
@@ -61,19 +58,31 @@ class App(Base):
 
         current_dir = Path(__file__).parent
 
-        # Load and render the Jinja2 template
-        template_file_path = os.path.join(current_dir, "app.py.j2")
-        with open(template_file_path, "r") as f:
-            app_content_template_str = f.read()
+        # Render and write utils.py
+        utils_template_path = os.path.join(current_dir, "utils.py.j2")
+        with open(utils_template_path, "r") as f:
+            utils_template_str = f.read()
 
-        app_template = jinja2.Template(app_content_template_str)
-        rendered_content = app_template.render(
+        utils_template = jinja2.Template(utils_template_str)
+        rendered_utils_content = utils_template.render(
             available_connection_types=available_connection_types
         )
+        utils_file = os.path.join(app_dir, "utils.py")
+        with open(utils_file, "w") as f:
+            f.write(rendered_utils_content)
 
-        # Write the rendered content to app.py
+        # Render and write app.py
+        app_template_path = os.path.join(current_dir, "app.py.j2")
+        with open(app_template_path, "r") as f:
+            app_template_str = f.read()
+
+        app_template = jinja2.Template(app_template_str)
+        rendered_app_content = app_template.render(
+            available_connection_types=available_connection_types
+        )
+        app_file = os.path.join(app_dir, "app.py")
         with open(app_file, "w") as f:
-            f.write(rendered_content)
+            f.write(rendered_app_content)
 
     def get_workspace_directory(self):
         """Get the workspace directory for this app."""

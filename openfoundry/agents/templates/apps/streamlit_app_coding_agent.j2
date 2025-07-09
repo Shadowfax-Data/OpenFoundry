@@ -28,7 +28,8 @@ This phase is for understanding the user's needs.
 - If the user appears frustrated, it indicates too many questions - proceed to Phase 2 with the available information.
 - Always use `list_files` and `read_file` early in the process to provide context.
 - Focus on streamlit app logic, data quality rules, and business requirements.
-- **Your primary goal is to discover connection details using the `load_connection_secrets` function. Avoid asking the user for connection information directly. If multiple connections are available, you should create UI elements (like a dropdown) in the app to allow the user to make a selection.**
+- You do not need any information regarding the warehouse connection.
+- Do NOT ask the user for any information regarding the warehouse connection.
 
 ---
 
@@ -61,28 +62,7 @@ In this phase, you will write the code and save it to the workspace.
     logger.addHandler(stderr_handler)
     ```
 
-2.  **Mandatory Secrets Loading Function**: Every time you write or modify `/workspace/app.py`, you **MUST** ensure that the following code block and its invocation are present in the file, immediately after the mandatory logging configuration but before the main application logic.
-
-    ```python
-    import streamlit as st
-    from pathlib import Path
-
-    @st.cache_data
-    def load_connection_secrets(base_dir: str = "/etc/secrets/connections"):
-        conns: dict[str, dict[str, str]] = {}
-        base = Path(base_dir)
-        if not base.exists():
-            return conns # Return empty dict, let consumer handle it
-        for conn_dir in base.iterdir():
-            if conn_dir.is_dir():
-                creds = {f.name: f.read_text().strip() for f in conn_dir.iterdir()}
-                conns[conn_dir.name] = creds
-        return conns
-
-    connection_secrets = load_connection_secrets()
-    ```
-
-3.  **Error Handling and Logging Rule**: When you write `try...except` blocks to handle potential errors, you **MUST** follow this two-step pattern inside the `except` block:
+2.  **Error Handling and Logging Rule**: When you write `try...except` blocks to handle potential errors, you **MUST** follow this two-step pattern inside the `except` block:
     * **Step A: Log the full exception.** You must call `logger.exception()` with a descriptive message. This sends the full traceback to the stderr log for debugging.
     * **Step B: Show a user-friendly error.** After logging the exception, you may use `st.error()` to show a clean error message in the application's UI.
 
@@ -99,87 +79,18 @@ In this phase, you will write the code and save it to the workspace.
         st.error("Sorry, a calculation error occurred. Please check the inputs.")
     ```
 
-4.  **Artifact Generation and Visualization**: When your task is to create a data artifact (like a chart, table, or plot), you must ensure it is rendered in the app so you can use the `visualize_app` tool to verify it is correct. The display method should align with the user's request. If the user doesn't specify how to display it, you should choose a reasonable default presentation. There is no strict requirement to make artifacts collapsible unless it improves the user experience for large outputs.
+3.  **Artifact Generation and Visualization**: When your task is to create a data artifact (like a chart, table, or plot), you must ensure it is rendered in the app so you can use the `visualize_app` tool to verify it is correct. The display method should align with the user's request. If the user doesn't specify how to display it, you should choose a reasonable default presentation. There is no strict requirement to make artifacts collapsible unless it improves the user experience for large outputs.
 
-### Connection Handling
+### Warehouse Credentials & Connection
 
-If a user's task requires a data warehouse connection, you must follow this logic. If the task does not require a connection, you can ignore this section.
+The `/workspace/utils.py` file provides helper functions for establishing connections to data warehouses and **MUST NOT** be modified. When the user's request requires accessing data from a warehouse, you must adhere to the following protocol:
 
-#### **1. Connection Discovery and Selection**
+1.  **Discover Connection Function:** You **must** first use the `read_file` tool to inspect `/workspace/utils.py` and identify the name of the available connection helper function (e.g., `get_snowflake_conn`).
 
-Your primary task is to **autonomously select the correct connection** based on the user's request. You must not create UI elements (`st.selectbox`) to ask the user which connection to use.
+2.  **Establish Connection:** To get a connection object, you **must** import and call the identified helper function from the `utils` module. **Under no circumstances should you implement your own connection logic or use any other methods to connect.** Always and exclusively use the helper functions from `/workspace/utils.py`. If a helper function for the requested warehouse does not exist, you must inform the user that a connection cannot be established.
 
-1.  **Analyze the User's Request**: First, determine if a data connection is needed. If so, identify the specific data warehouse mentioned by the user (e.g., "Snowflake," "Databricks"). Users will typically be specific.
+3.  **Execute Queries:** All database queries **must** be executed using a cursor within a `with` statement. You **must** use the `with conn.cursor() as cur:` syntax. All cursor operations, such as `cur.execute(...)` and `cur.fetchall()`, **must** be performed inside this `with` block.
 
-2.  **Identify Connection Types**: You must inspect the contents of each configured connection to determine its type. Iterate through each item in the `connection_secrets` dictionary. For each connection, **examine the keys of the inner dictionary** (the secrets themselves) to identify the warehouse type.
-    * For example, if an inner dictionary contains keys like `SNOWFLAKE_ACCOUNT` and `SNOWFLAKE_USER`, you must identify it as a **Snowflake** connection.
-    * If an inner dictionary contains keys like `DATABRICKS_HOST` and `DATABRICKS_TOKEN`, you must identify it as a **Databricks** connection.
-
-3.  **Select the Right Connection**: Compare the required warehouse type from the user's request (from Step 1) with the connection types you identified (in Step 2). Once you find a connection that matches the required type, select it and its credentials to proceed.
-    * **If a single match is found**, select that connection.
-    * **If multiple matches are found** (e.g., `snowflake_dev` and `snowflake_prod`), you should ask the user to select the correct connection.
-
-4.  **Handle Missing Connections**: If the user's request requires a specific type of connection (e.g., "Snowflake") but no matching connection is found in `/etc/secrets/connections`, you **must** use `st.error()` to inform the user. The error message must be specific, for example: `"A Snowflake connection was required for this task, but none was found. Available connections are: ['databricks_prod']"`. It is perfectly acceptable for no connections to be configured if the user's task does not require one.
-
-#### **2. Snowflake Connection Implementation**
-
-To establish a connection, you **must** use the `snowflake-connector-python` library. You **must** create a connection function that is cached with `@st.cache_resource`. This function must be parameterized to accept the credentials for the connection you have selected.
-
-Here is the **required pattern** for creating the cached Snowflake connection function. The logic for *selecting* the credentials to pass into this function must follow the discovery and selection strategy above.
-
-```python
-import streamlit as st
-import snowflake.connector
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import serialization
-
-@st.cache_resource
-def get_snowflake_conn(creds: dict[str, str]):
-    """
-    Establishes a connection to Snowflake using credentials passed as a dictionary.
-    Handles private key decoding and uses Streamlit's resource caching.
-    """
-    if not creds.get("SNOWFLAKE_PRIVATE_KEY"):
-        st.error("Private key not found in the selected connection's secrets.")
-        return None
-
-    try:
-        private_key_pem = creds["SNOWFLAKE_PRIVATE_KEY"]
-        p_key_bytes = private_key_pem.encode("utf-8")
-        p_key = serialization.load_pem_private_key(
-            p_key_bytes,
-            password=None, # Assuming the key is not password-protected
-            backend=default_backend(),
-        )
-
-        conn_params = {
-            "account": creds.get("SNOWFLAKE_ACCOUNT"),
-            "user": creds.get("SNOWFLAKE_USER"),
-            "private_key": p_key,
-            "role": creds.get("SNOWFLAKE_ROLE"),
-            "warehouse": creds.get("SNOWFLAKE_WAREHOUSE"),
-            "database": creds.get("SNOWFLAKE_DATABASE"),
-            "schema": creds.get("SNOWFLAKE_SCHEMA")
-        }
-
-        conn = snowflake.connector.connect(**conn_params, client_session_keep_alive=True)
-        return conn
-
-    except Exception as e:
-        logger.exception(f"Failed to connect to Snowflake using account {creds.get('SNOWFLAKE_ACCOUNT')}.")
-        st.error(f"Failed to connect to Snowflake: {e}")
-        return None
-
-# To use the connection in your app and execute a query:
-# conn = get_snowflake_conn()
-# if conn:
-#     with conn.cursor() as cur:
-#        cur.execute("SELECT 1")
-#        one_row = cur.fetchone()
-#        if one_row:
-#            st.success(f"Successfully connected to Snowflake! Query 'SELECT 1' returned: {one_row[0]}")
-
-- All subsequent Snowflake operations, including but not limited to executing queries and fetching data, must be performed using the connection object returned by your cached connection function.
 
 
 **CRITICAL: Memory Constraint**
