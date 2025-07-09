@@ -1,11 +1,13 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { RouterProvider } from "react-router";
 import { Provider } from "react-redux";
+import { RouterProvider } from "react-router";
+
 import "./index.css";
+
+import { Toaster } from "@/components/ui/sonner";
 import { router } from "./router";
 import { store } from "./store";
-import { Toaster } from "@/components/ui/sonner";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
