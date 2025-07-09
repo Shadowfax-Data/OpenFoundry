@@ -1,10 +1,8 @@
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Copy, Download, File } from "lucide-react";
 import { ReadFileResponse } from "@/types/files";
-import hljs from "highlight.js";
-import "highlight.js/styles/github.css";
+import Editor from "@monaco-editor/react";
 
 interface FileEditorProps {
   selectedFile: ReadFileResponse | null;
@@ -68,54 +66,6 @@ export function FileEditor({ selectedFile, initialPath }: FileEditorProps) {
         return "bash";
       default:
         return "text";
-    }
-  };
-
-  const renderLineNumbers = (content: string) => {
-    const lines = content.split("\n");
-    return lines.map((_, index) => (
-      <div
-        key={index}
-        className="text-right text-xs text-muted-foreground pr-2 select-none leading-relaxed"
-        style={{ minWidth: "3rem", lineHeight: "1.5" }}
-      >
-        {index + 1}
-      </div>
-    ));
-  };
-
-  const renderCodeLines = (content: string, language: string) => {
-    try {
-      // Use highlight.js to highlight the code
-      // If language is not supported, hljs will auto-detect or fallback
-      const highlighted =
-        language === "text"
-          ? hljs.highlightAuto(content)
-          : hljs.highlight(content, { language });
-
-      return (
-        <div
-          className="text-xs font-mono whitespace-pre hljs leading-relaxed bg-transparent"
-          style={{ lineHeight: "1.5" }}
-          dangerouslySetInnerHTML={{ __html: highlighted.value }}
-        />
-      );
-    } catch (error) {
-      // Fallback to plain text if highlighting fails
-      console.warn("Code highlighting failed:", error);
-      const lines = content.split("\n");
-      return (
-        <div>
-          {lines.map((line, index) => (
-            <div
-              key={index}
-              className="text-xs font-mono whitespace-pre leading-relaxed"
-            >
-              {line || "\u00A0"} {/* Non-breaking space for empty lines */}
-            </div>
-          ))}
-        </div>
-      );
     }
   };
 
@@ -189,20 +139,29 @@ export function FileEditor({ selectedFile, initialPath }: FileEditorProps) {
         </div>
       </div>
 
-      {/* Content */}
-      <ScrollArea className="flex-1">
-        <div className="flex min-h-full">
-          {/* Line numbers */}
-          <div className="bg-muted/30 border-r py-2 sticky left-0 z-10">
-            {renderLineNumbers(selectedFile.content)}
-          </div>
-
-          {/* Code content */}
-          <div className="flex-1 p-2 overflow-x-auto min-h-full">
-            {renderCodeLines(selectedFile.content, language)}
-          </div>
-        </div>
-      </ScrollArea>
+      {/* Monaco Editor */}
+      <div className="flex-1">
+        <Editor
+          height="100%"
+          language={language === "text" ? "plaintext" : language}
+          value={selectedFile.content}
+          theme="vs"
+          options={{
+            readOnly: true,
+            minimap: { enabled: false },
+            scrollBeyondLastLine: false,
+            fontSize: 12,
+            lineNumbers: "on",
+            wordWrap: "on",
+            folding: true,
+            lineDecorationsWidth: 10,
+            lineNumbersMinChars: 3,
+            renderLineHighlight: "all",
+            selectOnLineNumbers: true,
+            automaticLayout: true,
+          }}
+        />
+      </div>
 
       {/* Footer info */}
       <div className="h-6 border-t px-3 py-1 text-xs text-muted-foreground bg-muted/30 flex items-center">
