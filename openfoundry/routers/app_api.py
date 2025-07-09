@@ -13,8 +13,6 @@ from openfoundry.models.agent_sessions.docker_utils import (
     SecretPayload,
     container_exists,
     create_docker_container,
-    remove_docker_container,
-    stop_docker_container,
 )
 from openfoundry.models.apps import App
 from openfoundry.models.connections import ALL_CONNECTION_CLASSES, Connection
@@ -159,6 +157,9 @@ def delete_app(app_id: uuid.UUID, request: Request):
         # Update session status to STOPPED
         app_agent_session.agent_session.status = AgentSessionStatus.STOPPED
 
+    # Stop and remove docker container for app deployment if exists
+    app.remove_deployment_in_docker()
+
     # Soft delete the app
     app.soft_delete()
     db.commit()
@@ -189,18 +190,7 @@ def deploy_app(app_id: uuid.UUID, request: Request):
     container_name = app.get_container_name()
 
     # Check if there's already a deployment and clean up existing container
-    if app.deployment_port:
-        logger.info(
-            f"App {app_id} already has deployment_port {app.deployment_port}, cleaning up existing container"
-        )
-
-        # Stop the existing container
-        stop_docker_container(container_name, ignore_not_found=True)
-        logger.info(f"Stopped existing container {container_name}")
-
-        # Remove the existing container
-        remove_docker_container(container_name, ignore_not_found=True)
-        logger.info(f"Removed existing container {container_name}")
+    app.remove_deployment_in_docker()
 
     secrets: list[SecretPayload] = []
     # Process app connections to create secrets
