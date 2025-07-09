@@ -12,6 +12,11 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from openfoundry.config import STORAGE_DIR
 from openfoundry.database import Base
+from openfoundry.logger import logger
+from openfoundry.models.agent_sessions.docker_utils import (
+    remove_docker_container,
+    stop_docker_container,
+)
 from openfoundry.models.apps.app_connection import app_connection
 
 if TYPE_CHECKING:
@@ -91,3 +96,19 @@ class App(Base):
     def get_container_name(self):
         """Generate a container name based on the app's ID."""
         return f"app-{self.id}"
+
+    def remove_deployment_in_docker(self):
+        """Remove the Docker container associated with this app deployment."""
+        if self.deployment_port:
+            container_name = self.get_container_name()
+            logger.info(
+                f"Cleaning up existing container for app {self.id} with deployment port {self.deployment_port}"
+            )
+
+            # Stop the existing container
+            stop_docker_container(container_name, ignore_not_found=True)
+            logger.info(f"Stopped existing container {container_name}")
+
+            # Remove the existing container
+            remove_docker_container(container_name, ignore_not_found=True)
+            logger.info(f"Removed existing container {container_name}")
