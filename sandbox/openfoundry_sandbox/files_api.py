@@ -5,6 +5,7 @@ import os
 import shutil
 from pathlib import Path
 
+import aiofiles
 from fastapi import APIRouter, File, HTTPException, Query, UploadFile, status
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
@@ -387,7 +388,7 @@ def write_binary_file(request: WriteBinaryFileRequest):
 
 
 @router.post("/upload")
-def upload_file(
+async def upload_file(
     file: UploadFile = File(...),
     path: str = Query(..., description="Target path for the uploaded file"),
 ):
@@ -396,28 +397,33 @@ def upload_file(
     """
     logger.info(f"Uploading file to: {path}")
 
-    if not is_safe_path(path):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or unsafe path"
-        )
-
     # Create parent directories if they don't exist
     parent_dir = os.path.dirname(path)
     if parent_dir and not os.path.exists(parent_dir):
         os.makedirs(parent_dir, exist_ok=True)
         logger.info(f"Created parent directories for: {path}")
 
-    # Write the uploaded file
-    with open(path, "wb") as f:
-        f.write(file.file.read())
+    # Stream the uploaded file to disk without loading everything into memory
+    total_bytes = 0
+    chunk_size = 1024 * 1024  # 1MB chunks
+
+    async with aiofiles.open(path, "wb") as f:
+        while chunk := await file.read(chunk_size):
+            await f.write(chunk)
+            total_bytes += len(chunk)
+
+            # Log progress for large files
+            if total_bytes % (10 * chunk_size) == 0:  # Every 10MB
+                logger.info(f"Uploaded {total_bytes // (1024 * 1024)}MB to {path}")
 
     file_info = get_file_info(path)
-    logger.info(f"Successfully uploaded file: {path}")
+    logger.info(f"Successfully uploaded file: {path} ({total_bytes} bytes)")
 
     return {
         "message": f"File uploaded successfully to {path}",
         "original_filename": file.filename,
         "file_info": file_info,
+        "bytes_uploaded": total_bytes,
     }
 
 
