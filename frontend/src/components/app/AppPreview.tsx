@@ -123,7 +123,7 @@ export const AppPreview: React.FC<AppPreviewProps> = ({
             key={iframeKey}
             title="App Web Preview"
             src={previewUrl}
-            className="w-full h-full border-0 bg-white"
+            className="w-full h-full bg-white"
             sandbox="allow-scripts allow-same-origin"
           />
         )}
