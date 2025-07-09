@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import streamlit as st
+import utils
 
 st.title('Hello World Streamlit App')
 
@@ -20,3 +21,13 @@ st.line_chart(chart_data)
 if st.button('Click me!'):
     st.write('Button clicked!')
     st.balloons()
+
+{% if 'snowflake' in available_connection_types %}
+st.subheader("Snowflake Connection")
+with st.spinner("Connecting to Snowflake..."):
+    snowflake_conn = utils.get_snowflake_conn()
+    if snowflake_conn:
+        st.write("Snowflake connection successful.")
+    else:
+        st.write("Snowflake connection failed.")
+{% endif %}
