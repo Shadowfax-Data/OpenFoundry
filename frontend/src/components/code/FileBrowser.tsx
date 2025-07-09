@@ -9,6 +9,7 @@ import {
   Upload,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { DirectoryEntry, ReadFileResponse } from "@/types/files";
 
 interface FileBrowserProps {
@@ -302,52 +303,54 @@ export function FileBrowser({
 
   return (
     <div
-      className={`h-full flex flex-col overflow-auto ${isRootDragActive ? "bg-blue-50 border-2 border-blue-300 border-dashed" : ""}`}
+      className={`h-full flex flex-col ${isRootDragActive ? "bg-blue-50 border-2 border-blue-300 border-dashed" : ""}`}
       {...getRootProps()}
     >
-      <div className="py-2">
-        {isRootDragActive && (
-          <div className="text-center text-blue-600 py-4">
-            <Upload className="h-8 w-8 mx-auto mb-2" />
-            <p className="text-sm font-medium">Drop files here to upload</p>
-          </div>
-        )}
-        {error ? (
-          <div className="text-center text-destructive py-8">
-            <File className="h-8 w-8 mx-auto mb-2" />
-            <p className="text-sm">Error loading files</p>
-            <p className="text-xs">{error}</p>
-            <Button
-              variant="outline"
-              size="sm"
-              className="mt-2"
-              onClick={onRefresh}
-            >
-              Try again
-            </Button>
-          </div>
-        ) : loading ? (
-          <div className="text-center text-muted-foreground py-8">
-            <RefreshCw className="h-8 w-8 mx-auto mb-2 animate-spin" />
-            <p className="text-sm">Loading files...</p>
-          </div>
-        ) : fileTree.length > 0 ? (
-          fileTree.map((node) => renderFileNode(node))
-        ) : (
-          <div className="text-center text-muted-foreground py-8">
-            <File className="h-8 w-8 mx-auto mb-2" />
-            <p className="text-sm">No files to display</p>
-            <p className="text-xs">
-              Files will appear here when the AI generates code
-            </p>
-            {isRootDragActive && (
-              <p className="text-xs text-blue-600 mt-2">
-                Drop files to get started
+      <ScrollArea className="h-full">
+        <div className="py-2">
+          {isRootDragActive && (
+            <div className="text-center text-blue-600 py-4">
+              <Upload className="h-8 w-8 mx-auto mb-2" />
+              <p className="text-sm font-medium">Drop files here to upload</p>
+            </div>
+          )}
+          {error ? (
+            <div className="text-center text-destructive py-8">
+              <File className="h-8 w-8 mx-auto mb-2" />
+              <p className="text-sm">Error loading files</p>
+              <p className="text-xs">{error}</p>
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-2"
+                onClick={onRefresh}
+              >
+                Try again
+              </Button>
+            </div>
+          ) : loading ? (
+            <div className="text-center text-muted-foreground py-8">
+              <RefreshCw className="h-8 w-8 mx-auto mb-2 animate-spin" />
+              <p className="text-sm">Loading files...</p>
+            </div>
+          ) : fileTree.length > 0 ? (
+            fileTree.map((node) => renderFileNode(node))
+          ) : (
+            <div className="text-center text-muted-foreground py-8">
+              <File className="h-8 w-8 mx-auto mb-2" />
+              <p className="text-sm">No files to display</p>
+              <p className="text-xs">
+                Files will appear here when the AI generates code
               </p>
-            )}
-          </div>
-        )}
-      </div>
+              {isRootDragActive && (
+                <p className="text-xs text-blue-600 mt-2">
+                  Drop files to get started
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      </ScrollArea>
     </div>
   );
 }
