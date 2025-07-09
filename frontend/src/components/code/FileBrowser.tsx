@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useDropzone } from "react-dropzone";
 import {
   ChevronDown,
@@ -54,6 +54,24 @@ export function FileBrowser({
   const [dragOverFolder, setDragOverFolder] = useState<string | null>(null);
   const [uploading, setUploading] = useState<Set<string>>(new Set());
   const [isRootDragActive, setIsRootDragActive] = useState(false);
+
+  useEffect(() => {
+    const handleDragEnd = () => {
+      // Always reset drag states when the drag operation ends globally
+      setIsRootDragActive(false);
+      setDragOverFolder(null);
+    };
+
+    // These listeners on the window object ensure that we catch drag-ends
+    // even if they happen outside of the component's direct boundaries.
+    window.addEventListener("dragend", handleDragEnd, false);
+    window.addEventListener("drop", handleDragEnd, false);
+
+    return () => {
+      window.removeEventListener("dragend", handleDragEnd, false);
+      window.removeEventListener("drop", handleDragEnd, false);
+    };
+  }, []);
 
   // Convert DirectoryEntry to FileNode for tree structure
   const fileTree = useMemo(() => {
@@ -220,9 +238,10 @@ export function FileBrowser({
             ) : (
               <ChevronRight className="h-3 w-3 flex-shrink-0" />
             )}
-            <Folder className="h-3 w-3 flex-shrink-0" />
-            {isDragOver && (
+            {isDragOver ? (
               <Upload className="h-3 w-3 flex-shrink-0 text-blue-500" />
+            ) : (
+              <Folder className="h-3 w-3 flex-shrink-0" />
             )}
           </>
         ) : (
