@@ -121,11 +121,16 @@ class AgentSessionBase(Base):
         """
         return f"session-{self.id}"
 
-    def create_in_docker(self, workspace_dir: str) -> dict:
+    def create_in_docker(
+        self,
+        workspace_dir: str,
+        secrets: list[docker_utils.SecretPayload] | None = None,
+    ) -> dict:
         """Create Docker container for this agent session.
 
         Args:
             workspace_dir: Workspace directory to copy to container.
+            secrets: Secrets to materialize into the container.
 
         Returns:
             Dict containing container_id, assigned_sandbox_port, and any additional ports.
@@ -137,6 +142,7 @@ class AgentSessionBase(Base):
             initialization_data=self.get_initialization_data(),
             container_name=self.get_container_name(),
             workspace_dir=workspace_dir,
+            secrets=secrets,
         )
 
         # Get the main sandbox port

@@ -11,6 +11,7 @@ from openfoundry.agents.run_context import AppAgentRunContext
 from openfoundry.agents.streamlit_app_coding_agent import (
     STREAMLIT_APP_CODING_AGENT_NAME,
 )
+from openfoundry.config import CONNECTION_DIR
 from openfoundry.logger import logger
 from openfoundry.models.agent_sessions import (
     AgentSession,
@@ -18,9 +19,12 @@ from openfoundry.models.agent_sessions import (
     AppAgentSession,
 )
 from openfoundry.models.agent_sessions.docker_utils import (
+    SecretPayload,
     export_workspace_from_container,
 )
 from openfoundry.models.apps import App
+from openfoundry.models.connections import ALL_CONNECTION_CLASSES
+from openfoundry.models.connections.connection import ConnectionBase
 
 # Define terminal statuses for agent sessions
 AGENT_SESSION_TERMINAL_STATUSES = [
@@ -149,11 +153,15 @@ def create_app_agent_session(request: Request, app_id: uuid.UUID):
     session_id = uuid6.uuid6()
 
     # Verify the app exists and is not deleted
-    app = db.query(App).filter(App.id == app_id, App.deleted_on.is_(None)).first()
+    app = (
+        db.query(App)
+        .options(joinedload(App.connections))
+        .filter(App.id == app_id, App.deleted_on.is_(None))
+        .first()
+    )
     if not app:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"App with id {app_id} not found",
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"App {app_id} not found"
         )
 
     # Check for existing active session for this app since there can only be one active session per app
@@ -176,9 +184,33 @@ def create_app_agent_session(request: Request, app_id: uuid.UUID):
     # Create the app agent session
     app_agent_session = AppAgentSession(id=session_id, app_id=app_id)
 
+    secrets: list[SecretPayload] = []
+
+    # Process app connections to create secrets
+    if app.connections:
+        for connection in app.connections:
+            connection_type = connection.type
+            connection_class: type[ConnectionBase] = next(
+                cls for cls in ALL_CONNECTION_CLASSES if cls.type == connection_type
+            )
+            concrete_connection = (
+                db.query(connection_class)
+                .filter(connection_class.id == connection.id)
+                .first()
+            )
+
+            if concrete_connection:
+                env_vars = concrete_connection.get_env_vars()
+                secret_payload = SecretPayload(
+                    name=connection.name,
+                    secrets=env_vars,
+                    prefix=CONNECTION_DIR,
+                )
+                secrets.append(secret_payload)
+
     # Create Docker container
     container_info = app_agent_session.create_in_docker(
-        workspace_dir=str(app.get_workspace_directory())
+        workspace_dir=str(app.get_workspace_directory()), secrets=secrets
     )
 
     # Extract container information

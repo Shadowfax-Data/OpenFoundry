@@ -16,6 +16,7 @@ from openfoundry.models.agent_sessions.docker_utils import (
     stop_docker_container,
 )
 from openfoundry.models.apps import App
+from openfoundry.models.connections import Connection
 
 router = APIRouter(prefix="/api")
 logger = logging.getLogger(__name__)
@@ -24,6 +25,7 @@ logger = logging.getLogger(__name__)
 # Pydantic models for request/response
 class AppCreate(BaseModel):
     name: str
+    connection_ids: list[uuid.UUID] = []
 
 
 class AppModel(BaseModel):
@@ -43,8 +45,25 @@ def create_app(request: Request, app_data: AppCreate):
     """Create a new app."""
     db: Session = request.state.db
 
+    # Fetch connections if IDs are provided
+    connections = []
+    if app_data.connection_ids:
+        connections = (
+            db.query(Connection)
+            .filter(Connection.id.in_(app_data.connection_ids))
+            .all()
+        )
+        # Validate that all provided connection IDs exist
+        if len(connections) != len(set(app_data.connection_ids)):
+            found_ids = {c.id for c in connections}
+            missing_ids = set(app_data.connection_ids) - found_ids
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Connections with the following IDs were not found: {list(missing_ids)}",
+            )
+
     # Create new app object
-    app = App(id=uuid6.uuid6(), name=app_data.name)
+    app = App(id=uuid6.uuid6(), name=app_data.name, connections=connections)
     app.initialize_app_workspace()
 
     db.add(app)
