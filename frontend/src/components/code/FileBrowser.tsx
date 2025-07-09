@@ -210,52 +210,56 @@ export function FileBrowser({
     const isUploading = uploading.has(node.path);
 
     const buttonContent = (
-      <Button
-        variant="ghost"
-        className={`w-full justify-start h-6 text-xs flex items-center gap-1 group ${
+      <div
+        className={`flex items-center w-full group ${
           isSelected ? "bg-accent" : ""
-        } ${isDragOver ? "bg-blue-100 border-2 border-blue-300 border-dashed" : ""}`}
-        style={{ padding: "0 0.25rem" }}
-        onClick={() => {
-          if (node.type === "folder") {
-            toggleFolder(node.path);
-          } else {
-            onFileSelect(node.path);
-          }
-        }}
-        disabled={isLoadingFolder || isUploading}
+        } ${isDragOver ? "bg-blue-100 border-2 border-blue-300 border-dashed" : ""} hover:bg-accent/50 rounded-sm`}
       >
-        <span
-          className="inline-block flex-shrink-0"
-          style={{ width: `${depth * 10}px` }}
-        />
-        {node.type === "folder" ? (
-          <>
-            {isLoadingFolder || isUploading ? (
-              <RefreshCw className="h-3 w-3 flex-shrink-0 animate-spin" />
-            ) : isExpanded ? (
-              <ChevronDown className="h-3 w-3 flex-shrink-0" />
-            ) : (
-              <ChevronRight className="h-3 w-3 flex-shrink-0" />
-            )}
-            {isDragOver ? (
-              <Upload className="h-3 w-3 flex-shrink-0 text-blue-500" />
-            ) : (
-              <Folder className="h-3 w-3 flex-shrink-0" />
-            )}
-          </>
-        ) : (
-          <>
-            <ChevronRight className="h-3 w-3 flex-shrink-0 invisible" />
-            <File className="h-3 w-3 flex-shrink-0" />
-          </>
-        )}
-        <span className="truncate">{node.name}</span>
+        <Button
+          variant="ghost"
+          className="flex-1 justify-start h-6 text-xs flex items-center gap-1 hover:bg-transparent"
+          style={{ padding: "0 0.25rem" }}
+          onClick={() => {
+            if (node.type === "folder") {
+              toggleFolder(node.path);
+            } else {
+              onFileSelect(node.path);
+            }
+          }}
+          disabled={isLoadingFolder || isUploading}
+        >
+          <span
+            className="inline-block flex-shrink-0"
+            style={{ width: `${depth * 10}px` }}
+          />
+          {node.type === "folder" ? (
+            <>
+              {isLoadingFolder || isUploading ? (
+                <RefreshCw className="h-3 w-3 flex-shrink-0 animate-spin" />
+              ) : isExpanded ? (
+                <ChevronDown className="h-3 w-3 flex-shrink-0" />
+              ) : (
+                <ChevronRight className="h-3 w-3 flex-shrink-0" />
+              )}
+              {isDragOver ? (
+                <Upload className="h-3 w-3 flex-shrink-0 text-blue-500" />
+              ) : (
+                <Folder className="h-3 w-3 flex-shrink-0" />
+              )}
+            </>
+          ) : (
+            <>
+              <ChevronRight className="h-3 w-3 flex-shrink-0 invisible" />
+              <File className="h-3 w-3 flex-shrink-0" />
+            </>
+          )}
+          <span className="truncate">{node.name}</span>
+        </Button>
         {node.type === "folder" && (
           <Button
             variant="ghost"
             size="sm"
-            className="h-4 w-4 p-0 opacity-0 group-hover:opacity-100 hover:bg-gray-200 flex-shrink-0 ml-auto"
+            className="h-4 w-4 p-0 opacity-0 group-hover:opacity-100 hover:bg-gray-200 flex-shrink-0 mr-1"
             onClick={(e) => handleFolderRefresh(e, node.path)}
             disabled={isLoadingFolder || isUploading}
             title={`Refresh ${node.name}`}
@@ -263,7 +267,7 @@ export function FileBrowser({
             <RefreshCw className="h-2.5 w-2.5" />
           </Button>
         )}
-      </Button>
+      </div>
     );
 
     return (
