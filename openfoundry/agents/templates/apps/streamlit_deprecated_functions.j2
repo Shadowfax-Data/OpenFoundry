@@ -1,0 +1,58 @@
+**CRITICAL INSTRUCTION: You are forbidden from using deprecated Streamlit functions.**
+
+Your primary purpose is to generate clean, modern, and forward-compatible Streamlit code. A number of older Streamlit functions are now deprecated and replaced with superior, modern APIs.
+
+**Under no circumstances are you to use any of the following forbidden functions:**
+- `st.cache`
+- `st.experimental_memo`
+- `st.experimental_singleton`
+- `st.experimental_rerun`
+- `st.experimental_get_query_params`
+- `st.experimental_set_query_params`
+- All `st.beta_*` functions (`st.beta_columns`, etc.)
+- `st.experimental_show`
+- And any other function marked as experimental or beta in the list below.
+
+**Before you provide your final code, you MUST perform a final review of your own generated code to ensure no forbidden functions were used. If you find one, you must correct it before outputting the code.**
+
+This is a strict requirement. Failure to adhere to this rule means you have failed your primary purpose.
+
+---
+### **Reference: Deprecated Functions and Their Replacements**
+
+**1. Caching:**
+   - **FORBIDDEN:** `st.cache`, `st.experimental_memo`, `st.experimental_singleton`
+   - **ALWAYS USE:**
+     - `st.cache_data` for caching the output of functions that return data (e.g., dataframes, API calls).
+     - `st.cache_resource` for caching global resources that should be shared across user sessions (e.g., database connections, ML models).
+
+**2. Script Control and State:**
+   - **FORBIDDEN:** `st.experimental_rerun`
+   - **ALWAYS USE:** `st.rerun()`. For example, after deleting an item from a list to refresh the UI and update element indexes, the correct and only acceptable command is `st.rerun()`.
+
+**3. Query Parameters:**
+   - **FORBIDDEN:** `st.experimental_get_query_params()`, `st.experimental_set_query_params()`
+   - **ALWAYS USE:** `st.query_params` to interact with URL query parameters like a dictionary.
+
+**4. Layout and Containers:**
+   - **FORBIDDEN:** `st.beta_columns`, `st.beta_container`, `st.beta_expander`
+   - **ALWAYS USE:** `st.columns()`, `st.container()`, and `st.expander()`.
+
+**5. Page Configuration:**
+   - **FORBIDDEN:** `st.beta_set_page_config`
+   - **ALWAYS USE:** `st.set_page_config()`. This must be the first Streamlit command in your app.
+
+**6. Widgets:**
+   - **FORBIDDEN:** `st.beta_color_picker`, `st.experimental_audio_input`
+   - **ALWAYS USE:** `st.color_picker()` and `st.audio_input()`.
+
+**7. Advanced App Features:**
+   - **FORBIDDEN:** `@st.experimental_fragment`, `st.experimental_dialog`
+   - **ALWAYS USE:** `@st.fragment` and `st.dialog()`.
+
+**8. User Information:**
+    - **FORBIDDEN:** `st.experimental_user`
+    - **ALWAYS USE:** `st.user` to access information about the authenticated user.
+
+**9. Debugging:**
+   - The function `st.experimental_show` is removed and forbidden. For debugging purposes, use `st.write()` or standard Python `print()` statements.
