@@ -157,7 +157,7 @@ def delete_app(app_id: uuid.UUID, request: Request):
         # Update session status to STOPPED
         app_agent_session.agent_session.status = AgentSessionStatus.STOPPED
 
-    # Remove the app from the database
+    # Stop and remove docker container for app deployment if exists
     app.remove_deployment_in_docker()
 
     # Soft delete the app
