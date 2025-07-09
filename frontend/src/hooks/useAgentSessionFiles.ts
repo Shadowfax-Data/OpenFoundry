@@ -195,6 +195,37 @@ export const useAgentSessionFiles = ({
     [loadedFolders, loadingFolders, listFiles],
   );
 
+  const refreshFolderContents = useCallback(
+    async (folderPath: string): Promise<void> => {
+      // Always refresh - bypass cache check
+      setLoadingFolders((prev) => new Set(prev).add(folderPath));
+
+      try {
+        const response = await listFiles(folderPath);
+        setLoadedFolders((prev) =>
+          new Map(prev).set(folderPath, response.entries),
+        );
+      } catch (error) {
+        console.error(
+          `Failed to refresh folder contents for ${folderPath}:`,
+          error,
+        );
+        setError(
+          error instanceof Error
+            ? error.message
+            : "Failed to refresh folder contents",
+        );
+      } finally {
+        setLoadingFolders((prev) => {
+          const newSet = new Set(prev);
+          newSet.delete(folderPath);
+          return newSet;
+        });
+      }
+    },
+    [listFiles],
+  );
+
   const readFileHandler = useCallback(
     async (path: string): Promise<ReadFileResponse | null> => {
       try {
@@ -227,6 +258,7 @@ export const useAgentSessionFiles = ({
     loadingFolders,
     loadFiles,
     loadFolderContents,
+    refreshFolderContents,
     readFile: readFileHandler,
     writeFile,
     uploadFile,

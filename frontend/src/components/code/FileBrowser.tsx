@@ -21,6 +21,7 @@ interface FileBrowserProps {
   loadedFolders: Map<string, DirectoryEntry[]>;
   loadingFolders: Set<string>;
   onLoadFolderContents: (folderPath: string) => Promise<void>;
+  onRefreshFolder?: (folderPath: string) => Promise<void>;
   onFileUpload: (file: File, targetPath: string) => Promise<void>;
   currentPath: string;
 }
@@ -43,6 +44,7 @@ export function FileBrowser({
   loadedFolders,
   loadingFolders,
   onLoadFolderContents,
+  onRefreshFolder,
   onFileUpload,
   currentPath,
 }: FileBrowserProps) {
@@ -164,6 +166,24 @@ export function FileBrowser({
     e.stopPropagation(); // Stop propagation to prevent root dropzone from activating
   };
 
+  const handleFolderRefresh = async (
+    e: React.MouseEvent,
+    folderPath: string,
+  ) => {
+    e.preventDefault();
+    e.stopPropagation(); // Prevent folder toggle when clicking refresh
+
+    // Ensure folder is expanded to see the refreshed contents
+    setExpandedFolders((prev) => new Set(prev).add(folderPath));
+
+    // Use the dedicated refresh function if provided, otherwise fall back to regular load
+    if (onRefreshFolder) {
+      await onRefreshFolder(folderPath);
+    } else {
+      await onLoadFolderContents(folderPath);
+    }
+  };
+
   const renderFileNode = (node: FileNode, depth: number = 0) => {
     const isExpanded = expandedFolders.has(node.path);
     const isSelected = selectedFile?.path === node.path;
@@ -174,7 +194,7 @@ export function FileBrowser({
     const buttonContent = (
       <Button
         variant="ghost"
-        className={`w-full justify-start h-6 text-xs flex items-center gap-1 ${
+        className={`w-full justify-start h-6 text-xs flex items-center gap-1 group ${
           isSelected ? "bg-accent" : ""
         } ${isDragOver ? "bg-blue-100 border-2 border-blue-300 border-dashed" : ""}`}
         style={{ padding: "0 0.25rem" }}
@@ -212,6 +232,18 @@ export function FileBrowser({
           </>
         )}
         <span className="truncate">{node.name}</span>
+        {node.type === "folder" && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-4 w-4 p-0 opacity-0 group-hover:opacity-100 hover:bg-gray-200 flex-shrink-0 ml-auto"
+            onClick={(e) => handleFolderRefresh(e, node.path)}
+            disabled={isLoadingFolder || isUploading}
+            title={`Refresh ${node.name}`}
+          >
+            <RefreshCw className="h-2.5 w-2.5" />
+          </Button>
+        )}
       </Button>
     );
 
