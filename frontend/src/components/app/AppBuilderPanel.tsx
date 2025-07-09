@@ -38,7 +38,13 @@ export const AppBuilderPanel: React.FC<AppBuilderPanelProps> = ({
 
       // Then deploy the app
       setIsDeploying(true);
-      await dispatch(deployApp(appId)).unwrap();
+      const deployedApp = await dispatch(deployApp(appId)).unwrap();
+
+      // Open the deployed app in a new tab
+      if (deployedApp && deployedApp.deployment_port) {
+        const url = `${window.location.protocol}//${window.location.hostname}:${deployedApp.deployment_port}`;
+        window.open(url, "_blank");
+      }
     } catch (error) {
       console.error("Failed to save and deploy:", error);
     } finally {
