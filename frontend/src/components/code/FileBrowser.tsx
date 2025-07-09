@@ -161,6 +161,7 @@ export function FileBrowser({
 
   const handleFolderDragEnter = (folderPath: string) => {
     setDragOverFolder(folderPath);
+    setIsRootDragActive(true); // Ensure root drag state is active
   };
 
   const handleFolderDragLeave = (e: React.DragEvent) => {
@@ -276,8 +277,8 @@ export function FileBrowser({
       <div key={node.path}>
         {node.type === "folder" ? (
           <div
-            onDragEnter={(e) => {
-              e.stopPropagation();
+            onDragEnter={() => {
+              // Don't stop propagation on drag enter to allow root dropzone to activate
               handleFolderDragEnter(node.path);
             }}
             onDragLeave={(e) => {
