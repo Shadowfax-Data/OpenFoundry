@@ -273,8 +273,14 @@ export function Apps() {
   const handleDeployApp = async (appId: string) => {
     setDeployLoadingAppId(appId);
     try {
-      await dispatch(deployApp(appId)).unwrap();
+      const deployedApp = await dispatch(deployApp(appId)).unwrap();
       // App will be automatically updated in the state by the Redux reducer
+
+      // Open the deployed app in a new tab
+      if (deployedApp && deployedApp.deployment_port) {
+        const url = `${window.location.protocol}//${window.location.hostname}:${deployedApp.deployment_port}`;
+        window.open(url, "_blank");
+      }
     } catch (error) {
       console.error("Failed to deploy app:", error);
       // Error is handled by Redux state
