@@ -245,10 +245,11 @@ export function FileBrowser({
   };
 
   return (
-    <div className="h-full flex flex-col overflow-auto" {...getRootProps()}>
-      <div
-        className={`py-2 ${isRootDragActive ? "bg-blue-50 border-2 border-blue-300 border-dashed rounded-lg" : ""}`}
-      >
+    <div
+      className={`h-full flex flex-col overflow-auto ${isRootDragActive ? "bg-blue-50 border-2 border-blue-300 border-dashed" : ""}`}
+      {...getRootProps()}
+    >
+      <div className="py-2">
         {isRootDragActive && (
           <div className="text-center text-blue-600 py-4">
             <Upload className="h-8 w-8 mx-auto mb-2" />
