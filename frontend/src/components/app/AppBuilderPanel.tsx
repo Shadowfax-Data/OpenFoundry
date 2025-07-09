@@ -53,7 +53,7 @@ export const AppBuilderPanel: React.FC<AppBuilderPanelProps> = ({
         <div className="flex items-center justify-between w-full">
           <div className="flex items-center gap-4">
             <h1 className="text-sm font-semibold">App Builder</h1>
-            <div className="flex bg-muted p-1">
+            <div className="flex bg-muted p-1 rounded-lg">
               <Button
                 variant={activeTab === "preview" ? "default" : "ghost"}
                 size="sm"
