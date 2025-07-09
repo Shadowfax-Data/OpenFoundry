@@ -7,16 +7,18 @@ from fastapi import APIRouter, HTTPException, Request, status
 from pydantic import BaseModel
 from sqlalchemy.orm import Session, joinedload
 
-from openfoundry.config import SANDBOX_IMAGE
+from openfoundry.config import CONNECTION_DIR, SANDBOX_IMAGE
 from openfoundry.models.agent_sessions import AgentSessionStatus, AppAgentSession
 from openfoundry.models.agent_sessions.docker_utils import (
+    SecretPayload,
     container_exists,
     create_docker_container,
     remove_docker_container,
     stop_docker_container,
 )
 from openfoundry.models.apps import App
-from openfoundry.models.connections import Connection
+from openfoundry.models.connections import ALL_CONNECTION_CLASSES, Connection
+from openfoundry.models.connections.connection import ConnectionBase
 
 router = APIRouter(prefix="/api")
 logger = logging.getLogger(__name__)
@@ -170,7 +172,12 @@ def deploy_app(app_id: uuid.UUID, request: Request):
     db: Session = request.state.db
 
     # Get the specific non-deleted app
-    app = db.query(App).filter(App.id == app_id, App.deleted_on.is_(None)).first()
+    app = (
+        db.query(App)
+        .options(joinedload(App.connections))
+        .filter(App.id == app_id, App.deleted_on.is_(None))
+        .first()
+    )
 
     if not app:
         raise HTTPException(
@@ -194,6 +201,29 @@ def deploy_app(app_id: uuid.UUID, request: Request):
         # Remove the existing container
         remove_docker_container(container_name, ignore_not_found=True)
         logger.info(f"Removed existing container {container_name}")
+
+    secrets: list[SecretPayload] = []
+    # Process app connections to create secrets
+    if app.connections:
+        for connection in app.connections:
+            connection_type = connection.type
+            connection_class: type[ConnectionBase] = next(
+                cls for cls in ALL_CONNECTION_CLASSES if cls.type == connection_type
+            )
+            concrete_connection = (
+                db.query(connection_class)
+                .filter(connection_class.id == connection.id)
+                .first()
+            )
+
+            if concrete_connection:
+                env_vars = concrete_connection.get_env_vars()
+                secret_payload = SecretPayload(
+                    name=connection.name,
+                    secrets=env_vars,
+                    prefix=CONNECTION_DIR,
+                )
+                secrets.append(secret_payload)
 
     # Docker configuration
     docker_config = {
@@ -225,6 +255,7 @@ def deploy_app(app_id: uuid.UUID, request: Request):
         workspace_dir=workspace_dir,
         working_dir="/workspace",
         command=command,
+        secrets=secrets,
     )
 
     # Save the deployment port to the app
