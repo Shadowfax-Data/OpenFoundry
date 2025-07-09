@@ -47,9 +47,7 @@ export function ChatConversation({
   }, [messages, isStreaming]);
 
   return (
-    <div
-      className={`w-full bg-background rounded-lg border flex flex-col ${className}`}
-    >
+    <div className={`w-full bg-background flex flex-col ${className}`}>
       {" "}
       {/* Header */}
       <div className="px-4 py-2 border-b flex items-center h-10">

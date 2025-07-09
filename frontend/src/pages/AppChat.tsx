@@ -123,9 +123,9 @@ export function AppChat() {
   }
 
   return (
-    <ResizablePanelGroup direction="horizontal" className="h-full">
-      {/* Left Panel - Chat Messages */}
-      <ResizablePanel defaultSize={30} minSize={20} maxSize={50}>
+    <div className="h-full">
+      {/* Mobile/Tablet View - Only Conversation Panel */}
+      <div className="md:hidden h-full">
         <ChatConversation
           messages={messages}
           isStreaming={isStreaming}
@@ -133,32 +133,51 @@ export function AppChat() {
           onSendMessage={handleSendMessage}
           placeholder="Type your message..."
           title="Conversation"
-          className="h-full border-0 rounded-l-lg"
+          className="h-full"
           disabled={!isSandboxReady || isStreaming}
         />
-      </ResizablePanel>
+      </div>
 
-      <ResizableHandle withHandle />
+      {/* Desktop View - Resizable Panels */}
+      <div className="hidden md:block h-full">
+        <ResizablePanelGroup direction="horizontal" className="h-full">
+          {/* Left Panel - Chat Messages */}
+          <ResizablePanel defaultSize={30} minSize={20} maxSize={50}>
+            <ChatConversation
+              messages={messages}
+              isStreaming={isStreaming}
+              error={error}
+              onSendMessage={handleSendMessage}
+              placeholder="Type your message..."
+              title="Conversation"
+              className="h-full border-0"
+              disabled={!isSandboxReady || isStreaming}
+            />
+          </ResizablePanel>
 
-      {/* Right Panel - Preview/Code Tabs */}
-      <ResizablePanel defaultSize={70}>
-        {!isSandboxReady ? (
-          <div className="h-full flex items-center justify-center">
-            <div className="text-center text-muted-foreground">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-              <p>Waiting for sandbox to become ready...</p>
-            </div>
-          </div>
-        ) : (
-          <AppBuilderPanel
-            previewUrl={previewUrl}
-            appId={appId!}
-            sessionId={sessionId!}
-            currentWriteFileInfo={currentWriteFileInfo}
-            saveWorkspace={handleSaveWorkspace}
-          />
-        )}
-      </ResizablePanel>
-    </ResizablePanelGroup>
+          <ResizableHandle withHandle />
+
+          {/* Right Panel - Preview/Code Tabs */}
+          <ResizablePanel defaultSize={70}>
+            {!isSandboxReady ? (
+              <div className="h-full flex items-center justify-center">
+                <div className="text-center text-muted-foreground">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                  <p>Waiting for sandbox to become ready...</p>
+                </div>
+              </div>
+            ) : (
+              <AppBuilderPanel
+                previewUrl={previewUrl}
+                appId={appId!}
+                sessionId={sessionId!}
+                currentWriteFileInfo={currentWriteFileInfo}
+                saveWorkspace={handleSaveWorkspace}
+              />
+            )}
+          </ResizablePanel>
+        </ResizablePanelGroup>
+      </div>
+    </div>
   );
 }
