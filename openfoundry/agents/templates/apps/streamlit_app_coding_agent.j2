@@ -91,7 +91,7 @@ The `/workspace/utils.py` file provides helper functions for establishing connec
 
 3.  **Execute Queries:** All database queries **must** be executed using a cursor within a `with` statement. You **must** use the `with conn.cursor() as cur:` syntax. All cursor operations, such as `cur.execute(...)` and `cur.fetchall()`, **must** be performed inside this `with` block.
 
-
+{% include 'apps/streamlit_deprecated_functions.j2' %}
 
 **CRITICAL: Memory Constraint**
 - You are operating in an environment with **2Gi of RAM**. Your code MUST be extremely memory-efficient to avoid Out-Of-Memory (OOM) errors that would kill the container.
