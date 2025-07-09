@@ -3,7 +3,16 @@ from datetime import datetime
 
 import docker
 import uuid6
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    HTTPException,
+    Query,
+    Request,
+    UploadFile,
+    status,
+)
 from pydantic import BaseModel
 from sqlalchemy.orm import Session, joinedload
 
@@ -517,6 +526,28 @@ async def write_file_to_sandbox(
         response = await client.post("/files/write", json=write_request.model_dump())
         response.raise_for_status()
         return WriteFileResponse.model_validate(response.json())
+
+
+@router.post(
+    "/apps/{app_id}/sessions/{session_id}/files/upload",
+)
+async def upload_file_to_sandbox(
+    request: Request,
+    app_id: uuid.UUID,
+    session_id: uuid.UUID,
+    file: UploadFile = File(...),
+    path: str = Query(..., description="Target path for the uploaded file"),
+    run_context: AppAgentRunContext = Depends(get_app_agent_run_context),
+):
+    """Upload a file to the sandbox using multipart form data."""
+    async with run_context.get_sandbox_client() as client:
+        # Stream the file upload to the sandbox
+        files = {"file": (file.filename, file.file, file.content_type)}
+        response = await client.post(
+            "/files/upload", files=files, params={"path": path}
+        )
+        response.raise_for_status()
+        return response.json()
 
 
 @router.post(

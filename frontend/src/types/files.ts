@@ -39,3 +39,10 @@ export interface WriteFileResponse {
   message: string;
   file_info: FileInfo;
 }
+
+export interface UploadFileResponse {
+  message: string;
+  original_filename: string;
+  file_info: FileInfo;
+  bytes_uploaded: number;
+}

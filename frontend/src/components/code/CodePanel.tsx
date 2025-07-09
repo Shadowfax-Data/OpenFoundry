@@ -36,13 +36,16 @@ export function CodePanel({
   const initialPath = "/workspace";
   const {
     files,
+    currentPath,
     loading,
     error,
     loadedFolders,
     loadingFolders,
     readFile,
+    uploadFile,
     refreshFiles,
     loadFolderContents,
+    refreshFolderContents,
   } = useAgentSessionFiles({
     appId,
     sessionId,
@@ -75,6 +78,11 @@ export function CodePanel({
     if (fileData) {
       setSelectedFile(fileData);
     }
+  };
+
+  const handleRefreshFolder = async (folderPath: string) => {
+    // Use the dedicated refresh function that bypasses cache and makes API call
+    await refreshFolderContents(folderPath);
   };
 
   return (
@@ -129,6 +137,11 @@ export function CodePanel({
                   loadedFolders={loadedFolders}
                   loadingFolders={loadingFolders}
                   onLoadFolderContents={loadFolderContents}
+                  onRefreshFolder={handleRefreshFolder}
+                  currentPath={currentPath}
+                  onFileUpload={async (file: File, targetPath: string) => {
+                    await uploadFile(file, targetPath);
+                  }}
                 />
               </CollapsibleContent>
             </div>
