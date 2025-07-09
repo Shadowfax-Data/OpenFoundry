@@ -115,7 +115,7 @@ export const AppBuilderPanel: React.FC<AppBuilderPanelProps> = ({
       </div>
 
       {/* Tab Content Area */}
-      <div className="flex-1">
+      <div className="flex-1 h-full overflow-hidden">
         <div className={activeTab === "preview" ? "h-full" : "hidden"}>
           <AppPreview
             previewUrl={previewUrl}

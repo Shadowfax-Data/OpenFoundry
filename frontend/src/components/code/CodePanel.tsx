@@ -98,53 +98,55 @@ export function CodePanel({
             onOpenChange={setIsFileBrowserOpen}
             className="h-full"
           >
-            <div className="h-full bg-background border-r flex flex-col">
-              <div className="h-8 border-b px-3 py-2 flex items-center justify-between flex-shrink-0">
-                <h3 className="text-sm font-medium">Files</h3>
-                <div className="flex items-center gap-1">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 w-6 p-0"
-                    onClick={refreshFiles}
-                    disabled={loading}
-                    title="Refresh files"
-                  >
-                    <RefreshCw
-                      className={`h-3 w-3 ${loading ? "animate-spin" : ""}`}
-                    />
-                  </Button>
-                  <CollapsibleTrigger asChild>
+            <CollapsibleContent className="h-full">
+              <div className="h-full bg-background border-r flex flex-col">
+                <div className="h-8 border-b px-3 py-2 flex items-center justify-between flex-shrink-0">
+                  <h3 className="text-sm font-medium">Files</h3>
+                  <div className="flex items-center gap-1">
                     <Button
                       variant="ghost"
                       size="sm"
                       className="h-6 w-6 p-0"
-                      title="Collapse file browser"
+                      onClick={refreshFiles}
+                      disabled={loading}
+                      title="Refresh files"
                     >
-                      <ArrowLeftToLine className="h-3 w-3" />
+                      <RefreshCw
+                        className={`h-3 w-3 ${loading ? "animate-spin" : ""}`}
+                      />
                     </Button>
-                  </CollapsibleTrigger>
+                    <CollapsibleTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 w-6 p-0"
+                        title="Collapse file browser"
+                      >
+                        <ArrowLeftToLine className="h-3 w-3" />
+                      </Button>
+                    </CollapsibleTrigger>
+                  </div>
+                </div>
+                <div className="flex-1 h-full">
+                  <FileBrowser
+                    files={files}
+                    loading={loading}
+                    error={error}
+                    selectedFile={selectedFile}
+                    onFileSelect={handleFileSelect}
+                    onRefresh={refreshFiles}
+                    loadedFolders={loadedFolders}
+                    loadingFolders={loadingFolders}
+                    onLoadFolderContents={loadFolderContents}
+                    onRefreshFolder={handleRefreshFolder}
+                    currentPath={currentPath}
+                    onFileUpload={async (file: File, targetPath: string) => {
+                      await uploadFile(file, targetPath);
+                    }}
+                  />
                 </div>
               </div>
-              <CollapsibleContent className="flex-1">
-                <FileBrowser
-                  files={files}
-                  loading={loading}
-                  error={error}
-                  selectedFile={selectedFile}
-                  onFileSelect={handleFileSelect}
-                  onRefresh={refreshFiles}
-                  loadedFolders={loadedFolders}
-                  loadingFolders={loadingFolders}
-                  onLoadFolderContents={loadFolderContents}
-                  onRefreshFolder={handleRefreshFolder}
-                  currentPath={currentPath}
-                  onFileUpload={async (file: File, targetPath: string) => {
-                    await uploadFile(file, targetPath);
-                  }}
-                />
-              </CollapsibleContent>
-            </div>
+            </CollapsibleContent>
           </Collapsible>
         </ResizablePanel>
 

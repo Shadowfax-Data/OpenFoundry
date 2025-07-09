@@ -9,6 +9,7 @@ import {
   Upload,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { DirectoryEntry, ReadFileResponse } from "@/types/files";
 
 interface FileBrowserProps {
@@ -160,6 +161,7 @@ export function FileBrowser({
 
   const handleFolderDragEnter = (folderPath: string) => {
     setDragOverFolder(folderPath);
+    setIsRootDragActive(true); // Ensure root drag state is active
   };
 
   const handleFolderDragLeave = (e: React.DragEvent) => {
@@ -211,52 +213,56 @@ export function FileBrowser({
     const isUploading = uploading.has(node.path);
 
     const buttonContent = (
-      <Button
-        variant="ghost"
-        className={`w-full justify-start h-6 text-xs flex items-center gap-1 group ${
+      <div
+        className={`flex items-center w-full group ${
           isSelected ? "bg-accent" : ""
-        } ${isDragOver ? "bg-blue-100 border-2 border-blue-300 border-dashed" : ""}`}
-        style={{ padding: "0 0.25rem" }}
-        onClick={() => {
-          if (node.type === "folder") {
-            toggleFolder(node.path);
-          } else {
-            onFileSelect(node.path);
-          }
-        }}
-        disabled={isLoadingFolder || isUploading}
+        } ${isDragOver ? "bg-blue-100 border-2 border-blue-300 border-dashed" : ""} hover:bg-accent/50 rounded-sm`}
       >
-        <span
-          className="inline-block flex-shrink-0"
-          style={{ width: `${depth * 10}px` }}
-        />
-        {node.type === "folder" ? (
-          <>
-            {isLoadingFolder || isUploading ? (
-              <RefreshCw className="h-3 w-3 flex-shrink-0 animate-spin" />
-            ) : isExpanded ? (
-              <ChevronDown className="h-3 w-3 flex-shrink-0" />
-            ) : (
-              <ChevronRight className="h-3 w-3 flex-shrink-0" />
-            )}
-            {isDragOver ? (
-              <Upload className="h-3 w-3 flex-shrink-0 text-blue-500" />
-            ) : (
-              <Folder className="h-3 w-3 flex-shrink-0" />
-            )}
-          </>
-        ) : (
-          <>
-            <ChevronRight className="h-3 w-3 flex-shrink-0 invisible" />
-            <File className="h-3 w-3 flex-shrink-0" />
-          </>
-        )}
-        <span className="truncate">{node.name}</span>
+        <Button
+          variant="ghost"
+          className="flex-1 justify-start h-6 text-xs flex items-center gap-1 hover:bg-transparent"
+          style={{ padding: "0 0.25rem" }}
+          onClick={() => {
+            if (node.type === "folder") {
+              toggleFolder(node.path);
+            } else {
+              onFileSelect(node.path);
+            }
+          }}
+          disabled={isLoadingFolder || isUploading}
+        >
+          <span
+            className="inline-block flex-shrink-0"
+            style={{ width: `${depth * 10}px` }}
+          />
+          {node.type === "folder" ? (
+            <>
+              {isLoadingFolder || isUploading ? (
+                <RefreshCw className="h-3 w-3 flex-shrink-0 animate-spin" />
+              ) : isExpanded ? (
+                <ChevronDown className="h-3 w-3 flex-shrink-0" />
+              ) : (
+                <ChevronRight className="h-3 w-3 flex-shrink-0" />
+              )}
+              {isDragOver ? (
+                <Upload className="h-3 w-3 flex-shrink-0 text-blue-500" />
+              ) : (
+                <Folder className="h-3 w-3 flex-shrink-0" />
+              )}
+            </>
+          ) : (
+            <>
+              <ChevronRight className="h-3 w-3 flex-shrink-0 invisible" />
+              <File className="h-3 w-3 flex-shrink-0" />
+            </>
+          )}
+          <span className="truncate">{node.name}</span>
+        </Button>
         {node.type === "folder" && (
           <Button
             variant="ghost"
             size="sm"
-            className="h-4 w-4 p-0 opacity-0 group-hover:opacity-100 hover:bg-gray-200 flex-shrink-0 ml-auto"
+            className="h-4 w-4 p-0 opacity-0 group-hover:opacity-100 hover:bg-gray-200 flex-shrink-0 mr-1"
             onClick={(e) => handleFolderRefresh(e, node.path)}
             disabled={isLoadingFolder || isUploading}
             title={`Refresh ${node.name}`}
@@ -264,15 +270,15 @@ export function FileBrowser({
             <RefreshCw className="h-2.5 w-2.5" />
           </Button>
         )}
-      </Button>
+      </div>
     );
 
     return (
       <div key={node.path}>
         {node.type === "folder" ? (
           <div
-            onDragEnter={(e) => {
-              e.stopPropagation();
+            onDragEnter={() => {
+              // Don't stop propagation on drag enter to allow root dropzone to activate
               handleFolderDragEnter(node.path);
             }}
             onDragLeave={(e) => {
@@ -298,52 +304,54 @@ export function FileBrowser({
 
   return (
     <div
-      className={`h-full flex flex-col overflow-auto ${isRootDragActive ? "bg-blue-50 border-2 border-blue-300 border-dashed" : ""}`}
+      className={`h-full flex flex-col ${isRootDragActive ? "bg-blue-50 border-2 border-blue-300 border-dashed" : ""}`}
       {...getRootProps()}
     >
-      <div className="py-2">
-        {isRootDragActive && (
-          <div className="text-center text-blue-600 py-4">
-            <Upload className="h-8 w-8 mx-auto mb-2" />
-            <p className="text-sm font-medium">Drop files here to upload</p>
-          </div>
-        )}
-        {error ? (
-          <div className="text-center text-destructive py-8">
-            <File className="h-8 w-8 mx-auto mb-2" />
-            <p className="text-sm">Error loading files</p>
-            <p className="text-xs">{error}</p>
-            <Button
-              variant="outline"
-              size="sm"
-              className="mt-2"
-              onClick={onRefresh}
-            >
-              Try again
-            </Button>
-          </div>
-        ) : loading ? (
-          <div className="text-center text-muted-foreground py-8">
-            <RefreshCw className="h-8 w-8 mx-auto mb-2 animate-spin" />
-            <p className="text-sm">Loading files...</p>
-          </div>
-        ) : fileTree.length > 0 ? (
-          fileTree.map((node) => renderFileNode(node))
-        ) : (
-          <div className="text-center text-muted-foreground py-8">
-            <File className="h-8 w-8 mx-auto mb-2" />
-            <p className="text-sm">No files to display</p>
-            <p className="text-xs">
-              Files will appear here when the AI generates code
-            </p>
-            {isRootDragActive && (
-              <p className="text-xs text-blue-600 mt-2">
-                Drop files to get started
+      <ScrollArea className="h-full">
+        <div className="py-2">
+          {isRootDragActive && (
+            <div className="text-center text-blue-600 py-4">
+              <Upload className="h-8 w-8 mx-auto mb-2" />
+              <p className="text-sm font-medium">Drop files here to upload</p>
+            </div>
+          )}
+          {error ? (
+            <div className="text-center text-destructive py-8">
+              <File className="h-8 w-8 mx-auto mb-2" />
+              <p className="text-sm">Error loading files</p>
+              <p className="text-xs">{error}</p>
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-2"
+                onClick={onRefresh}
+              >
+                Try again
+              </Button>
+            </div>
+          ) : loading ? (
+            <div className="text-center text-muted-foreground py-8">
+              <RefreshCw className="h-8 w-8 mx-auto mb-2 animate-spin" />
+              <p className="text-sm">Loading files...</p>
+            </div>
+          ) : fileTree.length > 0 ? (
+            fileTree.map((node) => renderFileNode(node))
+          ) : (
+            <div className="text-center text-muted-foreground py-8">
+              <File className="h-8 w-8 mx-auto mb-2" />
+              <p className="text-sm">No files to display</p>
+              <p className="text-xs">
+                Files will appear here when the AI generates code
               </p>
-            )}
-          </div>
-        )}
-      </div>
+              {isRootDragActive && (
+                <p className="text-xs text-blue-600 mt-2">
+                  Drop files to get started
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      </ScrollArea>
     </div>
   );
 }
