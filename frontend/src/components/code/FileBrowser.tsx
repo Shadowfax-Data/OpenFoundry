@@ -162,9 +162,10 @@ export function FileBrowser({
     setDragOverFolder(folderPath);
   };
 
-  const handleFolderDragLeave = () => {
-    // Use a small timeout to prevent flickering when moving between child elements
-    setTimeout(() => setDragOverFolder(null), 50);
+  const handleFolderDragLeave = (e: React.DragEvent) => {
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+      setDragOverFolder(null);
+    }
   };
 
   const handleFolderDrop = (e: React.DragEvent, folderPath: string) => {
@@ -280,7 +281,7 @@ export function FileBrowser({
             }}
             onDragLeave={(e) => {
               e.stopPropagation();
-              handleFolderDragLeave();
+              handleFolderDragLeave(e);
             }}
             onDragOver={handleFolderDragOver}
             onDrop={(e) => handleFolderDrop(e, node.path)}
