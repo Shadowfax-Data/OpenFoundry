@@ -1,13 +1,14 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import { useDropzone } from "react-dropzone";
 import {
   ChevronDown,
   ChevronRight,
   File,
   Folder,
   RefreshCw,
+  Upload,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { DirectoryEntry, ReadFileResponse } from "@/types/files";
 
 interface FileBrowserProps {
@@ -20,6 +21,8 @@ interface FileBrowserProps {
   loadedFolders: Map<string, DirectoryEntry[]>;
   loadingFolders: Set<string>;
   onLoadFolderContents: (folderPath: string) => Promise<void>;
+  onFileUpload: (file: File, targetPath: string) => Promise<void>;
+  currentPath: string;
 }
 
 interface FileNode {
@@ -40,13 +43,18 @@ export function FileBrowser({
   loadedFolders,
   loadingFolders,
   onLoadFolderContents,
+  onFileUpload,
+  currentPath,
 }: FileBrowserProps) {
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(
     new Set(),
   );
+  const [dragOverFolder, setDragOverFolder] = useState<string | null>(null);
+  const [uploading, setUploading] = useState<Set<string>>(new Set());
+  const [isRootDragActive, setIsRootDragActive] = useState(false);
 
   // Convert DirectoryEntry to FileNode for tree structure
-  const generateFileTree = (): FileNode[] => {
+  const fileTree = useMemo(() => {
     const convertEntryToNode = (entry: DirectoryEntry): FileNode => {
       const node: FileNode = {
         name: entry.name,
@@ -63,9 +71,7 @@ export function FileBrowser({
     };
 
     return files.map(convertEntryToNode);
-  };
-
-  const fileTree = generateFileTree();
+  }, [files, loadedFolders]);
 
   const toggleFolder = async (path: string) => {
     const isCurrentlyExpanded = expandedFolders.has(path);
@@ -82,51 +88,153 @@ export function FileBrowser({
     setExpandedFolders(newExpanded);
   };
 
+  const handleFileDrop = async (acceptedFiles: File[], targetPath?: string) => {
+    const uploadPath = targetPath || currentPath;
+
+    // Clear any lingering drag states
+    setDragOverFolder(null);
+    setIsRootDragActive(false);
+
+    for (const file of acceptedFiles) {
+      const fullPath = `${uploadPath}/${file.name}`.replace(/\/+/g, "/");
+      setUploading((prev) => new Set(prev).add(fullPath));
+
+      try {
+        await onFileUpload(file, fullPath);
+      } catch (error) {
+        console.error(`Failed to upload ${file.name}:`, error);
+      } finally {
+        setUploading((prev) => {
+          const newSet = new Set(prev);
+          newSet.delete(fullPath);
+          return newSet;
+        });
+      }
+    }
+
+    // Refresh files after upload
+    onRefresh();
+  };
+
+  // Root level dropzone
+  const { getRootProps } = useDropzone({
+    onDrop: (acceptedFiles) => {
+      setIsRootDragActive(false);
+      setDragOverFolder(null);
+      handleFileDrop(acceptedFiles);
+    },
+    onDragEnter: () => setIsRootDragActive(true),
+    onDragLeave: (event) => {
+      // Only clear root drag state if not over a folder
+      if (
+        !event.relatedTarget ||
+        !event.currentTarget.contains(event.relatedTarget as Node)
+      ) {
+        setIsRootDragActive(false);
+        setDragOverFolder(null);
+      }
+    },
+    noClick: true,
+    noKeyboard: true,
+  });
+
+  const handleFolderDragEnter = (folderPath: string) => {
+    setDragOverFolder(folderPath);
+  };
+
+  const handleFolderDragLeave = () => {
+    // Use a small timeout to prevent flickering when moving between child elements
+    setTimeout(() => setDragOverFolder(null), 50);
+  };
+
+  const handleFolderDrop = (e: React.DragEvent, folderPath: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOverFolder(null);
+    setIsRootDragActive(false); // Clear root drag state
+
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length > 0) {
+      handleFileDrop(files, folderPath);
+    }
+  };
+
+  const handleFolderDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation(); // Stop propagation to prevent root dropzone from activating
+  };
+
   const renderFileNode = (node: FileNode, depth: number = 0) => {
     const isExpanded = expandedFolders.has(node.path);
     const isSelected = selectedFile?.path === node.path;
     const isLoadingFolder = loadingFolders.has(node.path);
+    const isDragOver = dragOverFolder === node.path;
+    const isUploading = uploading.has(node.path);
+
+    const buttonContent = (
+      <Button
+        variant="ghost"
+        className={`w-full justify-start h-6 text-xs flex items-center gap-1 ${
+          isSelected ? "bg-accent" : ""
+        } ${isDragOver ? "bg-blue-100 border-2 border-blue-300 border-dashed" : ""}`}
+        style={{ padding: "0 0.25rem" }}
+        onClick={() => {
+          if (node.type === "folder") {
+            toggleFolder(node.path);
+          } else {
+            onFileSelect(node.path);
+          }
+        }}
+        disabled={isLoadingFolder || isUploading}
+      >
+        <span
+          className="inline-block flex-shrink-0"
+          style={{ width: `${depth * 10}px` }}
+        />
+        {node.type === "folder" ? (
+          <>
+            {isLoadingFolder || isUploading ? (
+              <RefreshCw className="h-3 w-3 flex-shrink-0 animate-spin" />
+            ) : isExpanded ? (
+              <ChevronDown className="h-3 w-3 flex-shrink-0" />
+            ) : (
+              <ChevronRight className="h-3 w-3 flex-shrink-0" />
+            )}
+            <Folder className="h-3 w-3 flex-shrink-0" />
+            {isDragOver && (
+              <Upload className="h-3 w-3 flex-shrink-0 text-blue-500" />
+            )}
+          </>
+        ) : (
+          <>
+            <ChevronRight className="h-3 w-3 flex-shrink-0 invisible" />
+            <File className="h-3 w-3 flex-shrink-0" />
+          </>
+        )}
+        <span className="truncate">{node.name}</span>
+      </Button>
+    );
 
     return (
       <div key={node.path}>
-        <Button
-          variant="ghost"
-          className={`w-full justify-start h-6 text-xs flex items-center gap-1 ${
-            isSelected ? "bg-accent" : ""
-          }`}
-          style={{ padding: "0 0.25rem" }}
-          onClick={() => {
-            if (node.type === "folder") {
-              toggleFolder(node.path);
-            } else {
-              onFileSelect(node.path);
-            }
-          }}
-          disabled={isLoadingFolder}
-        >
-          <span
-            className="inline-block flex-shrink-0"
-            style={{ width: `${depth * 10}px` }}
-          />
-          {node.type === "folder" ? (
-            <>
-              {isLoadingFolder ? (
-                <RefreshCw className="h-3 w-3 flex-shrink-0 animate-spin" />
-              ) : isExpanded ? (
-                <ChevronDown className="h-3 w-3 flex-shrink-0" />
-              ) : (
-                <ChevronRight className="h-3 w-3 flex-shrink-0" />
-              )}
-              <Folder className="h-3 w-3 flex-shrink-0" />
-            </>
-          ) : (
-            <>
-              <ChevronRight className="h-3 w-3 flex-shrink-0 invisible" />
-              <File className="h-3 w-3 flex-shrink-0" />
-            </>
-          )}
-          <span className="truncate">{node.name}</span>
-        </Button>
+        {node.type === "folder" ? (
+          <div
+            onDragEnter={(e) => {
+              e.stopPropagation();
+              handleFolderDragEnter(node.path);
+            }}
+            onDragLeave={(e) => {
+              e.stopPropagation();
+              handleFolderDragLeave();
+            }}
+            onDragOver={handleFolderDragOver}
+            onDrop={(e) => handleFolderDrop(e, node.path)}
+          >
+            {buttonContent}
+          </div>
+        ) : (
+          buttonContent
+        )}
         {node.type === "folder" && isExpanded && node.children && (
           <div>
             {node.children.map((child) => renderFileNode(child, depth + 1))}
@@ -137,41 +245,52 @@ export function FileBrowser({
   };
 
   return (
-    <div className="h-full flex flex-col">
-      <ScrollArea className="flex-1">
-        <div className="py-2">
-          {error ? (
-            <div className="text-center text-destructive py-8">
-              <File className="h-8 w-8 mx-auto mb-2" />
-              <p className="text-sm">Error loading files</p>
-              <p className="text-xs">{error}</p>
-              <Button
-                variant="outline"
-                size="sm"
-                className="mt-2"
-                onClick={onRefresh}
-              >
-                Try again
-              </Button>
-            </div>
-          ) : loading ? (
-            <div className="text-center text-muted-foreground py-8">
-              <RefreshCw className="h-8 w-8 mx-auto mb-2 animate-spin" />
-              <p className="text-sm">Loading files...</p>
-            </div>
-          ) : fileTree.length > 0 ? (
-            fileTree.map((node) => renderFileNode(node))
-          ) : (
-            <div className="text-center text-muted-foreground py-8">
-              <File className="h-8 w-8 mx-auto mb-2" />
-              <p className="text-sm">No files to display</p>
-              <p className="text-xs">
-                Files will appear here when the AI generates code
+    <div className="h-full flex flex-col overflow-auto" {...getRootProps()}>
+      <div
+        className={`py-2 ${isRootDragActive ? "bg-blue-50 border-2 border-blue-300 border-dashed rounded-lg" : ""}`}
+      >
+        {isRootDragActive && (
+          <div className="text-center text-blue-600 py-4">
+            <Upload className="h-8 w-8 mx-auto mb-2" />
+            <p className="text-sm font-medium">Drop files here to upload</p>
+          </div>
+        )}
+        {error ? (
+          <div className="text-center text-destructive py-8">
+            <File className="h-8 w-8 mx-auto mb-2" />
+            <p className="text-sm">Error loading files</p>
+            <p className="text-xs">{error}</p>
+            <Button
+              variant="outline"
+              size="sm"
+              className="mt-2"
+              onClick={onRefresh}
+            >
+              Try again
+            </Button>
+          </div>
+        ) : loading ? (
+          <div className="text-center text-muted-foreground py-8">
+            <RefreshCw className="h-8 w-8 mx-auto mb-2 animate-spin" />
+            <p className="text-sm">Loading files...</p>
+          </div>
+        ) : fileTree.length > 0 ? (
+          fileTree.map((node) => renderFileNode(node))
+        ) : (
+          <div className="text-center text-muted-foreground py-8">
+            <File className="h-8 w-8 mx-auto mb-2" />
+            <p className="text-sm">No files to display</p>
+            <p className="text-xs">
+              Files will appear here when the AI generates code
+            </p>
+            {isRootDragActive && (
+              <p className="text-xs text-blue-600 mt-2">
+                Drop files to get started
               </p>
-            </div>
-          )}
-        </div>
-      </ScrollArea>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

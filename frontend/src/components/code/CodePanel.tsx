@@ -36,11 +36,13 @@ export function CodePanel({
   const initialPath = "/workspace";
   const {
     files,
+    currentPath,
     loading,
     error,
     loadedFolders,
     loadingFolders,
     readFile,
+    uploadFile,
     refreshFiles,
     loadFolderContents,
   } = useAgentSessionFiles({
@@ -129,6 +131,10 @@ export function CodePanel({
                   loadedFolders={loadedFolders}
                   loadingFolders={loadingFolders}
                   onLoadFolderContents={loadFolderContents}
+                  currentPath={currentPath}
+                  onFileUpload={async (file: File, targetPath: string) => {
+                    await uploadFile(file, targetPath);
+                  }}
                 />
               </CollapsibleContent>
             </div>
