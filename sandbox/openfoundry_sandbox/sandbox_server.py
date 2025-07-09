@@ -275,7 +275,7 @@ def list_files() -> dict:
     """
     List all available files under the workspace directory.
     """
-    default_roots = [WORKSPACE_DIR]
+    default_roots = [WORKSPACE_DIR, "/etc/secrets/connections"]
     files = find_all_files(default_roots)
     return {"files": files}
 

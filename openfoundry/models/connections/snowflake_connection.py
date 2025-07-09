@@ -70,7 +70,7 @@ class SnowflakeConnection(ConnectionBase):
             "SNOWFLAKE_DATABASE": self.database,
             "SNOWFLAKE_WAREHOUSE": self.warehouse,
             "SNOWFLAKE_SCHEMA": self.schema,
-            "SNOWFLAKE_PRIVATE_KEY": format_private_key_for_snowflake(self.private_key),
+            "SNOWFLAKE_PRIVATE_KEY": self.private_key,
         }
 
     def check_connection(self) -> None:

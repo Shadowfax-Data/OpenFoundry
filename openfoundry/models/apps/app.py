@@ -4,8 +4,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+import jinja2
 import uuid6
-from jinja2 import Environment, FileSystemLoader
 from sqlalchemy import DateTime, func
 from sqlalchemy.dialects.postgresql import UUID as PostgresUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -54,13 +54,22 @@ class App(Base):
         # Create the app.py file inside the files directory
         app_file = os.path.join(app_dir, "app.py")
 
-        # Setup Jinja2 environment
-        template_dir = Path(__file__).parent
-        env = Environment(loader=FileSystemLoader(template_dir))
-        template = env.get_template("app.py.j2")
+        # Extract available connection types from the app's connections
+        available_connection_types = set()
+        if self.connections:
+            available_connection_types = {conn.type.value for conn in self.connections}
 
-        # Render the template with app context
-        rendered_content = template.render()
+        current_dir = Path(__file__).parent
+
+        # Load and render the Jinja2 template
+        template_file_path = os.path.join(current_dir, "app.py.j2")
+        with open(template_file_path, "r") as f:
+            app_content_template_str = f.read()
+
+        app_template = jinja2.Template(app_content_template_str)
+        rendered_content = app_template.render(
+            available_connection_types=available_connection_types
+        )
 
         # Write the rendered content to app.py
         with open(app_file, "w") as f:

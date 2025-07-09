@@ -53,6 +53,7 @@ altair = {extras = ["all"], version = "^5.5.0"}
 python-multipart = "^0.0.20"
 snowflake-connector-python = "^3.16.0"
 pyarrow = "^18.1.0"
+cryptography = "^45.0.5"
 
 [tool.poetry.group.dev.dependencies]
 pytest = ">=7.0.0"

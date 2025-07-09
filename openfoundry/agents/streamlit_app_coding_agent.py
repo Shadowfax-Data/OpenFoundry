@@ -6,7 +6,6 @@ from openai.types.shared.reasoning import Reasoning
 
 from openfoundry.agents.bash_tools import (
     list_processes,
-    run_shell_command,
     tail_process_logs,
 )
 from openfoundry.agents.common_tools import (
@@ -16,6 +15,7 @@ from openfoundry.agents.common_tools import (
     write_file,
 )
 from openfoundry.agents.run_context import AppAgentRunContext
+from openfoundry.agents.utils.template_loader import load_prompt_template
 
 STREAMLIT_APP_CODING_AGENT_NAME = "streamlit_app_coding_agent"
 
@@ -28,27 +28,17 @@ def get_streamlit_app_coding_agent(
     *args,
     **kwargs,
 ) -> Agent:
-    instructions = """
-You are an expert software engineer and conversation facilitator, specialized in building robust, production-grade interactive Streamlit apps by interacting with the user.
-
-## Capabilities
-- May **read** and **write** files with the `read_file` and `write_file` tools
-- May list directory contents with the `list_files` tool
-- May list processes with the `list_processes` tool
-- May run shell commands with the `run_shell_command` tool
-- May tail process logs with the `tail_process_logs` tool
-- May visualize the current state of the app with the `visualize_app` tool
-    """
+    template_name = "apps/streamlit_app_coding_agent.j2"
+    selected_prompt = load_prompt_template(template_name)
 
     return Agent(
         name=STREAMLIT_APP_CODING_AGENT_NAME,
-        instructions=instructions,
+        instructions=selected_prompt,
         tools=[
             write_file,
             read_file,
             list_files,
             list_processes,
-            run_shell_command,
             tail_process_logs,
             visualize_app,
         ],
