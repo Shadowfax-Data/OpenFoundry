@@ -514,14 +514,8 @@ async def _perform_initialization(request: InitializeRequest):
             store_secret(secret)
 
     # Initialize connections from /etc/secrets/connections/
-    try:
-        logger.info("Initializing connections")
-        connection_manager.initialize_connections()
-        logger.info(
-            f"Initialized {len(connection_manager.list_connections())} connections: {connection_manager.list_connections()}"
-        )
-    except Exception as e:
-        logger.error(f"Failed to initialize connections: {e}")
+    connection_manager.initialize_connections()
+    logger.info(f"Initialized connections: {connection_manager.list_connections()}")
 
     # Handle streamlit startup if streamlit_run_config is present
     if request.streamlit_run_config:
