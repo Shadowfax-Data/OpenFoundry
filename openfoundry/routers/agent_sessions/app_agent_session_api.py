@@ -29,6 +29,7 @@ from openfoundry.models.agent_sessions import (
 )
 from openfoundry.models.agent_sessions.docker_utils import (
     SecretPayload,
+    container_exists,
     export_workspace_from_container,
 )
 from openfoundry.models.apps import App
@@ -464,11 +465,12 @@ def delete_app_agent_session(
         )
 
     agent_session = app_agent_session.agent_session
-    app_agent_session.stop_in_docker()
-    app_agent_session.remove_from_docker()
-    logger.info(
-        f"Container {agent_session.container_id} stopped and removed for session {session_id}"
-    )
+    if container_exists(agent_session.container_id):
+        app_agent_session.stop_in_docker()
+        app_agent_session.remove_from_docker()
+        logger.info(
+            f"Container {agent_session.container_id} stopped and removed for session {session_id}"
+        )
 
     # Delete the app agent session and its associated agent session
     db.delete(app_agent_session)
