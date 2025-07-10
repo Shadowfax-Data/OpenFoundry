@@ -9,6 +9,8 @@ from openfoundry.agents.bash_tools import (
     tail_process_logs,
 )
 from openfoundry.agents.common_tools import (
+    execute_sql,
+    list_connections,
     list_files,
     read_file,
     visualize_app,
@@ -41,6 +43,8 @@ def get_streamlit_app_coding_agent(
             list_processes,
             tail_process_logs,
             visualize_app,
+            list_connections,
+            execute_sql,
         ],
         model="o4-mini",
         model_settings=ModelSettings(

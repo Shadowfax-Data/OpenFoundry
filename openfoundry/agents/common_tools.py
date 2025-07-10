@@ -7,7 +7,7 @@ that are used across different agent implementations.
 from agents import RunContextWrapper, function_tool
 
 from openfoundry.agents.run_context import AgentRunContext
-from openfoundry.agents.utils.format_utils import truncate
+from openfoundry.agents.utils.format_utils import dict_to_xml, truncate
 
 
 @function_tool
@@ -177,6 +177,72 @@ async def list_files(
             raise Exception(f"Failed to list files: {response.text}")
 
         return response.json()["files"]
+
+
+@function_tool
+async def list_connections(
+    wrapper: RunContextWrapper[AgentRunContext],
+    thought: str,
+):
+    """List all available connections to the agent. The connection name and it's type will be returned.
+
+    Args:
+        wrapper: The agent run context wrapper for accessing sandbox client.
+        thought: Your thought process for using this tool. It will be displayed in the chat to the user. Talk in first person and present reasoning as to why you are using this tool.
+
+    """
+    async with wrapper.context.get_sandbox_client() as client:
+        response = await client.get("/connections/")
+        if response.is_error:
+            raise Exception(f"Failed to list connections: {response.text}")
+
+        return dict_to_xml(response.json())
+
+
+@function_tool
+async def execute_sql(
+    wrapper: RunContextWrapper[AgentRunContext],
+    thought: str,
+    sql_statement: str,
+    connection_name: str,
+):
+    """Execute a single SQL statement against the destination database.
+
+    Before using this tool the agent MUST follow these steps in order:
+    1.  Call the `list_connections` tool to retrieve the list of available connections.
+    2.  Analyze the user's prompt to identify the most logical `connection_name` from the retrieved list.
+    3.  Invoke this tool, passing the selected `connection_name` and the `sql_statement`.
+    4.  If no suitable connection is found in step 1, the agent must inform the user and must NOT call this tool.
+
+    Args:
+        wrapper: The agent run context wrapper for accessing sandbox client.
+
+        thought: A first-person explanation of why you're running this SQL.
+            This will be shown to the user in chat, so clearly explain your reasoning and intent.
+
+        sql_statement: A single SQL statement to execute.
+            Only one statement is allowed per call — for example:
+            - SELECT * FROM customers WHERE country = 'US' LIMIT 100;
+            - SHOW TABLES;
+            - DESCRIBE orders;
+
+        connection_name: The name of the target database connection.
+
+            The statement must be read-only (e.g., SELECT, DESCRIBE, SHOW) unless the user
+            has explicitly confirmed the action. Statements that modify the database
+            (e.g., CREATE, DROP, DELETE, UPDATE) should not be executed without prior user confirmation.
+            To prevent excessively large result sets, any SELECT statements must include LIMIT 100.
+
+    """
+    async with wrapper.context.get_sandbox_client() as client:
+        response = await client.post(
+            "/execute_sql",
+            json={"sql_statement": sql_statement, "connection_name": connection_name},
+        )
+        if response.is_error:
+            raise Exception(f"Failed to execute SQL: {response.text}")
+
+        return dict_to_xml(response.json())
 
 
 @function_tool

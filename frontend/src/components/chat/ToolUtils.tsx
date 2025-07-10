@@ -49,6 +49,8 @@ export const getToolIcon = (functionName: string) => {
       return <Pencil className={baseClasses} />;
     case "visualize_app":
       return <Eye className={baseClasses} />;
+    case "list_connections":
+      return <Search className={baseClasses} />;
     default:
       return <Wrench className={baseClasses} />;
   }
@@ -99,6 +101,8 @@ export const getToolLabel = (
       return "Using File Editor";
     case "visualize_app":
       return "Visualizing App";
+    case "list_connections":
+      return "Listing Connections";
     default:
       return "Using Tool";
   }
