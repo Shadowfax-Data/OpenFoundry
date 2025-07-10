@@ -18,6 +18,8 @@ from playwright.sync_api import sync_playwright
 from pydantic import BaseModel, Field
 
 from openfoundry_sandbox.config import WORKSPACE_DIR
+from openfoundry_sandbox.connection_manager import connection_manager
+from openfoundry_sandbox.connections_api import router as connections_api_router
 from openfoundry_sandbox.files_api import router as files_api_router
 from openfoundry_sandbox.find_api import router as find_api_router
 from openfoundry_sandbox.pcb_api import RunRequest, run_process_core
@@ -79,6 +81,19 @@ class StrReplaceEditorResponse(BaseModel):
         from_attributes = True
 
 
+# SQL Execution
+class ExecuteSqlRequest(BaseModel):
+    sql_statement: str
+    connection_name: str
+
+
+class ExecuteSqlResponse(BaseModel):
+    success: bool
+    rows_affected: int
+    data: list[dict]
+    error: str | None = None
+
+
 editor = OHEditor(workspace_root=WORKSPACE_DIR)
 
 
@@ -134,6 +149,13 @@ async def lifespan(app: FastAPI):
 
     yield
 
+    # Cleanup connections on shutdown
+    try:
+        connection_manager.cleanup_connections()
+        logger.info("Cleaned up all connections during shutdown")
+    except Exception as e:
+        logger.error(f"Error cleaning up connections during shutdown: {e}")
+
 
 app = FastAPI(lifespan=lifespan)
 
@@ -141,6 +163,7 @@ app.include_router(pcb_api_router)
 app.include_router(find_api_router)
 app.include_router(files_api_router)
 app.include_router(secrets_api_router)
+app.include_router(connections_api_router)
 
 
 @app.get("/health")
@@ -439,16 +462,66 @@ def visualize_app():
     return {"content": markdown_text.strip()}
 
 
+# SQL Execution Endpoint
+@app.post("/execute_sql", response_model=ExecuteSqlResponse)
+def execute_sql(request: ExecuteSqlRequest):
+    """
+    Execute a SQL statement on a specified connection.
+    """
+    logger.info(
+        f"Received execute_sql request: sql_statement='{request.sql_statement}', connection_name='{request.connection_name}'"
+    )
+
+    try:
+        # Get the connection from the connection manager
+        connection = connection_manager.get_connection(request.connection_name)
+
+        if connection is None:
+            return ExecuteSqlResponse(
+                success=False,
+                rows_affected=0,
+                data=[],
+                error=f"Connection '{request.connection_name}' not found. Available connections: {connection_manager.list_connections()}",
+            )
+
+        # Execute the SQL statement
+        result = connection.execute_sql(request.sql_statement)
+
+        # Return the result
+        return ExecuteSqlResponse(
+            success=result.success,
+            rows_affected=result.rows_affected,
+            data=result.data,
+            error=result.error,
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to execute SQL: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
+        )
+
+
 # --- Helper Functions ---
 
 
 async def _perform_initialization(request: InitializeRequest):
-    """Perform initialization including file templates, secrets, and streamlit startup."""
+    """Perform initialization including file templates, secrets, connections, and streamlit startup."""
 
     # Handle secrets initialization if present
     if request.secrets:
         for secret in request.secrets:
             store_secret(secret)
+
+    # Initialize connections from /etc/secrets/connections/
+    try:
+        logger.info("Initializing connections")
+        connection_manager.initialize_connections()
+        logger.info(
+            f"Initialized {len(connection_manager.list_connections())} connections: {connection_manager.list_connections()}"
+        )
+    except Exception as e:
+        logger.error(f"Failed to initialize connections: {e}")
 
     # Handle streamlit startup if streamlit_run_config is present
     if request.streamlit_run_config:
