@@ -1,5 +1,3 @@
-from typing import Optional
-
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
@@ -14,54 +12,37 @@ class ConnectionInfo(BaseModel):
 
     name: str
     type: str
-    status: str
 
 
-@router.get("/", response_model=list[str])
+@router.get("/", response_model=list[ConnectionInfo])
 def list_connections():
     """
-    Lists the names of available initialized connections.
+    Lists the available initialized connections with their names and types.
 
     Connection names are determined by successfully initialized connections
     from /etc/secrets/connections/.
     """
     try:
-        return connection_manager.list_connections()
+        connection_names = connection_manager.list_connections()
+        connections_info = []
+
+        for name in connection_names:
+            connection = connection_manager.get_connection(name)
+            if connection is not None:
+                # Determine connection type from class name
+                connection_type = connection.__class__.__name__.lower().replace(
+                    "connection", ""
+                )
+                connections_info.append(ConnectionInfo(name=name, type=connection_type))
+
+        return connections_info
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Error retrieving connections: {e}"
         )
 
 
-@router.get("/{connection_name}")
-def get_connection_info(connection_name: str):
-    """
-    Get information about a specific connection.
-    """
-    try:
-        connection = connection_manager.get_connection(connection_name)
-        if connection is None:
-            raise HTTPException(
-                status_code=404, detail=f"Connection '{connection_name}' not found"
-            )
-
-        # Try to determine connection type from class name
-        connection_type = connection.__class__.__name__.lower().replace(
-            "connection", ""
-        )
-
-        return ConnectionInfo(
-            name=connection_name, type=connection_type, status="active"
-        )
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Error retrieving connection info: {e}"
-        )
-
-
-def get_connection(connection_name: str) -> Optional[Connection]:
+def get_connection(connection_name: str) -> Connection | None:
     """
     Helper function to get a connection by name for use in other modules.
 

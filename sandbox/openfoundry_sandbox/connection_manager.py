@@ -1,7 +1,8 @@
+from __future__ import annotations
+
 import logging
 import os
 from pathlib import Path
-from typing import Optional, Type
 
 from connections.connection import Connection
 from connections.snowflake_connection import SnowflakeConnection
@@ -13,15 +14,13 @@ logger = logging.getLogger(__name__)
 class ConnectionManager:
     """Singleton manager for database connections."""
 
-    _instance: Optional["ConnectionManager"] = None
+    _instance: "ConnectionManager" | None = None
     _connections: dict[str, Connection] = {}
 
     # Registry of connection types - easily extensible for new connection types
-    _connection_types: dict[str, Type[Connection]] = {
+    _connection_types: dict[str, type[Connection]] = {
         "snowflake": SnowflakeConnection,
         # Add more connection types here as they are implemented
-        # 'databricks': DatabricksConnection,
-        # 'postgres': PostgresConnection,
     }
 
     def __new__(cls) -> "ConnectionManager":
@@ -38,7 +37,7 @@ class ConnectionManager:
         self._initialized = True
         logger.info("ConnectionManager initialized")
 
-    def get_connection(self, connection_name: str) -> Optional[Connection]:
+    def get_connection(self, connection_name: str) -> Connection | None:
         """Get a connection by name."""
         return self._connections.get(connection_name)
 
@@ -75,7 +74,7 @@ class ConnectionManager:
 
     def _create_connection(
         self, connection_name: str, connection_path: Path
-    ) -> Optional[Connection]:
+    ) -> Connection | None:
         """Create a connection from the files in the connection directory."""
         try:
             secrets = {}

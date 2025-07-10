@@ -35,11 +35,9 @@ class SnowflakeConnection(Connection):
         self.account = secrets["SNOWFLAKE_ACCOUNT"]
         self.warehouse = secrets["SNOWFLAKE_WAREHOUSE"]
         self.role = secrets["SNOWFLAKE_ROLE"]
-        print(f"Snowflake connection initialized with pk: {self.private_key}")
 
     def _init_connection(self) -> None:
         """Initialize the Snowflake connection using keypair authentication"""
-        print(f"Initializing Snowflake connection with pk: {self.private_key}")
         self._conn = snowflake.connector.connect(
             user=self.user,
             private_key=self.private_key,
@@ -49,7 +47,6 @@ class SnowflakeConnection(Connection):
             schema=self.schema,
             role=self.role,
         )
-        print(f"Snowflake connection initialized with pk: {self.private_key}")
 
     def cleanup(self) -> None:
         """Clean up any resources used by the connection"""
