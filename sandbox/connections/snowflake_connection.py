@@ -3,7 +3,6 @@ from typing import Any
 import snowflake.connector
 
 from .connection import Connection
-from .utils import format_private_key_for_snowflake
 
 
 class SnowflakeConnection(Connection):
@@ -28,9 +27,7 @@ class SnowflakeConnection(Connection):
         self.database = secrets["SNOWFLAKE_DATABASE"]
         self.schema = secrets["SNOWFLAKE_SCHEMA"]
 
-        self.private_key = format_private_key_for_snowflake(
-            secrets["SNOWFLAKE_PRIVATE_KEY"]
-        )
+        self.private_key = secrets["SNOWFLAKE_PRIVATE_KEY"]
         self.user = secrets["SNOWFLAKE_USER"]
         self.account = secrets["SNOWFLAKE_ACCOUNT"]
         self.warehouse = secrets["SNOWFLAKE_WAREHOUSE"]

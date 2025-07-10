@@ -51,25 +51,11 @@ def get_snowflake_conn():
         st.info("Snowflake connection secrets not found.")
         return None
 
-    private_key_pem = SNOWFLAKE_CREDS.get("SNOWFLAKE_PRIVATE_KEY")
-    if not private_key_pem:
-        st.error("Private key not found in Snowflake secrets.")
-        return None
-
     try:
-        # Decode the private key
-        p_key_bytes = private_key_pem.encode("utf-8")
-        p_key = serialization.load_pem_private_key(
-            p_key_bytes,
-            password=None,  # Assuming the key is not password-protected
-            backend=default_backend(),
-        )
-
-        # Create a copy of the creds and replace the key string with the key object
         conn_params = {
             "account": SNOWFLAKE_CREDS.get("SNOWFLAKE_ACCOUNT"),
             "user": SNOWFLAKE_CREDS.get("SNOWFLAKE_USER"),
-            "private_key": p_key,
+            "private_key": SNOWFLAKE_CREDS.get("SNOWFLAKE_PRIVATE_KEY"),
             "role": SNOWFLAKE_CREDS.get("SNOWFLAKE_ROLE"),
             "warehouse": SNOWFLAKE_CREDS.get("SNOWFLAKE_WAREHOUSE"),
             "database": SNOWFLAKE_CREDS.get("SNOWFLAKE_DATABASE"),
