@@ -1,3 +1,4 @@
+import enum
 import uuid
 from datetime import datetime
 
@@ -33,7 +34,7 @@ from openfoundry.models.agent_sessions.docker_utils import (
     export_workspace_from_container,
 )
 from openfoundry.models.apps import App
-from openfoundry.models.connections import ALL_CONNECTION_CLASSES
+from openfoundry.models.connections import ALL_CONNECTION_CLASSES, Connection
 from openfoundry.models.connections.connection import ConnectionBase
 
 # Define terminal statuses for agent sessions
@@ -111,6 +112,17 @@ class WriteFileResponse(BaseModel):
 
     message: str
     file_info: FileInfo
+
+
+class SecretType(enum.Enum):
+    CONNECTIONS = "connections"
+
+
+class UploadSecretsRequest(BaseModel):
+    """Request model for uploading secrets to sandbox."""
+
+    secret_type: SecretType
+    id: uuid.UUID
 
 
 def get_app_agent_run_context(
@@ -592,6 +604,78 @@ async def upload_file_to_sandbox(
         )
         response.raise_for_status()
         return response.json()
+
+
+@router.post(
+    "/apps/{app_id}/sessions/{session_id}/upload_secrets",
+)
+async def upload_secrets_to_sandbox(
+    request: Request,
+    app_id: uuid.UUID,
+    session_id: uuid.UUID,
+    upload_request: UploadSecretsRequest,
+    run_context: AppAgentRunContext = Depends(get_app_agent_run_context),
+):
+    """Upload secrets to the sandbox based on secret type and ID."""
+    db: Session = request.state.db
+
+    # Get secret payload and metadata based on secret type
+    if upload_request.secret_type == SecretType.CONNECTIONS:
+        secret_payload, secret_name = _get_connection_secrets(db, upload_request.id)
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Unsupported secret type"
+        )
+
+    async with run_context.get_sandbox_client() as client:
+        response = await client.put("/secrets/", json=secret_payload.model_dump())
+        response.raise_for_status()
+
+    return {
+        "message": f"Secrets for '{secret_name}' uploaded successfully",
+        "secret_type": upload_request.secret_type.value,
+        "id": upload_request.id,
+    }
+
+
+def _get_connection_secrets(
+    db: Session, connection_id: uuid.UUID
+) -> tuple[SecretPayload, str]:
+    """Get secrets for a connection by ID."""
+    # Query the base connection first
+    connection = db.query(Connection).filter(Connection.id == connection_id).first()
+
+    if not connection:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Connection with id {connection_id} not found",
+        )
+
+    # Find the concrete connection class
+    connection_class: type[ConnectionBase] = next(
+        (cls for cls in ALL_CONNECTION_CLASSES if cls.type == connection.type)
+    )
+
+    # Query the concrete connection
+    concrete_connection = (
+        db.query(connection_class).filter(connection_class.id == connection_id).first()
+    )
+
+    if not concrete_connection:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Concrete connection with id {connection_id} not found",
+        )
+
+    # Extract secrets
+    env_vars = concrete_connection.get_env_vars()
+    secret_payload = SecretPayload(
+        name=connection.name,
+        secrets=env_vars,
+        prefix=CONNECTION_DIR,
+    )
+
+    return secret_payload, connection.name
 
 
 @router.post(

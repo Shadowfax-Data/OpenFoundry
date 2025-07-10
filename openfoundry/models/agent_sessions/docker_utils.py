@@ -4,14 +4,14 @@ import tarfile
 import tempfile
 from functools import cache
 from pathlib import Path
-from typing import NamedTuple
 
 import docker
+from pydantic import BaseModel
 
 from openfoundry.logger import logger
 
 
-class SecretPayload(NamedTuple):
+class SecretPayload(BaseModel):
     name: str
     secrets: dict[str, str]
     prefix: str | None = None

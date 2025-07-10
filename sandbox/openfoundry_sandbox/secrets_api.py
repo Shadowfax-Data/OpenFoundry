@@ -3,10 +3,11 @@ import shutil
 from pathlib import Path
 from typing import Dict, Optional
 
-from fastapi import APIRouter, Body
+from fastapi import APIRouter, Body, HTTPException, status
 from pydantic import BaseModel, Field
 
-from openfoundry_sandbox.config import SECRETS_BASE
+from openfoundry_sandbox.config import CONNECTIONS_DIR, SECRETS_BASE
+from openfoundry_sandbox.connection_manager import connection_manager
 
 router = APIRouter(prefix="/secrets", tags=["secrets"])
 
@@ -41,6 +42,17 @@ def store_secret(payload: SecretPayload):
 @router.put("/")
 def put_secret(payload: SecretPayload = Body(...)):
     secret_dir = store_secret(payload)
+
+    # Check if this is a connection secret and add it to connection manager
+    if payload.prefix and (SECRETS_BASE / payload.prefix) == CONNECTIONS_DIR:
+        try:
+            connection_manager.add_connection(secret_dir, payload.name)
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Failed to add connection: {str(e)}",
+            )
+
     return {
         "message": f"Secret '{payload.name}' stored successfully.",
         "path": str(secret_dir),
