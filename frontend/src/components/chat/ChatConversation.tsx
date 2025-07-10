@@ -1,7 +1,9 @@
 import { useEffect, useRef } from "react";
+import { Button } from "@/components/ui/button";
 import { ChatInput } from "./ChatInput";
 import { ChatMessage } from "./ChatMessage";
 import { Message } from "@/store/slices/chatSliceFactory";
+import { RotateCcw } from "lucide-react";
 
 interface ChatConversationProps {
   title?: string;
@@ -12,6 +14,8 @@ interface ChatConversationProps {
   placeholder?: string;
   className?: string;
   disabled?: boolean;
+  onResetChat?: () => Promise<void> | void;
+  isResetting?: boolean;
 }
 
 export function ChatConversation({
@@ -23,6 +27,8 @@ export function ChatConversation({
   placeholder = "Type your message…",
   className = "",
   disabled = false,
+  onResetChat,
+  isResetting = false,
 }: ChatConversationProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const prevMessagesLengthRef = useRef<number>(messages.length);
@@ -50,8 +56,20 @@ export function ChatConversation({
     <div className={`w-full bg-background flex flex-col ${className}`}>
       {" "}
       {/* Header */}
-      <div className="px-4 py-2 border-b flex items-center h-10">
+      <div className="px-4 py-2 border-b flex items-center justify-between h-10">
         <h2 className="font-semibold text-sm truncate">{title}</h2>
+        {onResetChat && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onResetChat}
+            disabled={isResetting || isStreaming}
+            className="h-7 px-2 text-xs"
+          >
+            <RotateCcw className="h-3 w-3 mr-1" />
+            {isResetting ? "Resetting..." : "Reset"}
+          </Button>
+        )}
       </div>
       {/* Messages */}
       <div className="flex-1 overflow-auto p-4 space-y-4 w-full bg-background">

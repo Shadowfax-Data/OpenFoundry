@@ -121,6 +121,33 @@ export const resumeAppAgentSession = createAsyncThunk(
   },
 );
 
+// Async thunk for deleting an app agent session
+export const deleteAppAgentSession = createAsyncThunk(
+  "appAgentSessions/deleteAppAgentSession",
+  async (
+    { appId, sessionId }: { appId: string; sessionId: string },
+    { rejectWithValue },
+  ) => {
+    try {
+      const response = await fetch(`/api/apps/${appId}/sessions/${sessionId}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      return { appId, sessionId };
+    } catch (error) {
+      return rejectWithValue(
+        error instanceof Error
+          ? error.message
+          : "Failed to delete app agent session",
+      );
+    }
+  },
+);
+
 const initialState: AppAgentSessionsState = {
   sessions: {},
   loading: false,
@@ -217,6 +244,25 @@ const appAgentSessionsSlice = createSlice({
         state.loading = false;
         state.error =
           (action.payload as string) || "Failed to resume app agent session";
+      })
+      // Delete app agent session
+      .addCase(deleteAppAgentSession.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(deleteAppAgentSession.fulfilled, (state, action) => {
+        state.loading = false;
+        const { appId, sessionId } = action.payload;
+        if (state.sessions[appId]) {
+          state.sessions[appId] = state.sessions[appId].filter(
+            (s) => s.id !== sessionId,
+          );
+        }
+      })
+      .addCase(deleteAppAgentSession.rejected, (state, action) => {
+        state.loading = false;
+        state.error =
+          (action.payload as string) || "Failed to delete app agent session";
       });
   },
 });

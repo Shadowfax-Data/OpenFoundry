@@ -89,7 +89,7 @@ export function CodePanel({
     <div className="h-full bg-background relative">
       <ResizablePanelGroup direction="horizontal">
         <ResizablePanel
-          defaultSize={30}
+          defaultSize={isFileBrowserOpen ? 30 : 0}
           minSize={isFileBrowserOpen ? 20 : 0}
           maxSize={isFileBrowserOpen ? 50 : 0}
         >
@@ -150,9 +150,13 @@ export function CodePanel({
           </Collapsible>
         </ResizablePanel>
 
-        {isFileBrowserOpen && <ResizableHandle withHandle />}
+        <ResizableHandle
+          withHandle={isFileBrowserOpen}
+          disabled={!isFileBrowserOpen}
+          className={!isFileBrowserOpen ? "pointer-events-none opacity-0" : ""}
+        />
 
-        <ResizablePanel defaultSize={70}>
+        <ResizablePanel defaultSize={isFileBrowserOpen ? 70 : 100}>
           <FileEditor selectedFile={selectedFile} initialPath={initialPath} />
         </ResizablePanel>
       </ResizablePanelGroup>
