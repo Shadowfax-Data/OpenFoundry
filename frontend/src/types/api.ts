@@ -29,6 +29,7 @@ export interface AppAgentSessionFromAPI {
 // API request types
 export interface CreateAppRequest {
   name: string;
+  connection_ids: string[];
 }
 
 export interface Connection {

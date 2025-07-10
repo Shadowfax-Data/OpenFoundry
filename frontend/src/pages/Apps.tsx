@@ -29,6 +29,9 @@ import {
   resumeAppAgentSession,
   deleteAppAgentSession,
 } from "@/store/slices/appAgentSessionsSlice";
+import { fetchConnections } from "@/store/slices/connectionsSlice";
+import { Connection } from "@/types/api";
+import { MultiSelect } from "@/components/ui/multi-select";
 
 export function Apps() {
   const dispatch = useAppDispatch();
@@ -38,9 +41,13 @@ export function Apps() {
   const { sessions, error: sessionsError } = useAppSelector(
     (state) => state.appAgentSessions,
   );
+  const { connections } = useAppSelector((state) => state.connections);
 
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [newAppName, setNewAppName] = useState("");
+  const [selectedConnectionIds, setSelectedConnectionIds] = useState<string[]>(
+    [],
+  );
   const [isCreatingSession, setIsCreatingSession] = useState(false);
 
   // Track loading state for Edit button per app
@@ -54,6 +61,7 @@ export function Apps() {
   // Fetch apps on component mount
   useEffect(() => {
     dispatch(fetchApps());
+    dispatch(fetchConnections());
   }, [dispatch]);
 
   // Fetch app agent sessions for each app when apps are loaded
@@ -148,10 +156,14 @@ export function Apps() {
     try {
       // Create the app first
       const appResult = await dispatch(
-        createApp({ name: newAppName.trim() }),
+        createApp({
+          name: newAppName.trim(),
+          connection_ids: selectedConnectionIds,
+        }),
       ).unwrap();
       setNewAppName("");
       setShowCreateDialog(false);
+      setSelectedConnectionIds([]);
 
       // Show session creation loading state
       setIsCreatingSession(true);
@@ -432,6 +444,22 @@ export function Apps() {
                       className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground"
                       required
                       autoFocus
+                    />
+                  </div>
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium mb-2">
+                      Connections
+                    </label>
+                    <MultiSelect
+                      options={
+                        connections.map((c: Connection) => ({
+                          value: c.id,
+                          label: c.name,
+                        })) ?? []
+                      }
+                      selected={selectedConnectionIds}
+                      onChange={setSelectedConnectionIds}
+                      placeholder="Select connections..."
                     />
                   </div>
                   <div className="flex gap-2 justify-end">
