@@ -7,6 +7,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { MoreVertical, Database, Trash2, FilePenLine } from "lucide-react";
+import { IconBrandDatabricks, IconBrandSnowflake } from "@tabler/icons-react";
 import { Connection } from "@/types/api";
 
 interface ConnectionCardProps {
@@ -23,8 +24,9 @@ export function ConnectionCard({
   const getIconForType = (type: string) => {
     switch (type.toLowerCase()) {
       case "snowflake":
-        // You can return a specific icon for Snowflake here if you add one
-        return <Database className="h-6 w-6" />;
+        return <IconBrandSnowflake className="h-6 w-6" />;
+      case "databricks":
+        return <IconBrandDatabricks className="h-6 w-6" />;
       default:
         return <Database className="h-6 w-6" />;
     }

@@ -51,10 +51,10 @@ export function DatabricksConnectionForm() {
             id="name"
             value={formState.name}
             onChange={handleInputChange}
-            placeholder="My Databricks Warehouse"
+            placeholder="My Databricks"
           />
           <p className="text-xs text-muted-foreground">
-            A name to identify this warehouse
+            A name to identify this SQL Warehouse
           </p>
         </div>
 

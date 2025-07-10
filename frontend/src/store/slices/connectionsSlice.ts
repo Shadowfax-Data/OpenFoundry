@@ -1,5 +1,10 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
-import { Connection, SnowflakeConnectionCreate } from "@/types/api";
+import {
+  Connection,
+  SnowflakeConnectionCreate,
+  SnowflakeConnectionUpdate,
+  SnowflakeConnectionModel,
+} from "@/types/api";
 import { ConnectionsState } from "@/store/types";
 
 // Async thunk for fetching connections
@@ -16,6 +21,29 @@ export const fetchConnections = createAsyncThunk(
     } catch (error) {
       return rejectWithValue(
         error instanceof Error ? error.message : "Failed to fetch connections",
+      );
+    }
+  },
+);
+
+// Async thunk for fetching a single snowflake connection
+export const fetchSnowflakeConnection = createAsyncThunk(
+  "connections/fetchSnowflakeConnection",
+  async (connectionId: string, { rejectWithValue }) => {
+    try {
+      const response = await fetch(
+        `/api/connections/snowflake/${connectionId}`,
+      );
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const connection: SnowflakeConnectionModel = await response.json();
+      return connection;
+    } catch (error) {
+      return rejectWithValue(
+        error instanceof Error
+          ? error.message
+          : "Failed to fetch connection details",
       );
     }
   },
@@ -44,6 +72,43 @@ export const createSnowflakeConnection = createAsyncThunk(
     } catch (error) {
       return rejectWithValue(
         error instanceof Error ? error.message : "Failed to create connection",
+      );
+    }
+  },
+);
+
+// Async thunk for updating a snowflake connection
+export const updateSnowflakeConnection = createAsyncThunk(
+  "connections/updateSnowflakeConnection",
+  async (
+    {
+      connectionId,
+      connectionData,
+    }: { connectionId: string; connectionData: SnowflakeConnectionUpdate },
+    { rejectWithValue },
+  ) => {
+    try {
+      const response = await fetch(
+        `/api/connections/snowflake/${connectionId}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(connectionData),
+        },
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || "Failed to update connection");
+      }
+
+      const updatedConnection: Connection = await response.json();
+      return updatedConnection;
+    } catch (error) {
+      return rejectWithValue(
+        error instanceof Error ? error.message : "Failed to update connection",
       );
     }
   },
@@ -91,6 +156,7 @@ const initialState: ConnectionsState = {
   error: null,
   searchQuery: "",
   sortBy: "recent",
+  currentConnection: null,
 };
 
 const connectionsSlice = createSlice({
@@ -123,6 +189,21 @@ const connectionsSlice = createSlice({
         state.error =
           (action.payload as string) || "Failed to fetch connections";
       })
+      // Fetch single snowflake connection
+      .addCase(fetchSnowflakeConnection.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+        state.currentConnection = null;
+      })
+      .addCase(fetchSnowflakeConnection.fulfilled, (state, action) => {
+        state.loading = false;
+        state.currentConnection = action.payload;
+      })
+      .addCase(fetchSnowflakeConnection.rejected, (state, action) => {
+        state.loading = false;
+        state.error =
+          (action.payload as string) || "Failed to fetch connection details";
+      })
       // Create connection
       .addCase(createSnowflakeConnection.pending, (state) => {
         state.loading = true;
@@ -136,6 +217,25 @@ const connectionsSlice = createSlice({
         state.loading = false;
         state.error =
           (action.payload as string) || "Failed to create connection";
+      })
+      // Update connection
+      .addCase(updateSnowflakeConnection.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateSnowflakeConnection.fulfilled, (state, action) => {
+        state.loading = false;
+        const index = state.connections.findIndex(
+          (c) => c.id === action.payload.id,
+        );
+        if (index !== -1) {
+          state.connections[index] = action.payload;
+        }
+      })
+      .addCase(updateSnowflakeConnection.rejected, (state, action) => {
+        state.loading = false;
+        state.error =
+          (action.payload as string) || "Failed to update connection";
       })
       // Delete connection
       .addCase(deleteConnection.pending, (state) => {

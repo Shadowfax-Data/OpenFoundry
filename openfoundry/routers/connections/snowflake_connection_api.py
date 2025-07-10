@@ -6,6 +6,7 @@ from fastapi import APIRouter, HTTPException, Request, status
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session, joinedload
 
+from openfoundry.models.connections.connection import Connection
 from openfoundry.models.connections.snowflake_connection import SnowflakeConnection
 
 router = APIRouter(prefix="/api/connections")
@@ -43,6 +44,7 @@ class SnowflakeConnectionModel(BaseModel):
     warehouse: str
     schema_: str = Field(..., alias="schema")
     connection_type: str
+    private_key: str
 
     class Config:
         from_attributes = True
@@ -68,8 +70,7 @@ def get_snowflake_connection(request: Request, connection_id: UUID):
             status_code=status.HTTP_404_NOT_FOUND, detail="connection not found"
         )
 
-    connection.connection_type = connection.type.value
-
+    setattr(connection, "connection_type", connection.type.value)
     return SnowflakeConnectionModel.model_validate(connection)
 
 
@@ -78,6 +79,22 @@ def create_snowflake_connection(
     request: Request, connection_data: SnowflakeConnectionCreate
 ):
     db: Session = request.state.db
+
+    # Check if a connection with the same name already exists and is not soft-deleted
+    existing_connection = (
+        db.query(Connection)
+        .filter(
+            Connection.name == connection_data.name, Connection.deleted_on.is_(None)
+        )
+        .first()
+    )
+
+    if existing_connection:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Connection name must be unique",
+        )
+
     connection_id = uuid6.uuid6()
 
     snowflake_connection = SnowflakeConnection(
@@ -104,8 +121,7 @@ def create_snowflake_connection(
     db.commit()
     db.refresh(snowflake_connection)
 
-    snowflake_connection.connection_type = snowflake_connection.type.value
-
+    setattr(snowflake_connection, "connection_type", snowflake_connection.type.value)
     return SnowflakeConnectionModel.model_validate(snowflake_connection)
 
 
@@ -136,6 +152,24 @@ def update_snowflake_connection(
     if "schema_" in update_data:
         update_data["schema"] = update_data.pop("schema_")
 
+    # Check for name uniqueness if name is being updated
+    if "name" in update_data:
+        existing_connection = (
+            db.query(Connection)
+            .filter(
+                Connection.name == update_data["name"],
+                Connection.deleted_on.is_(None),
+                Connection.id != connection_id,
+            )
+            .first()
+        )
+
+        if existing_connection:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Connection name must be unique",
+            )
+
     for key, value in update_data.items():
         if value is not None:
             setattr(snowflake_connection, key, value)
@@ -143,7 +177,6 @@ def update_snowflake_connection(
     try:
         snowflake_connection.check_connection()
     except Exception as e:
-        db.rollback()
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Failed to connect to Snowflake with updated credentials: {e}",
@@ -152,8 +185,7 @@ def update_snowflake_connection(
     db.commit()
     db.refresh(snowflake_connection)
 
-    snowflake_connection.connection_type = snowflake_connection.type.value
-
+    setattr(snowflake_connection, "connection_type", snowflake_connection.type.value)
     return SnowflakeConnectionModel.model_validate(snowflake_connection)
 
 

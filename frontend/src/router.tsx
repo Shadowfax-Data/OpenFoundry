@@ -6,6 +6,7 @@ import { AppChat } from "@/pages/AppChat";
 import { Connections } from "@/pages/Connections";
 import { SnowflakeConnectionPage } from "@/pages/SnowflakeConnectionPage";
 import { DatabricksConnectionPage } from "@/pages/DatabricksConnectionPage";
+import { SnowflakeConnectionEditPage } from "@/pages/SnowflakeConnectionEditPage";
 
 export const router = createBrowserRouter([
   {
@@ -29,8 +30,12 @@ export const router = createBrowserRouter([
         element: <Connections />,
       },
       {
-        path: "connections/snowflake/new",
+        path: "connections/new/snowflake",
         element: <SnowflakeConnectionPage />,
+      },
+      {
+        path: "connections/edit/snowflake/:connectionId",
+        element: <SnowflakeConnectionEditPage />,
       },
       {
         path: "connections/databricks/new",
