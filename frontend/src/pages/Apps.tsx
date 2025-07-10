@@ -27,6 +27,7 @@ import {
   createAppAgentSession,
   stopAppAgentSession,
   resumeAppAgentSession,
+  deleteAppAgentSession,
 } from "@/store/slices/appAgentSessionsSlice";
 
 export function Apps() {
@@ -232,6 +233,30 @@ export function Apps() {
         ).unwrap();
       } catch (error) {
         console.error("Failed to stop session:", error);
+      }
+    }
+  };
+
+  // Helper to handle Delete Session action
+  const handleDeleteSession = async (appId: string) => {
+    const appSessions = sessions[appId] || [];
+    // Find the most recent session (active or stopped)
+    const sessionToDelete =
+      appSessions.length > 0
+        ? [...appSessions].sort(
+            (a, b) =>
+              new Date(b.created_on).getTime() -
+              new Date(a.created_on).getTime(),
+          )[0]
+        : null;
+
+    if (sessionToDelete) {
+      try {
+        await dispatch(
+          deleteAppAgentSession({ appId, sessionId: sessionToDelete.id }),
+        ).unwrap();
+      } catch (error) {
+        console.error("Failed to delete session:", error);
       }
     }
   };
@@ -471,6 +496,7 @@ export function Apps() {
                     isDeployLoading={deployLoadingAppId === app.id}
                     onEditClick={handleEditClick}
                     onStopSession={handleStopSession}
+                    onDeleteSession={handleDeleteSession}
                     onOpenApp={handleOpenApp}
                     onDeleteApp={handleDeleteApp}
                     onDeployApp={handleDeployApp}

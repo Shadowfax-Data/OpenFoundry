@@ -436,6 +436,48 @@ def resume_app_agent_session(
     return AppAgentSessionModel.model_validate(app_agent_session)
 
 
+@router.delete(
+    "/apps/{app_id}/sessions/{session_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def delete_app_agent_session(
+    app_id: uuid.UUID, session_id: uuid.UUID, request: Request
+):
+    """Delete an app agent session and its associated Docker container."""
+    db: Session = request.state.db
+
+    # Get the specific agent session for the app
+    app_agent_session = (
+        db.query(AppAgentSession)
+        .options(joinedload(AppAgentSession.agent_session))
+        .filter(
+            AppAgentSession.id == session_id,
+            AppAgentSession.app_id == app_id,
+        )
+        .first()
+    )
+
+    if not app_agent_session:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Session with id {session_id} not found for app {app_id}",
+        )
+
+    agent_session = app_agent_session.agent_session
+    app_agent_session.stop_in_docker()
+    app_agent_session.remove_from_docker()
+    logger.info(
+        f"Container {agent_session.container_id} stopped and removed for session {session_id}"
+    )
+
+    # Delete the app agent session and its associated agent session
+    db.delete(app_agent_session)
+    db.delete(agent_session)
+    db.commit()
+
+    logger.info(f"App agent session {session_id} deleted successfully")
+
+
 @router.get(
     "/apps/{app_id}/sessions/{session_id}/app_health",
 )

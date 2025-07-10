@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams } from "react-router";
+import { useParams, useNavigate } from "react-router";
 import { ChatConversation } from "@/components/chat/ChatConversation";
 import {
   ResizablePanelGroup,
@@ -11,6 +11,8 @@ import { useAppSelector, useAppDispatch } from "@/store";
 import {
   selectAppAgentSessionById,
   fetchAppAgentSessions,
+  deleteAppAgentSession,
+  createAppAgentSession,
 } from "@/store/slices/appAgentSessionsSlice";
 import { AppBuilderPanel } from "@/components/app/AppBuilderPanel";
 import { toast } from "sonner";
@@ -20,7 +22,10 @@ export function AppChat() {
     appId: string;
     sessionId: string;
   }>();
+  const navigate = useNavigate();
+  const dispatch = useAppDispatch();
   const [isSandboxReady, setIsSandboxReady] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
   const {
     messages,
     isStreaming,
@@ -37,8 +42,6 @@ export function AppChat() {
   const previewUrl = session?.app_port
     ? `${window.location.protocol}//${window.location.hostname}:${session.app_port}/`
     : undefined;
-
-  const dispatch = useAppDispatch();
 
   // Ensure sessions are loaded for this appId
   useEffect(() => {
@@ -98,6 +101,31 @@ export function AppChat() {
     }
   };
 
+  const handleResetChat = async () => {
+    if (!appId || !sessionId) return;
+
+    setIsResetting(true);
+    try {
+      // Delete the current session
+      await dispatch(deleteAppAgentSession({ appId, sessionId })).unwrap();
+
+      // Create a new session
+      const result = await dispatch(createAppAgentSession(appId)).unwrap();
+
+      // Navigate to the new session
+      navigate(`/apps/${appId}/sessions/${result.session.id}/chat`);
+
+      toast.success("Chat reset successfully. New session created.");
+    } catch (error) {
+      console.error("Failed to reset chat:", error);
+      toast.error(
+        `Failed to reset chat: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
   // Show loading state while chat history is being fetched
   if (messages.length === 0 && !error) {
     return (
@@ -141,6 +169,8 @@ export function AppChat() {
             title="Conversation"
             className="h-full"
             disabled={!isSandboxReady || isStreaming}
+            onResetChat={handleResetChat}
+            isResetting={isResetting}
           />
         </ResizablePanel>
 

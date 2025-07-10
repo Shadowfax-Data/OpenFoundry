@@ -19,7 +19,8 @@ import {
   Square,
   Pause,
   ExternalLink,
-  Trash2,
+  CircleX,
+  Trash,
   Rocket,
 } from "lucide-react";
 import { App } from "@/types/api";
@@ -32,6 +33,7 @@ interface AppCardProps {
   isDeployLoading?: boolean;
   onEditClick: (appId: string) => void;
   onStopSession?: (appId: string) => void;
+  onDeleteSession?: (appId: string) => void;
   onOpenApp?: (appId: string) => void;
   onDeleteApp?: (appId: string) => void;
   onDeployApp?: (appId: string) => void;
@@ -45,6 +47,7 @@ export function AppCard({
   isDeployLoading = false,
   onEditClick,
   onStopSession,
+  onDeleteSession,
   onOpenApp,
   onDeleteApp,
   onDeployApp,
@@ -115,14 +118,27 @@ export function AppCard({
                   </DropdownMenuItem>
                 </>
               )}
+              {sessionCount > 0 && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => onDeleteSession?.(app.id)}
+                    variant="destructive"
+                    className="cursor-pointer"
+                  >
+                    <CircleX className="h-4 w-4 mr-2" />
+                    Delete Session
+                  </DropdownMenuItem>
+                </>
+              )}
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={() => onDeleteApp?.(app.id)}
                 variant="destructive"
                 className="cursor-pointer"
               >
-                <Trash2 className="h-4 w-4 mr-2" />
-                Delete
+                <Trash className="h-4 w-4 mr-2" />
+                Delete App
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -150,12 +166,16 @@ export function AppCard({
         </div>
 
         {/* Deployment status */}
-        {app.deployment_port && (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
-            <Rocket className="h-4 w-4 text-blue-500" />
-            <span>Deployed on port {app.deployment_port}</span>
-          </div>
-        )}
+        <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4 min-h-[20px]">
+          {app.deployment_port ? (
+            <>
+              <Rocket className="h-4 w-4 text-blue-500" />
+              <span>Deployed on port {app.deployment_port}</span>
+            </>
+          ) : (
+            <span className="invisible">Deployed on port 0000</span>
+          )}
+        </div>
 
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -172,7 +192,7 @@ export function AppCard({
             onClick={() => onEditClick(app.id)}
             disabled={isEditLoading}
           >
-            {isEditLoading ? "Loading..." : "Edit"}
+            {isEditLoading ? "Loading..." : "Edit App"}
           </Button>
         </div>
       </div>
