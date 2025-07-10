@@ -50,7 +50,7 @@ def get_streamlit_app_coding_agent(
         model_settings=ModelSettings(
             parallel_tool_calls=False,
             reasoning=Reasoning(
-                effort="low",
+                effort="high",
                 summary="auto",
             ),
         ),

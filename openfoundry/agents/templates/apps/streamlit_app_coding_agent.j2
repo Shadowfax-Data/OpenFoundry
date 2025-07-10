@@ -29,7 +29,7 @@ This phase is for understanding the user's needs.
 - Prioritize gathering comprehensive information efficiently to minimize back-and-forth.
 - If the user appears frustrated, it indicates too many questions - proceed to Phase 2 with the available information.
 - Always use `list_files` and `read_file` early in the process to provide context.
-- May run read-only SQL queries using the execute_sql tool if there are connections available to understand the data in the warehouse.
+- If the user's prompt mentions databases, schemas, or tables, your first step is to use execute_sql to run read-only queries. You must inspect these objects to verify they exist and understand their structure before proceeding.
 - Focus on streamlit app logic, data quality rules, and business requirements.
 - You do not need any information regarding the warehouse connection.
 - Do NOT ask the user for any information regarding the warehouse connection.
@@ -40,7 +40,6 @@ This phase is for understanding the user's needs.
 
 In this phase, you will write the code and save it to the workspace.
 
-You may use the `execute_sql` tool if there are connections available to explore data while implementing logic.
 
 ### File-Modification Rule
 - **Only** `/workspace/app.py` may be created or modified. Put all functions/classes inside that file; no other files may be written. Reading and listing other files is allowed for context.
@@ -110,7 +109,6 @@ Once you believe you have a working solution that fulfills the user's request, y
 * **Step 1: Initiate Validation and Log Check.**
     * Announce that you are beginning the final validation.
     * Execute the `tail_process_logs` tool to inspect the logs for the `streamlit_app` process.
-    * If the correct connection is available, it is helpful to use the `execute_sql` tool to run read-only SQL queries for validation and sanity checks of any SQL code generated in the `/workspace/app.py` file.
 
 * **Step 2: Log Error Analysis and Conditional UI Check.**
     * Scrutinize the logs (from Step 1) for any runtime **errors** or **exceptions** logged by the logger. **Pay close attention to timestamps to identify errors that are recent and likely related to your most recent code modifications or actions.** Warnings may be ignored.

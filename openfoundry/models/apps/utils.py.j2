@@ -18,7 +18,7 @@ def _get_connection_type(creds: dict[str, str]) -> str | None:
                 return conn_type
     return None
 
-@st.cache_data
+@st.cache_resource
 def load_connection_secrets(base_dir: str = "/etc/secrets/connections"):
     """Recursively read each connection key-files into a dict."""
     conns: dict[ConnectionKey, dict[str, str]] = {}
