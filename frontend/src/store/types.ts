@@ -3,6 +3,7 @@ import {
   AppAgentSessionFromAPI,
   Connection,
   SnowflakeConnectionModel,
+  DatabricksConnectionModel,
 } from "@/types/api";
 import { AppChatState } from "./slices/appChatSlice";
 
@@ -25,7 +26,10 @@ export interface ConnectionsState {
   // Add any other filters like type, etc. if needed
   // statusFilter: "all" | "active" | "failed";
   sortBy: "recent" | "name";
-  currentConnection: SnowflakeConnectionModel | null;
+  currentConnection:
+    | SnowflakeConnectionModel
+    | DatabricksConnectionModel
+    | null;
 }
 
 // App Agent Sessions slice state

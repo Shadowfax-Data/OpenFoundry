@@ -7,6 +7,7 @@ import { Connections } from "@/pages/Connections";
 import { SnowflakeConnectionPage } from "@/pages/SnowflakeConnectionPage";
 import { DatabricksConnectionPage } from "@/pages/DatabricksConnectionPage";
 import { SnowflakeConnectionEditPage } from "@/pages/SnowflakeConnectionEditPage";
+import { DatabricksConnectionEditPage } from "@/pages/DatabricksConnectionEditPage";
 
 export const router = createBrowserRouter([
   {
@@ -40,6 +41,10 @@ export const router = createBrowserRouter([
       {
         path: "connections/databricks/new",
         element: <DatabricksConnectionPage />,
+      },
+      {
+        path: "connections/databricks/:connectionId",
+        element: <DatabricksConnectionEditPage />,
       },
     ],
   },

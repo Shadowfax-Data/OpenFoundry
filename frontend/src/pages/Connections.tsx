@@ -84,6 +84,9 @@ export function Connections() {
       case "snowflake":
         navigate(`/connections/snowflake/${connectionId}`);
         break;
+      case "databricks":
+        navigate(`/connections/databricks/${connectionId}`);
+        break;
       default:
         alert(
           `Editing for connection type '${connection.connection_type}' is not supported yet.`,
