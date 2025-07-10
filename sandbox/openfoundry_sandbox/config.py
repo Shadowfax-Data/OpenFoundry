@@ -9,3 +9,5 @@ WORKSPACE_DIR = "/workspace"
 MAX_FILE_SIZE = 20 * 1024 * 1024  # 20MB
 
 SECRETS_BASE = Path("/etc/secrets")
+
+CONNECTIONS_DIR = SECRETS_BASE / "connections"
