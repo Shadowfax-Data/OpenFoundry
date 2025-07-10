@@ -45,6 +45,23 @@ class ConnectionManager:
         """List all available connection names."""
         return list(self._connections.keys())
 
+    def add_connection(self, secrets_dir: Path, connection_name: str) -> None:
+        """Add a new connection from a secrets directory.
+
+        Args:
+            secrets_dir: Path to the directory containing connection secrets
+            connection_name: Name of the connection
+
+        Raises:
+            ValueError: If connection cannot be created or added
+        """
+        connection = self._create_connection(connection_name, secrets_dir)
+        if not connection:
+            raise ValueError(f"Failed to create connection '{connection_name}'")
+
+        self._connections[connection_name] = connection
+        logger.info(f"Successfully added connection: {connection_name}")
+
     def initialize_connections(self) -> None:
         """Initialize all connections from the connections directory."""
         logger.info(f"Initializing connections from {CONNECTIONS_DIR}")
