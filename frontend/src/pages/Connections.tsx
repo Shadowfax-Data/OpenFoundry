@@ -82,7 +82,7 @@ export function Connections() {
 
     switch (connection.connection_type.toLowerCase()) {
       case "snowflake":
-        navigate(`/connections/edit/snowflake/${connectionId}`);
+        navigate(`/connections/snowflake/${connectionId}`);
         break;
       default:
         alert(

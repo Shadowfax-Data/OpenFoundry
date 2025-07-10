@@ -30,11 +30,11 @@ export const router = createBrowserRouter([
         element: <Connections />,
       },
       {
-        path: "connections/new/snowflake",
+        path: "connections/snowflake/new",
         element: <SnowflakeConnectionPage />,
       },
       {
-        path: "connections/edit/snowflake/:connectionId",
+        path: "connections/snowflake/:connectionId",
         element: <SnowflakeConnectionEditPage />,
       },
       {
