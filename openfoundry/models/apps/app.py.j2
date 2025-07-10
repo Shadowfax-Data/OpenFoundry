@@ -27,7 +27,16 @@ st.subheader("Snowflake Connection")
 with st.spinner("Connecting to Snowflake..."):
     snowflake_conn = utils.get_snowflake_conn()
     if snowflake_conn:
-        st.write("Snowflake connection successful.")
+        try:
+            with snowflake_conn.cursor() as cur:
+                cur.execute("SELECT 1")
+                one_row = cur.fetchone()
+                if one_row:
+                    st.success("Snowflake connection successful.")
+                else:
+                    st.error("Snowflake connection failed.")
+        except Exception as e:
+            st.error(f"Snowflake connection failed: {e}")
     else:
-        st.write("Snowflake connection failed.")
+        st.error("Failed to create Snowflake connection object.")
 {% endif %}
