@@ -56,11 +56,6 @@ class App(Base):
         # Create directories (including parent directories)
         os.makedirs(app_dir, exist_ok=True)
 
-        # Extract available connection types from the app's connections
-        available_connection_types = set()
-        if self.connections:
-            available_connection_types = {conn.type.value for conn in self.connections}
-
         current_dir = Path(__file__).parent
 
         # Render and write utils.py
@@ -69,9 +64,7 @@ class App(Base):
             utils_template_str = f.read()
 
         utils_template = jinja2.Template(utils_template_str)
-        rendered_utils_content = utils_template.render(
-            available_connection_types=available_connection_types
-        )
+        rendered_utils_content = utils_template.render()
         utils_file = os.path.join(app_dir, "utils.py")
         with open(utils_file, "w") as f:
             f.write(rendered_utils_content)
@@ -82,9 +75,7 @@ class App(Base):
             app_template_str = f.read()
 
         app_template = jinja2.Template(app_template_str)
-        rendered_app_content = app_template.render(
-            available_connection_types=available_connection_types
-        )
+        rendered_app_content = app_template.render()
         app_file = os.path.join(app_dir, "app.py")
         with open(app_file, "w") as f:
             f.write(rendered_app_content)

@@ -22,7 +22,6 @@ if st.button('Click me!'):
     st.write('Button clicked!')
     st.balloons()
 
-{% if 'snowflake' in available_connection_types %}
 available_connections = utils.list_snowflake_connections()
 if available_connections:
     first_connection = available_connections[0]
@@ -35,4 +34,3 @@ if available_connections:
                     st.success(f"Snowflake connection '{first_connection}' is active.")
     except Exception:
         pass
-{% endif %}

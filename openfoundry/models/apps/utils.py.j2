@@ -23,7 +23,6 @@ def load_connection_secrets(base_dir: str = "/etc/secrets/connections"):
     conns: dict[ConnectionKey, dict[str, str]] = {}
     base = Path(base_dir)
     if not base.exists():
-        st.warning(f"No secrets found at {base_dir}")
         return conns
 
     for conn_dir in base.iterdir():
@@ -35,7 +34,6 @@ def load_connection_secrets(base_dir: str = "/etc/secrets/connections"):
                 conns[key] = creds
     return conns
 
-{% if 'snowflake' in available_connection_types %}
 import snowflake.connector
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
@@ -62,7 +60,6 @@ def get_snowflake_conn(connection_name: str):
     snowflake_connections = {key.name: creds for key, creds in connection_secrets.items() if key.type == "snowflake"}
 
     if not snowflake_connections:
-        st.info("No Snowflake connection secrets found.")
         return None
 
     # Select the appropriate connection
@@ -92,5 +89,3 @@ def get_snowflake_conn(connection_name: str):
     except Exception as e:
         st.error(f"Failed to connect to Snowflake connection '{connection_name}': {e}")
         return None
-
-{% endif %}

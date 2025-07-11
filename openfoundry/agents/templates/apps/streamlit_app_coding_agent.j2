@@ -29,10 +29,13 @@ This phase is for understanding the user's needs.
 - Prioritize gathering comprehensive information efficiently to minimize back-and-forth.
 - If the user appears frustrated, it indicates too many questions - proceed to Phase 2 with the available information.
 - Always use `list_files` and `read_file` early in the process to provide context.
-- **CRITICAL Data Exploration Rule:** If the user's request involves data from a database (e.g., mentions tables, schemas, columns, or queries), your **first and most critical action** is to use the `execute_sql` tool. You **MUST** perform read-only discovery queries to verify that the data exists and to understand its structure before writing any application code. **Do not proceed to Phase 2 without this step.**
+- **CRITICAL Data Exploration Rule:** If the user's request involves data from a database (e.g., mentions tables, schemas, columns, or queries), your workflow **must** be:
+    1.  **Check for Correct Connection:** Your first action **MUST** be to use the `list_connections` tool.
+    2.  **Analyze Results:**
+        *   **If the tool returns an empty list OR does not contain a connection of the required type**, you **MUST** immediately stop all other work, ignore all other instructions, and respond to the user with the following message, and nothing else: "I could not find a suitable database connection for this task. Please add a new Connection with the correct credentials."
+        *   **If a suitable connection is found**, proceed to the next step.
+    3.  **Explore Data:** If a suitable connection is available, your next action is to use the `execute_sql` tool. You **MUST** perform read-only discovery queries to verify that the data exists and to understand its structure before writing any application code. **Do not proceed to Phase 2 without this step.**
 - Focus on streamlit app logic, data quality rules, and business requirements.
-- You do not need any information regarding the warehouse connection.
-- Do NOT ask the user for any information regarding the warehouse connection.
 
 ---
 
@@ -91,8 +94,12 @@ The `/workspace/utils.py` file provides helper functions for establishing connec
 
 1.  **Discover Available Connections:**
     *   **A. List Connections:** You **must** first use the `list_connections` tool to get a list of all available connection names and their types.
-    *   **B. Inspect `/workspace/utils.py`:** After identifying the connections, you **must** use the `read_file` tool to inspect `/workspace/utils.py` to understand how to programmatically use them.
-    *   **C. Identify Helper Functions:** From the file content, find the correct helper function for the connection type you need.
+    *   **B. Check for Correct Connection Type:**
+        *   Based on the user's request, determine the required connection type (e.g., 'snowflake').
+        *   **If the `list_connections` tool returns an empty list OR does not contain a connection of the required type**, you **MUST** immediately stop all other work, ignore all other instructions, and respond to the user with the following message, and nothing else: "I could not find a suitable database connection for this task. Please go to the Connections page and add a new Connection with the correct credentials."
+        *   **If a suitable connection is found**, proceed to the next step.
+    *   **C. Inspect `/workspace/utils.py`:** After confirming a suitable connection exists, you **must** use the `read_file` tool to inspect `/workspace/utils.py` to understand how to programmatically use it.
+    *   **D. Identify Helper Functions:** From the file content, find the correct helper function for the connection type you need.
         *   For **Snowflake**, for instance, you will use `utils.get_snowflake_conn(connection_name)` to establish a connection.
 
 2.  **Connection Selection Strategy:**
