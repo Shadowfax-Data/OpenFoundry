@@ -36,7 +36,9 @@ export function ConnectionCard({
     <div className="rounded-lg border bg-card text-card-foreground shadow-sm hover:shadow-md transition-shadow">
       <div className="p-6">
         <div className="flex items-start justify-between mb-4">
-          <div className="h-12 w-12 rounded-lg bg-blue-600 flex items-center justify-center text-white">
+          <div
+            className={`h-12 w-12 rounded-lg ${connection.color} flex items-center justify-center text-white`}
+          >
             {getIconForType(connection.connection_type)}
           </div>
           <DropdownMenu>

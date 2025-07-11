@@ -32,10 +32,17 @@ export interface CreateAppRequest {
   connection_ids: string[];
 }
 
-export interface Connection {
+// Backend API response type for connections
+export interface ConnectionFromAPI {
   id: string;
   name: string;
   connection_type: string;
+}
+
+// Frontend connection type with computed UI properties
+export interface Connection extends ConnectionFromAPI {
+  // Computed/derived properties for UI
+  color: string;
 }
 
 export interface SnowflakeConnectionCreate {
@@ -77,8 +84,8 @@ export interface DatabricksConnectionCreate {
   name: string;
   host: string;
   http_path: string;
-  token: string;
-  catalog?: string;
+  access_token: string;
+  database?: string;
   schema?: string;
 }
 
@@ -86,8 +93,8 @@ export interface DatabricksConnectionUpdate {
   name?: string;
   host?: string;
   http_path?: string;
-  token?: string;
-  catalog?: string;
+  access_token?: string;
+  database?: string;
   schema?: string;
 }
 
@@ -96,7 +103,8 @@ export interface DatabricksConnectionModel {
   name: string;
   host: string;
   http_path: string;
-  catalog?: string;
+  access_token: string;
+  database?: string;
   schema?: string;
   connection_type: string;
 }

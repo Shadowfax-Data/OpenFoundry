@@ -7,60 +7,54 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session, joinedload
 
 from openfoundry.models.connections.connection import Connection
-from openfoundry.models.connections.snowflake_connection import SnowflakeConnection
+from openfoundry.models.connections.databricks_connection import DatabricksConnection
 
 router = APIRouter(prefix="/api/connections")
 
 
-class SnowflakeConnectionCreate(BaseModel):
+class DatabricksConnectionCreate(BaseModel):
     name: str
-    account: str
-    user: str
-    role: str
+    host: str
+    http_path: str
+    access_token: str
     database: str
-    warehouse: str
     schema_: str = Field(..., alias="schema")
-    private_key: str
 
 
-class SnowflakeConnectionUpdate(BaseModel):
+class DatabricksConnectionUpdate(BaseModel):
     name: Optional[str] = None
-    account: Optional[str] = None
-    user: Optional[str] = None
-    role: Optional[str] = None
+    host: Optional[str] = None
+    http_path: Optional[str] = None
+    access_token: Optional[str] = None
     database: Optional[str] = None
-    warehouse: Optional[str] = None
     schema_: Optional[str] = Field(None, alias="schema")
-    private_key: Optional[str] = None
 
 
-class SnowflakeConnectionModel(BaseModel):
+class DatabricksConnectionModel(BaseModel):
     id: UUID
     name: str
-    account: str
-    user: str
-    role: str
+    host: str
+    http_path: str
+    access_token: str
     database: str
-    warehouse: str
     schema_: str = Field(..., alias="schema")
     connection_type: str
-    private_key: str
 
     class Config:
         from_attributes = True
 
 
 @router.get(
-    "/snowflake/{connection_id}",
-    response_model=SnowflakeConnectionModel,
+    "/databricks/{connection_id}",
+    response_model=DatabricksConnectionModel,
 )
-def get_snowflake_connection(request: Request, connection_id: UUID):
+def get_databricks_connection(request: Request, connection_id: UUID):
     db: Session = request.state.db
 
     connection = (
-        db.query(SnowflakeConnection)
+        db.query(DatabricksConnection)
         .filter(
-            SnowflakeConnection.id == connection_id,
+            DatabricksConnection.id == connection_id,
         )
         .first()
     )
@@ -71,12 +65,12 @@ def get_snowflake_connection(request: Request, connection_id: UUID):
         )
 
     setattr(connection, "connection_type", connection.type.value)
-    return SnowflakeConnectionModel.model_validate(connection)
+    return DatabricksConnectionModel.model_validate(connection)
 
 
-@router.post("/snowflake", response_model=SnowflakeConnectionModel)
-def create_snowflake_connection(
-    request: Request, connection_data: SnowflakeConnectionCreate
+@router.post("/databricks", response_model=DatabricksConnectionModel)
+def create_databricks_connection(
+    request: Request, connection_data: DatabricksConnectionCreate
 ):
     db: Session = request.state.db
 
@@ -97,55 +91,53 @@ def create_snowflake_connection(
 
     connection_id = uuid6.uuid6()
 
-    snowflake_connection = SnowflakeConnection(
+    databricks_connection = DatabricksConnection(
         id=connection_id,
         name=connection_data.name,
-        account=connection_data.account,
-        user=connection_data.user,
-        role=connection_data.role,
+        host=connection_data.host,
+        http_path=connection_data.http_path,
+        access_token=connection_data.access_token,
         database=connection_data.database,
-        warehouse=connection_data.warehouse,
         schema=connection_data.schema_,
-        private_key=connection_data.private_key,
     )
     try:
-        snowflake_connection.check_connection()
+        databricks_connection.check_connection()
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Failed to connect to Snowflake: {e}",
+            detail=f"Failed to connect to Databricks: {e}",
         )
 
-    db.add(snowflake_connection)
-    db.add(snowflake_connection.as_connection())
+    db.add(databricks_connection)
+    db.add(databricks_connection.as_connection())
     db.commit()
-    db.refresh(snowflake_connection)
+    db.refresh(databricks_connection)
 
-    setattr(snowflake_connection, "connection_type", snowflake_connection.type.value)
-    return SnowflakeConnectionModel.model_validate(snowflake_connection)
+    setattr(databricks_connection, "connection_type", databricks_connection.type.value)
+    return DatabricksConnectionModel.model_validate(databricks_connection)
 
 
 @router.put(
-    "/snowflake/{connection_id}",
-    response_model=SnowflakeConnectionModel,
+    "/databricks/{connection_id}",
+    response_model=DatabricksConnectionModel,
 )
-def update_snowflake_connection(
+def update_databricks_connection(
     request: Request,
     connection_id: UUID,
-    connection_data: SnowflakeConnectionUpdate,
+    connection_data: DatabricksConnectionUpdate,
 ):
     db: Session = request.state.db
 
-    snowflake_connection = (
-        db.query(SnowflakeConnection)
-        .filter(SnowflakeConnection.id == connection_id)
+    databricks_connection = (
+        db.query(DatabricksConnection)
+        .filter(DatabricksConnection.id == connection_id)
         .first()
     )
 
-    if not snowflake_connection:
+    if not databricks_connection:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Snowflake connection not found",
+            detail="Databricks connection not found",
         )
 
     update_data = connection_data.model_dump(exclude_unset=True)
@@ -172,42 +164,42 @@ def update_snowflake_connection(
 
     for key, value in update_data.items():
         if value is not None:
-            setattr(snowflake_connection, key, value)
-    snowflake_connection.connection.name = snowflake_connection.name
+            setattr(databricks_connection, key, value)
+    databricks_connection.connection.name = databricks_connection.name
 
     try:
-        snowflake_connection.check_connection()
+        databricks_connection.check_connection()
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Failed to connect to Snowflake with updated credentials: {e}",
+            detail=f"Failed to connect to Databricks with updated credentials: {e}",
         )
 
     db.commit()
-    db.refresh(snowflake_connection)
+    db.refresh(databricks_connection)
 
-    setattr(snowflake_connection, "connection_type", snowflake_connection.type.value)
-    return SnowflakeConnectionModel.model_validate(snowflake_connection)
+    setattr(databricks_connection, "connection_type", databricks_connection.type.value)
+    return DatabricksConnectionModel.model_validate(databricks_connection)
 
 
 @router.delete(
-    "/snowflake/{connection_id}",
+    "/databricks/{connection_id}",
     status_code=status.HTTP_204_NO_CONTENT,
 )
-def delete_snowflake_connection(request: Request, connection_id: UUID):
+def delete_databricks_connection(request: Request, connection_id: UUID):
     db: Session = request.state.db
 
     specific_connection = (
-        db.query(SnowflakeConnection)
-        .options(joinedload(SnowflakeConnection.connection))
-        .filter(SnowflakeConnection.id == connection_id)
+        db.query(DatabricksConnection)
+        .options(joinedload(DatabricksConnection.connection))
+        .filter(DatabricksConnection.id == connection_id)
         .first()
     )
 
     if not specific_connection:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Snowflake connection not found",
+            detail="Databricks connection not found",
         )
 
     specific_connection.connection.soft_delete()

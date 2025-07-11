@@ -1,12 +1,24 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import {
   Connection,
+  ConnectionFromAPI,
   SnowflakeConnectionCreate,
   SnowflakeConnectionUpdate,
   DatabricksConnectionCreate,
   DatabricksConnectionUpdate,
 } from "@/types/api";
 import { ConnectionsState } from "@/store/types";
+import { generateColorFromText } from "@/lib/utils";
+
+// Helper function to transform backend connection to frontend connection
+const transformConnectionFromAPI = (
+  apiConnection: ConnectionFromAPI,
+): Connection => {
+  return {
+    ...apiConnection,
+    color: generateColorFromText(apiConnection.name),
+  };
+};
 
 // Async thunk for fetching connections
 export const fetchConnections = createAsyncThunk(
@@ -17,8 +29,8 @@ export const fetchConnections = createAsyncThunk(
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      const connections: Connection[] = await response.json();
-      return connections;
+      const apiConnections: ConnectionFromAPI[] = await response.json();
+      return apiConnections.map(transformConnectionFromAPI);
     } catch (error) {
       return rejectWithValue(
         error instanceof Error ? error.message : "Failed to fetch connections",
@@ -45,8 +57,8 @@ export const createSnowflakeConnection = createAsyncThunk(
         throw new Error(errorData.detail || "Failed to create connection");
       }
 
-      const newConnection: Connection = await response.json();
-      return newConnection;
+      const apiConnection: ConnectionFromAPI = await response.json();
+      return transformConnectionFromAPI(apiConnection);
     } catch (error) {
       return rejectWithValue(
         error instanceof Error ? error.message : "Failed to create connection",
@@ -82,8 +94,8 @@ export const updateSnowflakeConnection = createAsyncThunk(
         throw new Error(errorData.detail || "Failed to update connection");
       }
 
-      const updatedConnection: Connection = await response.json();
-      return updatedConnection;
+      const apiConnection: ConnectionFromAPI = await response.json();
+      return transformConnectionFromAPI(apiConnection);
     } catch (error) {
       return rejectWithValue(
         error instanceof Error ? error.message : "Failed to update connection",
@@ -110,8 +122,8 @@ export const createDatabricksConnection = createAsyncThunk(
         throw new Error(errorData.detail || "Failed to create connection");
       }
 
-      const newConnection: Connection = await response.json();
-      return newConnection;
+      const apiConnection: ConnectionFromAPI = await response.json();
+      return transformConnectionFromAPI(apiConnection);
     } catch (error) {
       return rejectWithValue(
         error instanceof Error ? error.message : "Failed to create connection",
@@ -147,8 +159,8 @@ export const updateDatabricksConnection = createAsyncThunk(
         throw new Error(errorData.detail || "Failed to update connection");
       }
 
-      const updatedConnection: Connection = await response.json();
-      return updatedConnection;
+      const apiConnection: ConnectionFromAPI = await response.json();
+      return transformConnectionFromAPI(apiConnection);
     } catch (error) {
       return rejectWithValue(
         error instanceof Error ? error.message : "Failed to update connection",

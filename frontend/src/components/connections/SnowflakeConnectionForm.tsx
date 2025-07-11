@@ -30,7 +30,13 @@ import { useSnowflakeConnection } from "@/hooks/useConnection";
 
 const snowflakeConnectionSchema = z.object({
   name: z.string().min(1, "Name is required"),
-  account: z.string().min(1, "Account is required"),
+  account: z
+    .string()
+    .min(1, "Account is required")
+    .refine(
+      (val) => /^[A-Za-z0-9_-]+$/.test(val),
+      "Account may only contain letters, numbers, underscores, or hyphens",
+    ),
   user: z.string().min(1, "User is required"),
   role: z.string().min(1, "Role is required"),
   database: z.string().min(1, "Database is required"),
@@ -103,7 +109,7 @@ export function SnowflakeConnectionForm({
         const file = acceptedFiles[0];
         const reader = new FileReader();
         reader.onload = () => {
-          const fileContent = reader.result as string;
+          const fileContent = (reader.result as string).trim();
           form.setValue("private_key", fileContent);
         };
         reader.readAsText(file);
@@ -283,6 +289,9 @@ export function SnowflakeConnectionForm({
                     placeholder="-----BEGIN RSA PRIVATE KEY-----&#10;...&#10;-----END RSA PRIVATE KEY-----"
                     rows={10}
                     {...field}
+                    onBlur={(e) => {
+                      field.onChange(e.target.value.trim());
+                    }}
                   />
                   {isDragActive && (
                     <div className="absolute inset-0 flex items-center justify-center bg-background/80">
