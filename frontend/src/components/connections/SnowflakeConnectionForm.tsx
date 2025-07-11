@@ -289,6 +289,9 @@ export function SnowflakeConnectionForm({
                     placeholder="-----BEGIN RSA PRIVATE KEY-----&#10;...&#10;-----END RSA PRIVATE KEY-----"
                     rows={10}
                     {...field}
+                    onBlur={(e) => {
+                      field.onChange(e.target.value.trim());
+                    }}
                   />
                   {isDragActive && (
                     <div className="absolute inset-0 flex items-center justify-center bg-background/80">
