@@ -37,14 +37,12 @@ class DatabricksConnection(ConnectionBase):
 
     def check_connection(self) -> None:
         """Check the connection to the DatabricksConnection."""
-        with (
-            databricks.sql.connect(
-                server_hostname=self.host,
-                http_path=self.http_path,
-                access_token=self.access_token,
-                _socket_timeout=10,
-                _retry_stop_after_attempts_duration=10,
-            ) as conn,
-            conn.cursor() as cur,
+        with databricks.sql.connect(
+            server_hostname=self.host,
+            http_path=self.http_path,
+            access_token=self.access_token,
+            _socket_timeout=10,
+            _retry_stop_after_attempts_duration=10,
         ):
-            cur.execute("SELECT 1")
+            # Databricks serverless warehouse takes forever to wake up
+            pass
