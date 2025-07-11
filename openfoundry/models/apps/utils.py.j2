@@ -18,13 +18,11 @@ def _get_connection_type(creds: dict[str, str]) -> str | None:
                 return conn_type
     return None
 
-@st.cache_resource
 def load_connection_secrets(base_dir: str = "/etc/secrets/connections"):
     """Recursively read each connection key-files into a dict."""
     conns: dict[ConnectionKey, dict[str, str]] = {}
     base = Path(base_dir)
     if not base.exists():
-        st.warning(f"No secrets found at {base_dir}")
         return conns
 
     for conn_dir in base.iterdir():
@@ -36,19 +34,40 @@ def load_connection_secrets(base_dir: str = "/etc/secrets/connections"):
                 conns[key] = creds
     return conns
 
-{% if 'snowflake' in available_connection_types %}
 import snowflake.connector
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 
-@st.cache_resource
-def get_snowflake_conn():
+def list_snowflake_connections():
+    """Returns a list of available Snowflake connection names."""
     connection_secrets = load_connection_secrets()
-    SNOWFLAKE_CREDS = next((creds for key, creds in connection_secrets.items() if key.type == "snowflake"), {})
+    return [key.name for key, creds in connection_secrets.items() if key.type == "snowflake"]
 
-    """Establishes a connection to Snowflake, handling private key decoding."""
-    if not SNOWFLAKE_CREDS:
-        st.info("Snowflake connection secrets not found.")
+@st.cache_resource
+def get_snowflake_conn(connection_name: str):
+    """
+    Establishes a connection to Snowflake, handling private key decoding.
+
+    Args:
+        connection_name: The name of the specific connection to use.
+
+    Returns:
+        Snowflake connection object or None if connection fails.
+    """
+    connection_secrets = load_connection_secrets()
+
+    # Get all Snowflake connections
+    snowflake_connections = {key.name: creds for key, creds in connection_secrets.items() if key.type == "snowflake"}
+
+    if not snowflake_connections:
+        return None
+
+    # Select the appropriate connection
+    if connection_name in snowflake_connections:
+        SNOWFLAKE_CREDS = snowflake_connections[connection_name]
+    else:
+        available_connections = list(snowflake_connections.keys())
+        st.error(f"Snowflake connection '{connection_name}' not found. Available connections: {available_connections}")
         return None
 
     try:
@@ -68,7 +87,5 @@ def get_snowflake_conn():
         )
 
     except Exception as e:
-        st.error(f"Failed to connect to Snowflake: {e}")
+        st.error(f"Failed to connect to Snowflake connection '{connection_name}': {e}")
         return None
-
-{% endif %}

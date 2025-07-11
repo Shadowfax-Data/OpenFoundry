@@ -22,21 +22,15 @@ if st.button('Click me!'):
     st.write('Button clicked!')
     st.balloons()
 
-{% if 'snowflake' in available_connection_types %}
-st.subheader("Snowflake Connection")
-with st.spinner("Connecting to Snowflake..."):
-    snowflake_conn = utils.get_snowflake_conn()
-    if snowflake_conn:
-        try:
+available_connections = utils.list_snowflake_connections()
+if available_connections:
+    first_connection = available_connections[0]
+    try:
+        snowflake_conn = utils.get_snowflake_conn(connection_name=first_connection)
+        if snowflake_conn:
             with snowflake_conn.cursor() as cur:
                 cur.execute("SELECT 1")
-                one_row = cur.fetchone()
-                if one_row:
-                    st.success("Snowflake connection successful.")
-                else:
-                    st.error("Snowflake connection failed.")
-        except Exception as e:
-            st.error(f"Snowflake connection failed: {e}")
-    else:
-        st.error("Failed to create Snowflake connection object.")
-{% endif %}
+                if cur.fetchone():
+                    st.success(f"Snowflake connection '{first_connection}' is active.")
+    except Exception:
+        pass

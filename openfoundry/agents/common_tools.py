@@ -196,6 +196,9 @@ async def list_connections(
         if response.is_error:
             raise Exception(f"Failed to list connections: {response.text}")
 
+        if not response.json():
+            return "No connections found"
+
         return dict_to_xml(response.json())
 
 
