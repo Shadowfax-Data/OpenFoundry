@@ -19,12 +19,12 @@ import { useAppDispatch, useAppSelector } from "@/store";
 import {
   createDatabricksConnection,
   updateDatabricksConnection,
-  fetchDatabricksConnection,
 } from "@/store/slices/connectionsSlice";
 import {
   DatabricksConnectionCreate,
   DatabricksConnectionUpdate,
 } from "@/types/api";
+import { useDatabricksConnection } from "@/hooks/useConnection";
 
 const databricksConnectionSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -50,9 +50,14 @@ export function DatabricksConnectionForm({
   const navigate = useNavigate();
 
   const isEditMode = connectionId !== undefined;
-  const { currentConnection, loading, error } = useAppSelector(
-    (state) => state.connections,
-  );
+  const { loading, error } = useAppSelector((state) => state.connections);
+
+  // Use the hook to fetch connection data
+  const {
+    connection: connectionData,
+    loading: isLoadingConnection,
+    error: connectionError,
+  } = useDatabricksConnection(connectionId);
 
   const form = useForm<z.infer<typeof databricksConnectionSchema>>({
     resolver: zodResolver(databricksConnectionSchema),
@@ -66,24 +71,19 @@ export function DatabricksConnectionForm({
     },
   });
 
+  // Populate form when connection data is loaded
   useEffect(() => {
-    if (isEditMode) {
-      dispatch(fetchDatabricksConnection(connectionId!));
-    }
-  }, [isEditMode, connectionId, dispatch]);
-
-  useEffect(() => {
-    if (isEditMode && currentConnection && "http_path" in currentConnection) {
+    if (isEditMode && connectionData) {
       form.reset({
-        name: currentConnection.name,
-        host: currentConnection.host,
-        http_path: currentConnection.http_path,
+        name: connectionData.name,
+        host: connectionData.host,
+        http_path: connectionData.http_path,
         token: "********",
-        catalog: currentConnection.catalog || "",
-        schema: currentConnection.schema || "",
+        catalog: connectionData.catalog || "",
+        schema: connectionData.schema || "",
       });
     }
-  }, [isEditMode, currentConnection, form]);
+  }, [isEditMode, connectionData, form]);
 
   async function onSubmit(values: z.infer<typeof databricksConnectionSchema>) {
     // If the token is still the placeholder, we don't want to send it
@@ -112,6 +112,29 @@ export function DatabricksConnectionForm({
   const handleCancel = () => {
     navigate("/connections");
   };
+
+  // Show loading state while fetching connection data
+  if (isEditMode && isLoadingConnection) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-sm text-muted-foreground">
+            Loading connection details...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state if connection fetch failed
+  if (isEditMode && connectionError) {
+    return (
+      <div className="rounded border border-red-300 bg-red-50 px-4 py-2 text-sm text-red-700">
+        {connectionError}
+      </div>
+    );
+  }
 
   return (
     <Form {...form}>

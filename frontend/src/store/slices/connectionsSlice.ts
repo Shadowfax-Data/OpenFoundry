@@ -3,10 +3,8 @@ import {
   Connection,
   SnowflakeConnectionCreate,
   SnowflakeConnectionUpdate,
-  SnowflakeConnectionModel,
   DatabricksConnectionCreate,
   DatabricksConnectionUpdate,
-  DatabricksConnectionModel,
 } from "@/types/api";
 import { ConnectionsState } from "@/store/types";
 
@@ -24,29 +22,6 @@ export const fetchConnections = createAsyncThunk(
     } catch (error) {
       return rejectWithValue(
         error instanceof Error ? error.message : "Failed to fetch connections",
-      );
-    }
-  },
-);
-
-// Async thunk for fetching a single snowflake connection
-export const fetchSnowflakeConnection = createAsyncThunk(
-  "connections/fetchSnowflakeConnection",
-  async (connectionId: string, { rejectWithValue }) => {
-    try {
-      const response = await fetch(
-        `/api/connections/snowflake/${connectionId}`,
-      );
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      const connection: SnowflakeConnectionModel = await response.json();
-      return connection;
-    } catch (error) {
-      return rejectWithValue(
-        error instanceof Error
-          ? error.message
-          : "Failed to fetch connection details",
       );
     }
   },
@@ -112,29 +87,6 @@ export const updateSnowflakeConnection = createAsyncThunk(
     } catch (error) {
       return rejectWithValue(
         error instanceof Error ? error.message : "Failed to update connection",
-      );
-    }
-  },
-);
-
-// Async thunk for fetching a single databricks connection
-export const fetchDatabricksConnection = createAsyncThunk(
-  "connections/fetchDatabricksConnection",
-  async (connectionId: string, { rejectWithValue }) => {
-    try {
-      const response = await fetch(
-        `/api/connections/databricks/${connectionId}`,
-      );
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      const connection: DatabricksConnectionModel = await response.json();
-      return connection;
-    } catch (error) {
-      return rejectWithValue(
-        error instanceof Error
-          ? error.message
-          : "Failed to fetch connection details",
       );
     }
   },
@@ -247,7 +199,6 @@ const initialState: ConnectionsState = {
   error: null,
   searchQuery: "",
   sortBy: "recent",
-  currentConnection: null,
 };
 
 const connectionsSlice = createSlice({
@@ -279,36 +230,6 @@ const connectionsSlice = createSlice({
         state.loading = false;
         state.error =
           (action.payload as string) || "Failed to fetch connections";
-      })
-      // Fetch single snowflake connection
-      .addCase(fetchSnowflakeConnection.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-        state.currentConnection = null;
-      })
-      .addCase(fetchSnowflakeConnection.fulfilled, (state, action) => {
-        state.loading = false;
-        state.currentConnection = action.payload;
-      })
-      .addCase(fetchSnowflakeConnection.rejected, (state, action) => {
-        state.loading = false;
-        state.error =
-          (action.payload as string) || "Failed to fetch connection details";
-      })
-      // Fetch single databricks connection
-      .addCase(fetchDatabricksConnection.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-        state.currentConnection = null;
-      })
-      .addCase(fetchDatabricksConnection.fulfilled, (state, action) => {
-        state.loading = false;
-        state.currentConnection = action.payload;
-      })
-      .addCase(fetchDatabricksConnection.rejected, (state, action) => {
-        state.loading = false;
-        state.error =
-          (action.payload as string) || "Failed to fetch connection details";
       })
       // Create snowflake connection
       .addCase(createSnowflakeConnection.pending, (state) => {

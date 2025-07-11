@@ -21,12 +21,12 @@ import { useAppDispatch, useAppSelector } from "@/store";
 import {
   createSnowflakeConnection,
   updateSnowflakeConnection,
-  fetchSnowflakeConnection,
 } from "@/store/slices/connectionsSlice";
 import {
   SnowflakeConnectionCreate,
   SnowflakeConnectionUpdate,
 } from "@/types/api";
+import { useSnowflakeConnection } from "@/hooks/useConnection";
 
 const snowflakeConnectionSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -58,9 +58,14 @@ export function SnowflakeConnectionForm({
   const navigate = useNavigate();
 
   const isEditMode = connectionId !== undefined;
-  const { currentConnection, loading, error } = useAppSelector(
-    (state) => state.connections,
-  );
+  const { loading, error } = useAppSelector((state) => state.connections);
+
+  // Use the hook to fetch connection data
+  const {
+    connection: connectionData,
+    loading: isLoadingConnection,
+    error: connectionError,
+  } = useSnowflakeConnection(connectionId);
 
   const form = useForm<z.infer<typeof snowflakeConnectionSchema>>({
     resolver: zodResolver(snowflakeConnectionSchema),
@@ -76,26 +81,21 @@ export function SnowflakeConnectionForm({
     },
   });
 
+  // Populate form when connection data is loaded
   useEffect(() => {
-    if (isEditMode) {
-      dispatch(fetchSnowflakeConnection(connectionId!));
-    }
-  }, [isEditMode, connectionId, dispatch]);
-
-  useEffect(() => {
-    if (isEditMode && currentConnection) {
+    if (isEditMode && connectionData) {
       form.reset({
-        name: currentConnection.name,
-        account: currentConnection.account,
-        user: currentConnection.user,
-        role: currentConnection.role,
-        database: currentConnection.database,
-        warehouse: currentConnection.warehouse,
-        schema: currentConnection.schema,
-        private_key: currentConnection.private_key,
+        name: connectionData.name,
+        account: connectionData.account,
+        user: connectionData.user,
+        role: connectionData.role,
+        database: connectionData.database,
+        warehouse: connectionData.warehouse,
+        schema: connectionData.schema,
+        private_key: connectionData.private_key,
       });
     }
-  }, [isEditMode, currentConnection, form]);
+  }, [isEditMode, connectionData, form]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop: (acceptedFiles) => {
@@ -135,6 +135,29 @@ export function SnowflakeConnectionForm({
   const handleCancel = () => {
     navigate("/connections");
   };
+
+  // Show loading state while fetching connection data
+  if (isEditMode && isLoadingConnection) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-sm text-muted-foreground">
+            Loading connection details...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state if connection fetch failed
+  if (isEditMode && connectionError) {
+    return (
+      <div className="rounded border border-red-300 bg-red-50 px-4 py-2 text-sm text-red-700">
+        {connectionError}
+      </div>
+    );
+  }
 
   return (
     <Form {...form}>
