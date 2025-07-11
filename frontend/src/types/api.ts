@@ -48,3 +48,55 @@ export interface SnowflakeConnectionCreate {
   schema: string;
   private_key: string;
 }
+
+export interface SnowflakeConnectionUpdate {
+  name?: string;
+  account?: string;
+  user?: string;
+  role?: string;
+  database?: string;
+  warehouse?: string;
+  schema?: string;
+  private_key?: string;
+}
+
+export interface SnowflakeConnectionModel {
+  id: string;
+  name: string;
+  account: string;
+  user: string;
+  role: string;
+  database: string;
+  warehouse: string;
+  schema: string;
+  connection_type: string;
+  private_key: string;
+}
+
+export interface DatabricksConnectionCreate {
+  name: string;
+  host: string;
+  http_path: string;
+  token: string;
+  catalog?: string;
+  schema?: string;
+}
+
+export interface DatabricksConnectionUpdate {
+  name?: string;
+  host?: string;
+  http_path?: string;
+  token?: string;
+  catalog?: string;
+  schema?: string;
+}
+
+export interface DatabricksConnectionModel {
+  id: string;
+  name: string;
+  host: string;
+  http_path: string;
+  catalog?: string;
+  schema?: string;
+  connection_type: string;
+}

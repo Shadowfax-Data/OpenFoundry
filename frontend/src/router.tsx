@@ -33,7 +33,15 @@ export const router = createBrowserRouter([
         element: <SnowflakeConnectionPage />,
       },
       {
+        path: "connections/snowflake/:connectionId",
+        element: <SnowflakeConnectionPage />,
+      },
+      {
         path: "connections/databricks/new",
+        element: <DatabricksConnectionPage />,
+      },
+      {
+        path: "connections/databricks/:connectionId",
         element: <DatabricksConnectionPage />,
       },
     ],

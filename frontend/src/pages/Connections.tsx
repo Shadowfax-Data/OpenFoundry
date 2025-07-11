@@ -1,4 +1,5 @@
 import { useEffect, useMemo } from "react";
+import { useNavigate } from "react-router";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -21,6 +22,7 @@ import { NewConnectionDialog } from "@/components/connections/NewConnectionDialo
 
 export function Connections() {
   const dispatch = useAppDispatch();
+  const navigate = useNavigate();
   const { connections, loading, error, searchQuery, sortBy } = useAppSelector(
     (state) => state.connections,
   );
@@ -71,14 +73,25 @@ export function Connections() {
   };
 
   const handleEdit = (connectionId: string) => {
-    // TODO: Implement edit functionality. This would likely involve:
-    // 1. Opening a sheet/dialog, similar to the create form.
-    // 2. Fetching the specific connection details (since private keys aren't sent in the list).
-    // 3. Populating the form with the details.
-    // 4. Dispatching an `updateConnection` action on save.
-    alert(
-      `Edit functionality for connection ${connectionId} is not yet implemented.`,
-    );
+    const connection = connections.find((c) => c.id === connectionId);
+
+    if (!connection) {
+      console.error("Could not find connection to edit.");
+      return;
+    }
+
+    switch (connection.connection_type.toLowerCase()) {
+      case "snowflake":
+        navigate(`/connections/snowflake/${connectionId}`);
+        break;
+      case "databricks":
+        navigate(`/connections/databricks/${connectionId}`);
+        break;
+      default:
+        alert(
+          `Editing for connection type '${connection.connection_type}' is not supported yet.`,
+        );
+    }
   };
 
   if (error) {
