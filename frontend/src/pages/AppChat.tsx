@@ -26,17 +26,11 @@ export function AppChat() {
   const dispatch = useAppDispatch();
   const [isSandboxReady, setIsSandboxReady] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
-  const {
-    messages,
-    isStreaming,
-    error,
-    currentWriteFileInfo,
-    saveWorkspace,
-    sendMessage,
-  } = useAppChat({
-    appId: appId!,
-    sessionId: sessionId!,
-  });
+  const { messages, isStreaming, error, currentWriteFileInfo, sendMessage } =
+    useAppChat({
+      appId: appId!,
+      sessionId: sessionId!,
+    });
 
   const session = useAppSelector(selectAppAgentSessionById(appId!, sessionId!));
   const previewUrl = session?.app_port
@@ -50,9 +44,9 @@ export function AppChat() {
     }
   }, [appId, sessionId, session, dispatch]);
 
-  // Health check for sandbox
+  // Health check for sandbox - only run once at the beginning
   useEffect(() => {
-    if (!appId || !sessionId || messages.length === 0 || error) {
+    if (!appId || !sessionId) {
       return;
     }
 
@@ -84,22 +78,7 @@ export function AppChat() {
     });
 
     return () => clearInterval(intervalId);
-  }, [appId, sessionId, messages.length, error]);
-
-  const handleSendMessage = (message: string) => {
-    sendMessage(message);
-  };
-
-  const handleSaveWorkspace = async () => {
-    try {
-      await saveWorkspace();
-      toast.success("Workspace saved successfully.");
-    } catch (error) {
-      toast.error(
-        `Failed to save workspace: ${error instanceof Error ? error.message : "Unknown error"}`,
-      );
-    }
-  };
+  }, [appId, sessionId]); // Only depend on appId and sessionId
 
   const handleResetChat = async () => {
     if (!appId || !sessionId) return;
@@ -164,7 +143,7 @@ export function AppChat() {
             messages={messages}
             isStreaming={isStreaming}
             error={error}
-            onSendMessage={handleSendMessage}
+            onSendMessage={sendMessage}
             placeholder="Type your message..."
             title="Conversation"
             className="h-full"
@@ -192,7 +171,6 @@ export function AppChat() {
               appId={appId!}
               sessionId={sessionId!}
               currentWriteFileInfo={currentWriteFileInfo}
-              saveWorkspace={handleSaveWorkspace}
             />
           )}
         </ResizablePanel>

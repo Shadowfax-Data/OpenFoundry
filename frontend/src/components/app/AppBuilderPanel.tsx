@@ -11,13 +11,13 @@ import { CodePanel } from "@/components/code/CodePanel";
 import { CurrentWriteFileInfo } from "@/store/slices/chatSliceFactory";
 import { useAppDispatch } from "@/store";
 import { deployApp } from "@/store/slices/appsSlice";
+import { toast } from "sonner";
 
 interface AppBuilderPanelProps {
   previewUrl?: string;
   appId: string;
   sessionId: string;
   currentWriteFileInfo: CurrentWriteFileInfo | null;
-  saveWorkspace: () => Promise<void>;
 }
 
 export const AppBuilderPanel: React.FC<AppBuilderPanelProps> = ({
@@ -25,19 +25,39 @@ export const AppBuilderPanel: React.FC<AppBuilderPanelProps> = ({
   appId,
   sessionId,
   currentWriteFileInfo,
-  saveWorkspace,
 }) => {
   const [activeTab, setActiveTab] = useState<"preview" | "code">("preview");
-  const [isDeploying, setIsDeploying] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const dispatch = useAppDispatch();
+
+  const handleSaveWorkspace = async () => {
+    try {
+      setIsProcessing(true);
+      const response = await fetch(
+        `/api/apps/${appId}/sessions/${sessionId}/save`,
+        {
+          method: "POST",
+        },
+      );
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+      toast.success("Workspace saved successfully.");
+    } catch (error) {
+      toast.error(
+        `Failed to save workspace: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
   const handleSaveAndDeploy = async () => {
     try {
-      // First save the workspace and wait for it to complete
-      await saveWorkspace();
-
       // Then deploy the app
-      setIsDeploying(true);
+      setIsProcessing(true);
+      // First save the workspace and wait for it to complete
+      await handleSaveWorkspace();
       const deployedApp = await dispatch(deployApp(appId)).unwrap();
 
       // Open the deployed app in a new tab
@@ -48,7 +68,7 @@ export const AppBuilderPanel: React.FC<AppBuilderPanelProps> = ({
     } catch (error) {
       console.error("Failed to save and deploy:", error);
     } finally {
-      setIsDeploying(false);
+      setIsProcessing(false);
     }
   };
 
@@ -87,7 +107,8 @@ export const AppBuilderPanel: React.FC<AppBuilderPanelProps> = ({
                   variant="ghost"
                   size="sm"
                   className="h-7 w-7 p-0"
-                  onClick={saveWorkspace}
+                  onClick={handleSaveWorkspace}
+                  disabled={isProcessing}
                 >
                   <Save className="h-3 w-3" />
                 </Button>
@@ -101,13 +122,13 @@ export const AppBuilderPanel: React.FC<AppBuilderPanelProps> = ({
                   size="sm"
                   className="h-7 w-7 p-0"
                   onClick={handleSaveAndDeploy}
-                  disabled={isDeploying}
+                  disabled={isProcessing}
                 >
                   <Rocket className="h-3 w-3" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                {isDeploying ? "Deploying..." : "Save and deploy"}
+                {isProcessing ? "Processing..." : "Save and deploy"}
               </TooltipContent>
             </Tooltip>
           </div>

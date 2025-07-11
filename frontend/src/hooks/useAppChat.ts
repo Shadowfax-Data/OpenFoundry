@@ -92,24 +92,11 @@ export const useAppChat = ({ appId, sessionId }: UseAppChatProps) => {
     }
   };
 
-  const saveWorkspace = async () => {
-    const response = await fetch(
-      `/api/apps/${appId}/sessions/${sessionId}/save`,
-      {
-        method: "POST",
-      },
-    );
-    if (!response.ok) {
-      throw new Error(`HTTP error! Status: ${response.status}`);
-    }
-  };
-
   return {
     ...chatProps,
     appPreviewUrl,
     appPreviewToken,
     deployApp,
     createAgentSession,
-    saveWorkspace,
   };
 };
