@@ -1,5 +1,5 @@
-import { IconBrandDatabricks } from "@tabler/icons-react";
 import { DatabricksConnectionForm } from "@/components/connections/DatabricksConnectionForm";
+import { SiDatabricks } from "@icons-pack/react-simple-icons";
 import DatabricksConnectionGuide from "@/components/connections/DatabricksConnectionGuide";
 import { ConnectionPageLayout } from "@/components/connections/ConnectionPageLayout";
 import { useParams } from "react-router";
@@ -11,7 +11,7 @@ export function DatabricksConnectionPage() {
   return (
     <ConnectionPageLayout
       icon={
-        <IconBrandDatabricks className="h-12 w-12 text-orange-500 flex-shrink-0" />
+        <SiDatabricks className="h-12 w-12 text-orange-500 flex-shrink-0" />
       }
       title={
         isEditMode ? "Edit Databricks Connection" : "New Databricks Connection"
