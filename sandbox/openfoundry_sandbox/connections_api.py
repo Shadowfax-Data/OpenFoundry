@@ -1,8 +1,8 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from connections.connection import Connection
 from openfoundry_sandbox.connection_manager import connection_manager
+from openfoundry_sandbox.models.connections.connection import Connection
 
 router = APIRouter(prefix="/connections", tags=["connections"])
 

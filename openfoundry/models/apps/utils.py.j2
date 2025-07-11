@@ -43,7 +43,6 @@ def list_snowflake_connections():
     connection_secrets = load_connection_secrets()
     return [key.name for key, creds in connection_secrets.items() if key.type == "snowflake"]
 
-@st.cache_resource
 def get_snowflake_conn(connection_name: str):
     """
     Establishes a connection to Snowflake, handling private key decoding.

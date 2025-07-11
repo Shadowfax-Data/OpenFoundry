@@ -40,7 +40,6 @@ WORKDIR /app
 
 # Create workspace directory
 RUN mkdir -p /workspace
-RUN touch /workspace/__init__.py
 
 # Set the default command to run the untrusted server
 CMD ["python", "-m", "uvicorn", "openfoundry_sandbox.sandbox_server:app", "--host", "0.0.0.0", "--port", "8000"]
