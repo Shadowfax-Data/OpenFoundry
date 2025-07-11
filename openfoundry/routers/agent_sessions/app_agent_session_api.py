@@ -35,6 +35,7 @@ from openfoundry.models.agent_sessions.docker_utils import (
 from openfoundry.models.apps import App
 from openfoundry.models.connections import ALL_CONNECTION_CLASSES, Connection
 from openfoundry.models.connections.connection import ConnectionBase
+from openfoundry.models.conversation_item import ConversationItem
 
 # Define terminal statuses for agent sessions
 AGENT_SESSION_TERMINAL_STATUSES = [
@@ -477,6 +478,11 @@ def delete_app_agent_session(
         logger.info(
             f"Container {agent_session.container_id} stopped and removed for session {session_id}"
         )
+
+    # Delete conversation items first to avoid foreign key constraint violation
+    db.query(ConversationItem).filter(
+        ConversationItem.agent_session_id == agent_session.id
+    ).delete()
 
     # Delete the app agent session and its associated agent session
     db.delete(app_agent_session)
