@@ -6,6 +6,7 @@ from openai.types.shared.reasoning import Reasoning
 
 from openfoundry.agents.bash_tools import (
     list_processes,
+    read_process_logs,
     tail_process_logs,
 )
 from openfoundry.agents.common_tools import (
@@ -42,6 +43,7 @@ def get_streamlit_app_coding_agent(
             list_files,
             list_processes,
             tail_process_logs,
+            read_process_logs,
             visualize_app,
             list_connections,
             execute_sql,
