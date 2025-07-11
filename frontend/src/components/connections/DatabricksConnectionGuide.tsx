@@ -28,7 +28,7 @@ export default function DatabricksConnectionGuide() {
             <span>
               <span className="font-medium text-primary">Enter a Name</span>
               <br />
-              to identify this warehouse connection in your models app.
+              to identify this warehouse connection.
             </span>
           </li>
           <li className="flex items-start gap-3">
@@ -90,7 +90,7 @@ export default function DatabricksConnectionGuide() {
                 Configure Catalog and Schema
               </span>
               <br />
-              Specify the default catalog and schema.
+              Specify the catalog and schema.
             </span>
           </li>
         </ol>

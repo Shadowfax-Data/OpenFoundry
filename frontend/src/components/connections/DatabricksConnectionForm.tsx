@@ -34,8 +34,12 @@ const databricksConnectionSchema = z.object({
     .refine(
       (host) => !host.startsWith("https://") && !host.startsWith("http://"),
       "Host should not include http:// or https://",
-    ),
-  http_path: z.string().min(1, "HTTP Path is required"),
+    )
+    .refine((host) => !host.endsWith("/"), "Host must not end with /"),
+  http_path: z
+    .string()
+    .min(1, "HTTP Path is required")
+    .refine((path) => path.startsWith("/"), "HTTP Path must start with /"),
   access_token: z.string().min(1, "Personal Access Token is required"),
   database: z.string().optional(),
   schema: z.string().optional(),

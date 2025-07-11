@@ -22,7 +22,7 @@ export function DatabricksConnectionPage() {
           : "Fill in the details to create a new Databricks SQL connection."
       }
       form={<DatabricksConnectionForm connectionId={connectionId} />}
-      guide={isEditMode ? null : <DatabricksConnectionGuide />}
+      guide={<DatabricksConnectionGuide />}
     />
   );
 }
