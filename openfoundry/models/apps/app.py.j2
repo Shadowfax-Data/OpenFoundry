@@ -31,6 +31,6 @@ if available_connections:
             with snowflake_conn.cursor() as cur:
                 cur.execute("SELECT 1")
                 if cur.fetchone():
-                    st.success(f"Snowflake connection '{first_connection}' is active.")
+                    st.success(f"Snowflake connection is active.")
     except Exception:
         pass

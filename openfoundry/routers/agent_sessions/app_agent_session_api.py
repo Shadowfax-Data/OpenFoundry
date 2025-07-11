@@ -1,4 +1,3 @@
-import enum
 import uuid
 from datetime import datetime
 
@@ -114,15 +113,10 @@ class WriteFileResponse(BaseModel):
     file_info: FileInfo
 
 
-class SecretType(enum.Enum):
-    CONNECTIONS = "connections"
+class UploadConnectionRequest(BaseModel):
+    """Request model for uploading connection to sandbox."""
 
-
-class UploadSecretsRequest(BaseModel):
-    """Request model for uploading secrets to sandbox."""
-
-    secret_type: SecretType
-    id: uuid.UUID
+    connection_id: uuid.UUID
 
 
 def get_app_agent_run_context(
@@ -607,34 +601,29 @@ async def upload_file_to_sandbox(
 
 
 @router.post(
-    "/apps/{app_id}/sessions/{session_id}/upload_secrets",
+    "/apps/{app_id}/sessions/{session_id}/upload_connection",
 )
-async def upload_secrets_to_sandbox(
+async def upload_connection_to_sandbox(
     request: Request,
     app_id: uuid.UUID,
     session_id: uuid.UUID,
-    upload_request: UploadSecretsRequest,
+    upload_request: UploadConnectionRequest,
     run_context: AppAgentRunContext = Depends(get_app_agent_run_context),
 ):
-    """Upload secrets to the sandbox based on secret type and ID."""
+    """Upload connection to the sandbox based on connection type and ID."""
     db: Session = request.state.db
 
-    # Get secret payload and metadata based on secret type
-    if upload_request.secret_type == SecretType.CONNECTIONS:
-        secret_payload, secret_name = _get_connection_secrets(db, upload_request.id)
-    else:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Unsupported secret type"
-        )
+    secret_payload, connection_name = _get_connection_secrets(
+        db, upload_request.connection_id
+    )
 
     async with run_context.get_sandbox_client() as client:
         response = await client.put("/secrets/", json=secret_payload.model_dump())
         response.raise_for_status()
 
     return {
-        "message": f"Secrets for '{secret_name}' uploaded successfully",
-        "secret_type": upload_request.secret_type.value,
-        "id": upload_request.id,
+        "message": f"Connection '{connection_name}' uploaded successfully",
+        "id": upload_request.connection_id,
     }
 
 
