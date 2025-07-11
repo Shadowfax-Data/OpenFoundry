@@ -7,7 +7,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { IconBrandSnowflake, IconBrandDatabricks } from "@tabler/icons-react";
+import { SiDatabricks, SiSnowflake } from "@icons-pack/react-simple-icons";
 
 interface NewConnectionDialogProps {
   children: React.ReactNode;
@@ -32,7 +32,7 @@ export function NewConnectionDialog({ children }: NewConnectionDialogProps) {
             onClick={() => navigate("/connections/snowflake/new")}
           >
             <div className="flex items-center gap-3">
-              <IconBrandSnowflake className="text-blue-500" />
+              <SiSnowflake className="text-blue-500" />
               <div>
                 <span className="font-semibold">Snowflake</span>
                 <p className="text-sm text-muted-foreground">
@@ -46,7 +46,7 @@ export function NewConnectionDialog({ children }: NewConnectionDialogProps) {
             onClick={() => navigate("/connections/databricks/new")}
           >
             <div className="flex items-center gap-3">
-              <IconBrandDatabricks className="text-orange-500" />
+              <SiDatabricks className="text-orange-500" />
               <div>
                 <span className="font-semibold">Databricks</span>
                 <p className="text-sm text-muted-foreground">

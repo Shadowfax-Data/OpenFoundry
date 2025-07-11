@@ -1,5 +1,5 @@
 import { SnowflakeConnectionForm } from "@/components/connections/SnowflakeConnectionForm";
-import { IconBrandSnowflake } from "@tabler/icons-react";
+import { SiSnowflake } from "@icons-pack/react-simple-icons";
 import SnowflakeConnectionGuide from "@/components/connections/SnowflakeConnectionGuide";
 import { ConnectionPageLayout } from "@/components/connections/ConnectionPageLayout";
 import { useParams } from "react-router";
@@ -10,9 +10,7 @@ export function SnowflakeConnectionPage() {
 
   return (
     <ConnectionPageLayout
-      icon={
-        <IconBrandSnowflake className="h-12 w-12 text-blue-500 flex-shrink-0" />
-      }
+      icon={<SiSnowflake className="h-12 w-12 text-blue-500 flex-shrink-0" />}
       title={
         isEditMode ? "Edit Snowflake Connection" : "New Snowflake Connection"
       }
