@@ -36,8 +36,8 @@ const databricksConnectionSchema = z.object({
       "Host should not include http:// or https://",
     ),
   http_path: z.string().min(1, "HTTP Path is required"),
-  token: z.string().min(1, "Personal Access Token is required"),
-  catalog: z.string().optional(),
+  access_token: z.string().min(1, "Personal Access Token is required"),
+  database: z.string().optional(),
   schema: z.string().optional(),
 });
 
@@ -65,8 +65,8 @@ export function DatabricksConnectionForm({
       name: "",
       host: "",
       http_path: "",
-      token: "",
-      catalog: "",
+      access_token: "",
+      database: "",
       schema: "",
     },
   });
@@ -78,8 +78,8 @@ export function DatabricksConnectionForm({
         name: connectionData.name,
         host: connectionData.host,
         http_path: connectionData.http_path,
-        token: "********",
-        catalog: connectionData.catalog || "",
+        access_token: "********",
+        database: connectionData.database || "",
         schema: connectionData.schema || "",
       });
     }
@@ -88,8 +88,9 @@ export function DatabricksConnectionForm({
   async function onSubmit(values: z.infer<typeof databricksConnectionSchema>) {
     // If the token is still the placeholder, we don't want to send it
     const submissionValues = { ...values };
-    if (isEditMode && submissionValues.token === "********") {
-      delete (submissionValues as Partial<typeof submissionValues>).token;
+    if (isEditMode && submissionValues.access_token === "********") {
+      delete (submissionValues as Partial<typeof submissionValues>)
+        .access_token;
     }
 
     if (isEditMode) {
@@ -187,7 +188,7 @@ export function DatabricksConnectionForm({
         />
         <FormField
           control={form.control}
-          name="token"
+          name="access_token"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Personal Access Token (PAT)</FormLabel>
@@ -204,7 +205,7 @@ export function DatabricksConnectionForm({
         />
         <FormField
           control={form.control}
-          name="catalog"
+          name="database"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Catalog</FormLabel>

@@ -21,10 +21,10 @@ httpx = "^0.28.1"
 httpx-retries = "^0.4.0"
 pyyaml = "^6.0.2"
 numpy = "^2.3.1"
-pandas = "^2.3.0"
 cryptography = "^45.0.5"
 snowflake-connector-python = "^3.16.0"
 pyarrow = "^18.1.0"
+databricks-sql-connector = {extras = ["pyarrow"], version = "^4.0.5"}
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.8.0"

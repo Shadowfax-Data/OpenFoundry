@@ -77,8 +77,8 @@ export interface DatabricksConnectionCreate {
   name: string;
   host: string;
   http_path: string;
-  token: string;
-  catalog?: string;
+  access_token: string;
+  database?: string;
   schema?: string;
 }
 
@@ -86,8 +86,8 @@ export interface DatabricksConnectionUpdate {
   name?: string;
   host?: string;
   http_path?: string;
-  token?: string;
-  catalog?: string;
+  access_token?: string;
+  database?: string;
   schema?: string;
 }
 
@@ -96,7 +96,8 @@ export interface DatabricksConnectionModel {
   name: string;
   host: string;
   http_path: string;
-  catalog?: string;
+  access_token: string;
+  database?: string;
   schema?: string;
   connection_type: string;
 }
