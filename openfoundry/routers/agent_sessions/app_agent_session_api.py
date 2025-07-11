@@ -555,8 +555,13 @@ async def list_files_in_sandbox(
         params = {"include_hidden": include_hidden}
         if path is not None:
             params["path"] = path
-
-        response = await client.get("/files/list", params=params)
+        try:
+            response = await client.get("/files/list", params=params)
+        except httpx.RequestError as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to list files: {e}",
+            )
         response.raise_for_status()
         return ListFilesResponse.model_validate(response.json())
 
@@ -576,7 +581,13 @@ async def read_file_from_sandbox(
     """Read a file from the sandbox."""
     async with run_context.get_sandbox_client() as client:
         params = {"path": path, "encoding": encoding}
-        response = await client.get("/files/read", params=params)
+        try:
+            response = await client.get("/files/read", params=params)
+        except httpx.RequestError as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to read file: {e}",
+            )
         response.raise_for_status()
         return ReadFileResponse.model_validate(response.json())
 
@@ -594,7 +605,15 @@ async def write_file_to_sandbox(
 ):
     """Write a file to the sandbox."""
     async with run_context.get_sandbox_client() as client:
-        response = await client.post("/files/write", json=write_request.model_dump())
+        try:
+            response = await client.post(
+                "/files/write", json=write_request.model_dump()
+            )
+        except httpx.RequestError as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to write file: {e}",
+            )
         response.raise_for_status()
         return WriteFileResponse.model_validate(response.json())
 
@@ -614,9 +633,15 @@ async def upload_file_to_sandbox(
     async with run_context.get_sandbox_client() as client:
         # Stream the file upload to the sandbox
         files = {"file": (file.filename, file.file, file.content_type)}
-        response = await client.post(
-            "/files/upload", files=files, params={"path": path}
-        )
+        try:
+            response = await client.post(
+                "/files/upload", files=files, params={"path": path}
+            )
+        except httpx.RequestError as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to upload file: {e}",
+            )
         response.raise_for_status()
         return response.json()
 
@@ -701,7 +726,13 @@ async def upload_connection_to_sandbox(
     )
 
     async with run_context.get_sandbox_client() as client:
-        response = await client.put("/secrets/", json=secret_payload.model_dump())
+        try:
+            response = await client.put("/secrets/", json=secret_payload.model_dump())
+        except httpx.RequestError as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to upload connection: {e}",
+            )
         response.raise_for_status()
 
     return {
