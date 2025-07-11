@@ -11,13 +11,13 @@ import { CodePanel } from "@/components/code/CodePanel";
 import { CurrentWriteFileInfo } from "@/store/slices/chatSliceFactory";
 import { useAppDispatch } from "@/store";
 import { deployApp } from "@/store/slices/appsSlice";
-import { toast } from "sonner";
 
 interface AppBuilderPanelProps {
   previewUrl?: string;
   appId: string;
   sessionId: string;
   currentWriteFileInfo: CurrentWriteFileInfo | null;
+  saveWorkspace: () => Promise<void>;
 }
 
 export const AppBuilderPanel: React.FC<AppBuilderPanelProps> = ({
@@ -25,6 +25,7 @@ export const AppBuilderPanel: React.FC<AppBuilderPanelProps> = ({
   appId,
   sessionId,
   currentWriteFileInfo,
+  saveWorkspace,
 }) => {
   const [activeTab, setActiveTab] = useState<"preview" | "code">("preview");
   const [isProcessing, setIsProcessing] = useState(false);
@@ -33,20 +34,9 @@ export const AppBuilderPanel: React.FC<AppBuilderPanelProps> = ({
   const handleSaveWorkspace = async () => {
     try {
       setIsProcessing(true);
-      const response = await fetch(
-        `/api/apps/${appId}/sessions/${sessionId}/save`,
-        {
-          method: "POST",
-        },
-      );
-      if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
-      }
-      toast.success("Workspace saved successfully.");
+      await saveWorkspace();
     } catch (error) {
-      toast.error(
-        `Failed to save workspace: ${error instanceof Error ? error.message : "Unknown error"}`,
-      );
+      console.error("Failed to save workspace:", error);
     } finally {
       setIsProcessing(false);
     }
@@ -57,7 +47,7 @@ export const AppBuilderPanel: React.FC<AppBuilderPanelProps> = ({
       // Then deploy the app
       setIsProcessing(true);
       // First save the workspace and wait for it to complete
-      await handleSaveWorkspace();
+      await saveWorkspace();
       const deployedApp = await dispatch(deployApp(appId)).unwrap();
 
       // Open the deployed app in a new tab
