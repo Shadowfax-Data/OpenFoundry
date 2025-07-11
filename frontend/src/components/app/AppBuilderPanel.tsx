@@ -117,9 +117,7 @@ export const AppBuilderPanel: React.FC<AppBuilderPanelProps> = ({
                   <Rocket className="h-3 w-3" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>
-                {isProcessing ? "Processing..." : "Save and deploy"}
-              </TooltipContent>
+              <TooltipContent>Save and deploy</TooltipContent>
             </Tooltip>
           </div>
         </div>
