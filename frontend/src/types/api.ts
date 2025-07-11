@@ -32,10 +32,17 @@ export interface CreateAppRequest {
   connection_ids: string[];
 }
 
-export interface Connection {
+// Backend API response type for connections
+export interface ConnectionFromAPI {
   id: string;
   name: string;
   connection_type: string;
+}
+
+// Frontend connection type with computed UI properties
+export interface Connection extends ConnectionFromAPI {
+  // Computed/derived properties for UI
+  color: string;
 }
 
 export interface SnowflakeConnectionCreate {

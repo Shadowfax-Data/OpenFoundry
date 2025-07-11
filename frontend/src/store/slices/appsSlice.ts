@@ -1,48 +1,14 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import { App, AppFromAPI, CreateAppRequest } from "@/types/api";
 import { AppsState } from "@/store/types";
+import { generateColorFromText, formatTimeAgo } from "@/lib/utils";
 
 // Helper function to transform backend app to frontend app
 const transformAppFromAPI = (apiApp: AppFromAPI): App => {
-  // Generate UI-specific properties based on app data
-  const colors = [
-    "bg-blue-600",
-    "bg-green-600",
-    "bg-purple-600",
-    "bg-orange-600",
-    "bg-red-600",
-    "bg-indigo-600",
-    "bg-pink-600",
-    "bg-cyan-600",
-  ];
-
-  // Use app name hash to consistently assign color
-  const colorIndex =
-    apiApp.name.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0) %
-    colors.length;
-
-  // Calculate time ago from updated_on
-  const updatedDate = new Date(apiApp.updated_on);
-  const now = new Date();
-  const diffInMs = now.getTime() - updatedDate.getTime();
-  const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
-  const diffInDays = Math.floor(diffInHours / 24);
-
-  let lastModified: string;
-  if (diffInHours < 1) {
-    lastModified = "Just now";
-  } else if (diffInHours < 24) {
-    lastModified = `${diffInHours} hour${diffInHours > 1 ? "s" : ""} ago`;
-  } else if (diffInDays < 7) {
-    lastModified = `${diffInDays} day${diffInDays > 1 ? "s" : ""} ago`;
-  } else {
-    lastModified = updatedDate.toLocaleDateString();
-  }
-
   return {
     ...apiApp,
-    color: colors[colorIndex],
-    lastModified,
+    color: generateColorFromText(apiApp.name),
+    lastModified: formatTimeAgo(apiApp.updated_on),
   };
 };
 
