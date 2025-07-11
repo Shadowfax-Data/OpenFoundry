@@ -2,6 +2,7 @@ import uuid
 from datetime import datetime
 
 import docker
+import httpx
 import uuid6
 from fastapi import (
     APIRouter,
@@ -504,7 +505,13 @@ async def check_app_health(
     run_context: AppAgentRunContext = Depends(get_app_agent_run_context),
 ):
     """Check the health of the app preview by verifying if the app URL is reachable."""
-    await run_context.check_app_url()
+    try:
+        await run_context.check_app_url()
+    except httpx.HTTPError as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to check app health: {e}",
+        )
     return {"status": "healthy"}
 
 
@@ -518,7 +525,13 @@ async def check_sandbox_health(
     run_context: AppAgentRunContext = Depends(get_app_agent_run_context),
 ):
     """Check the health of the sandbox by verifying if the sandbox URL is reachable."""
-    await run_context.check_sandbox_url()
+    try:
+        await run_context.check_sandbox_url()
+    except httpx.HTTPError as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to check sandbox health: {e}",
+        )
     return {"status": "healthy"}
 
 
