@@ -14,6 +14,7 @@ from fastapi import (
     status,
 )
 from pydantic import BaseModel
+from sqlalchemy import select
 from sqlalchemy.orm import Session, joinedload
 
 from openfoundry.agents.run_context import AppAgentRunContext
@@ -33,6 +34,7 @@ from openfoundry.models.agent_sessions.docker_utils import (
     export_workspace_from_container,
 )
 from openfoundry.models.apps import App
+from openfoundry.models.apps.app_connection import app_connection
 from openfoundry.models.connections import ALL_CONNECTION_CLASSES, Connection
 from openfoundry.models.connections.connection import ConnectionBase
 from openfoundry.models.conversation_item import ConversationItem
@@ -619,50 +621,65 @@ async def upload_connection_to_sandbox(
     """Upload connection to the sandbox based on connection type and ID."""
     db: Session = request.state.db
 
-    secret_payload, connection_name = _get_connection_secrets(
-        db, upload_request.connection_id
+    # Verify the app exists
+    app = db.query(App).filter(App.id == app_id, App.deleted_on.is_(None)).first()
+    if not app:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"App {app_id} not found"
+        )
+
+    # Verify the connection exists
+    connection = (
+        db.query(Connection)
+        .filter(
+            Connection.id == upload_request.connection_id,
+            Connection.deleted_on.is_(None),
+        )
+        .first()
     )
-
-    async with run_context.get_sandbox_client() as client:
-        response = await client.put("/secrets/", json=secret_payload.model_dump())
-        response.raise_for_status()
-
-    return {
-        "message": f"Connection '{connection_name}' uploaded successfully",
-        "id": upload_request.connection_id,
-    }
-
-
-def _get_connection_secrets(
-    db: Session, connection_id: uuid.UUID
-) -> tuple[SecretPayload, str]:
-    """Get secrets for a connection by ID."""
-    # Query the base connection first
-    connection = db.query(Connection).filter(Connection.id == connection_id).first()
-
     if not connection:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Connection with id {connection_id} not found",
+            detail=f"Connection {upload_request.connection_id} not found",
         )
 
-    # Find the concrete connection class
+    # Check if the connection is already linked to the app
+    existing_link = db.execute(
+        select(app_connection).where(
+            app_connection.c.app_id == app_id,
+            app_connection.c.connection_id == upload_request.connection_id,
+        )
+    ).first()
+
+    # If not already linked, add the connection to the app
+    if not existing_link:
+        logger.info(
+            f"Linking connection {upload_request.connection_id} to app {app_id}"
+        )
+        db.execute(
+            app_connection.insert().values(
+                app_id=app_id, connection_id=upload_request.connection_id
+            )
+        )
+        db.commit()
+
+    # Find the concrete connection class and get secrets
     connection_class: type[ConnectionBase] = next(
         (cls for cls in ALL_CONNECTION_CLASSES if cls.type == connection.type)
     )
 
     # Query the concrete connection
     concrete_connection = (
-        db.query(connection_class).filter(connection_class.id == connection_id).first()
+        db.query(connection_class).filter(connection_class.id == connection.id).first()
     )
 
     if not concrete_connection:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Concrete connection with id {connection_id} not found",
+            detail=f"Concrete connection with id {connection.id} not found",
         )
 
-    # Extract secrets
+    # Extract secrets and create payload
     env_vars = concrete_connection.get_env_vars()
     secret_payload = SecretPayload(
         name=connection.name,
@@ -670,7 +687,14 @@ def _get_connection_secrets(
         prefix=CONNECTION_DIR,
     )
 
-    return secret_payload, connection.name
+    async with run_context.get_sandbox_client() as client:
+        response = await client.put("/secrets/", json=secret_payload.model_dump())
+        response.raise_for_status()
+
+    return {
+        "message": f"Connection '{connection.name}' uploaded successfully",
+        "id": upload_request.connection_id,
+    }
 
 
 @router.post(
