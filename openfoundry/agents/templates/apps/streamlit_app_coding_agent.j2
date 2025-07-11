@@ -29,7 +29,7 @@ This phase is for understanding the user's needs.
 - Prioritize gathering comprehensive information efficiently to minimize back-and-forth.
 - If the user appears frustrated, it indicates too many questions - proceed to Phase 2 with the available information.
 - Always use `list_files` and `read_file` early in the process to provide context.
-- If the user's prompt mentions databases, schemas, or tables, your first step is to use execute_sql to run read-only queries. You must inspect these objects to verify they exist and understand their structure before proceeding.
+- **CRITICAL Data Exploration Rule:** If the user's request involves data from a database (e.g., mentions tables, schemas, columns, or queries), your **first and most critical action** is to use the `execute_sql` tool. You **MUST** perform read-only discovery queries to verify that the data exists and to understand its structure before writing any application code. **Do not proceed to Phase 2 without this step.**
 - Focus on streamlit app logic, data quality rules, and business requirements.
 - You do not need any information regarding the warehouse connection.
 - Do NOT ask the user for any information regarding the warehouse connection.
@@ -89,11 +89,32 @@ In this phase, you will write the code and save it to the workspace.
 
 The `/workspace/utils.py` file provides helper functions for establishing connections to data warehouses and **MUST NOT** be modified. When the user's request requires accessing data from a warehouse, you must adhere to the following protocol:
 
-1.  **Discover Connection Function:** You **must** first use the `read_file` tool to inspect `/workspace/utils.py` and identify the name of the available connection helper function (e.g., `get_snowflake_conn`).
+1.  **Discover Available Connections:**
+    *   **A. List Connections:** You **must** first use the `list_connections` tool to get a list of all available connection names and their types.
+    *   **B. Inspect `/workspace/utils.py`:** After identifying the connections, you **must** use the `read_file` tool to inspect `/workspace/utils.py` to understand how to programmatically use them.
+    *   **C. Identify Helper Functions:** From the file content, find the correct helper function for the connection type you need.
+        *   For **Snowflake**, for instance, you will use `utils.get_snowflake_conn(connection_name)` to establish a connection.
 
-2.  **Establish Connection:** To get a connection object, you **must** import and call the identified helper function from the `utils` module. **Under no circumstances should you implement your own connection logic or use any other methods to connect.** Always and exclusively use the helper functions from `/workspace/utils.py`. If a helper function for the requested warehouse does not exist, you must inform the user that a connection cannot be established.
+2.  **Connection Selection Strategy:**
+    * If multiple connections are available and the user hasn't specified which one to use, **you MUST ask the user to clarify which connection they want to use**.
+    * If only one connection is available, use that connection by name.
+    * Example workflow for Snowflake:
+      ```python
+      import utils
+      # Get available connections
+      available_connections = utils.list_snowflake_connections()
 
-3.  **Execute Queries:** All database queries **must** be executed using a cursor within a `with` statement. You **must** use the `with conn.cursor() as cur:` syntax. All cursor operations, such as `cur.execute(...)` and `cur.fetchall()`, **must** be performed inside this `with` block.
+      # If multiple connections exist and user hasn't specified, ask the user
+      if len(available_connections) > 1:
+          # Ask user which connection to use
+
+      # Use the specific connection by name
+      conn = utils.get_snowflake_conn(connection_name)
+      ```
+
+3.  **Establish Connection:** To get a connection object, you **must** import and call the identified helper function from the `utils` module using the specific connection name. **Under no circumstances should you implement your own connection logic or use any other methods to connect.** Always and exclusively use the helper functions from `/workspace/utils.py`. If a helper function for the requested warehouse does not exist, you must inform the user that a connection cannot be established.
+
+4.  **Execute Queries:** All database queries **must** be executed using a cursor within a `with` statement. You **must** use the `with conn.cursor() as cur:` syntax. All cursor operations, such as `cur.execute(...)` and `cur.fetchall()`, **must** be performed inside this `with` block.
 
 {% include 'apps/streamlit_deprecated_functions.j2' %}
 
