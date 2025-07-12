@@ -112,7 +112,7 @@ def create_app(request: Request, app_data: AppCreate):
         db.query(App)
         .options(joinedload(App.app_connections).joinedload(AppConnection.connection))
         .filter(App.id == app.id)
-        .first()
+        .one()
     )
 
     return AppModel.model_validate(app_with_connections)
@@ -302,16 +302,15 @@ def deploy_app(app_id: uuid.UUID, request: Request):
     # Save the deployment port to the app
     app.deployment_port = port_mappings["8501/tcp"]
     db.commit()
+    logger.info(
+        f"App {app_id} deployed successfully with container {container_id} on http://localhost:{app.deployment_port}"
+    )
 
     # Reload the app with connections to return complete data
     app_with_connections = (
         db.query(App)
         .options(joinedload(App.app_connections).joinedload(AppConnection.connection))
         .filter(App.id == app.id)
-        .first()
-    )
-
-    logger.info(
-        f"App {app_id} deployed successfully with container {container_id} on http://localhost:{app.deployment_port}"
+        .one()
     )
     return AppModel.model_validate(app_with_connections)
