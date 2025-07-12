@@ -185,7 +185,7 @@ export const deleteConnection = createAsyncThunk(
       }
 
       const response = await fetch(
-        `/api/connections/${connection.connection_type.toLowerCase()}/${connectionId}`,
+        `/api/connections/${connection.type.toLowerCase()}/${connectionId}`,
         {
           method: "DELETE",
         },

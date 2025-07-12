@@ -43,7 +43,7 @@ class SnowflakeConnectionModel(BaseModel):
     database: str
     warehouse: str
     schema_: str = Field(..., alias="schema")
-    connection_type: str
+    type: str
     private_key: str
 
     class Config:
@@ -70,7 +70,7 @@ def get_snowflake_connection(request: Request, connection_id: UUID):
             status_code=status.HTTP_404_NOT_FOUND, detail="connection not found"
         )
 
-    setattr(connection, "connection_type", connection.type.value)
+    setattr(connection, "type", connection.type.value)
     return SnowflakeConnectionModel.model_validate(connection)
 
 
@@ -121,7 +121,7 @@ def create_snowflake_connection(
     db.commit()
     db.refresh(snowflake_connection)
 
-    setattr(snowflake_connection, "connection_type", snowflake_connection.type.value)
+    setattr(snowflake_connection, "type", snowflake_connection.type.value)
     return SnowflakeConnectionModel.model_validate(snowflake_connection)
 
 
@@ -186,7 +186,7 @@ def update_snowflake_connection(
     db.commit()
     db.refresh(snowflake_connection)
 
-    setattr(snowflake_connection, "connection_type", snowflake_connection.type.value)
+    setattr(snowflake_connection, "type", snowflake_connection.type.value)
     return SnowflakeConnectionModel.model_validate(snowflake_connection)
 
 

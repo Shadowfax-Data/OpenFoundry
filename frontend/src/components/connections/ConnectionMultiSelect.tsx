@@ -144,7 +144,7 @@ export function ConnectionMultiSelect({
                     <div className="flex flex-col">
                       <span>{connection.name}</span>
                       <span className="text-xs text-muted-foreground">
-                        {connection.connection_type}
+                        {connection.type}
                       </span>
                     </div>
                   </CommandItem>

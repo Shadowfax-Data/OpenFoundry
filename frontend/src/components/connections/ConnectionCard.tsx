@@ -39,7 +39,7 @@ export function ConnectionCard({
           <div
             className={`h-12 w-12 rounded-lg ${connection.color} flex items-center justify-center text-white`}
           >
-            {getIconForType(connection.connection_type)}
+            {getIconForType(connection.type)}
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -71,7 +71,7 @@ export function ConnectionCard({
         <div className="mb-4">
           <h3 className="font-semibold text-lg mb-1">{connection.name}</h3>
           <p className="text-sm text-muted-foreground capitalize">
-            {connection.connection_type}
+            {connection.type}
           </p>
         </div>
 

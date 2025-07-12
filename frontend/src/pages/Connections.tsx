@@ -80,7 +80,7 @@ export function Connections() {
       return;
     }
 
-    switch (connection.connection_type.toLowerCase()) {
+    switch (connection.type.toLowerCase()) {
       case "snowflake":
         navigate(`/connections/snowflake/${connectionId}`);
         break;
@@ -89,7 +89,7 @@ export function Connections() {
         break;
       default:
         alert(
-          `Editing for connection type '${connection.connection_type}' is not supported yet.`,
+          `Editing for connection type '${connection.type}' is not supported yet.`,
         );
     }
   };

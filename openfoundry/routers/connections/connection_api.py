@@ -12,7 +12,7 @@ router = APIRouter()
 class ConnectionModel(BaseModel):
     id: UUID
     name: str
-    connection_type: str
+    type: str
 
 
 @router.get("/api/connections", response_model=list[ConnectionModel])
@@ -31,7 +31,7 @@ def list_connections(request: Request):
         ConnectionModel(
             id=connection.id,
             name=connection.name,
-            connection_type=connection.type.value,
+            type=connection.type.value,
         )
         for connection in connections
     ]

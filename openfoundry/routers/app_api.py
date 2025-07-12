@@ -17,7 +17,7 @@ from openfoundry.models.agent_sessions.docker_utils import (
 )
 from openfoundry.models.apps import App, AppConnection
 from openfoundry.models.connections import ALL_CONNECTION_CLASSES, Connection
-from openfoundry.models.connections.connection import ConnectionBase
+from openfoundry.models.connections.connection import ConnectionBase, ConnectionType
 
 router = APIRouter(prefix="/api")
 logger = logging.getLogger(__name__)
@@ -29,6 +29,15 @@ class AppCreate(BaseModel):
     connection_ids: list[uuid.UUID] = []
 
 
+class ConnectionModel(BaseModel):
+    id: uuid.UUID
+    name: str
+    type: ConnectionType
+
+    class Config:
+        from_attributes = True
+
+
 class AppModel(BaseModel):
     id: uuid.UUID
     name: str
@@ -36,9 +45,33 @@ class AppModel(BaseModel):
     updated_on: datetime
     deleted_on: datetime | None
     deployment_port: int | None
+    connections: list[ConnectionModel] = []
 
     class Config:
         from_attributes = True
+
+    @classmethod
+    def model_validate(cls, obj):
+        """Custom validation to extract connections from app_connections."""
+        if hasattr(obj, "app_connections"):
+            # Extract connections from app_connections
+            connections = [
+                ConnectionModel.model_validate(app_conn.connection)
+                for app_conn in obj.app_connections
+                if app_conn.connection
+            ]
+            # Create a dict with the connections field
+            data = {
+                "id": obj.id,
+                "name": obj.name,
+                "created_on": obj.created_on,
+                "updated_on": obj.updated_on,
+                "deleted_on": obj.deleted_on,
+                "deployment_port": obj.deployment_port,
+                "connections": connections,
+            }
+            return cls(**data)
+        return super().model_validate(obj)
 
 
 @router.post("/apps", response_model=AppModel, status_code=status.HTTP_201_CREATED)
@@ -73,9 +106,16 @@ def create_app(request: Request, app_data: AppCreate):
 
     db.add(app)
     db.commit()
-    db.refresh(app)
 
-    return AppModel.model_validate(app)
+    # Reload the app with connections to return complete data
+    app_with_connections = (
+        db.query(App)
+        .options(joinedload(App.app_connections).joinedload(AppConnection.connection))
+        .filter(App.id == app.id)
+        .first()
+    )
+
+    return AppModel.model_validate(app_with_connections)
 
 
 @router.get("/apps", response_model=list[AppModel])
@@ -84,8 +124,10 @@ def get_apps(request: Request):
     db: Session = request.state.db
 
     # Get all non-deleted apps ordered by created_on descending (newest first)
+    # Use joinedload to fetch the connections efficiently
     apps = (
         db.query(App)
+        .options(joinedload(App.app_connections).joinedload(AppConnection.connection))
         .filter(App.deleted_on.is_(None))
         .order_by(App.created_on.desc())
         .all()
@@ -99,8 +141,13 @@ def get_app(app_id: uuid.UUID, request: Request):
     """Get a specific app."""
     db: Session = request.state.db
 
-    # Get the specific non-deleted app
-    app = db.query(App).filter(App.id == app_id, App.deleted_on.is_(None)).first()
+    # Get the specific non-deleted app with connections
+    app = (
+        db.query(App)
+        .options(joinedload(App.app_connections).joinedload(AppConnection.connection))
+        .filter(App.id == app_id, App.deleted_on.is_(None))
+        .first()
+    )
 
     if not app:
         raise HTTPException(
@@ -255,9 +302,16 @@ def deploy_app(app_id: uuid.UUID, request: Request):
     # Save the deployment port to the app
     app.deployment_port = port_mappings["8501/tcp"]
     db.commit()
-    db.refresh(app)
+
+    # Reload the app with connections to return complete data
+    app_with_connections = (
+        db.query(App)
+        .options(joinedload(App.app_connections).joinedload(AppConnection.connection))
+        .filter(App.id == app.id)
+        .first()
+    )
 
     logger.info(
         f"App {app_id} deployed successfully with container {container_id} on http://localhost:{app.deployment_port}"
     )
-    return AppModel.model_validate(app)
+    return AppModel.model_validate(app_with_connections)
