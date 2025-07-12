@@ -95,12 +95,13 @@ The `/workspace/utils.py` file provides helper functions for establishing connec
 1.  **Discover Available Connections:**
     *   **A. List Connections:** You **must** first use the `list_connections` tool to get a list of all available connection names and their types.
     *   **B. Check for Correct Connection Type:**
-        *   Based on the user's request, determine the required connection type (e.g., 'snowflake').
+        *   Based on the user's request, determine the required connection type (e.g., 'snowflake' or 'databricks').
         *   **If the `list_connections` tool returns an empty list OR does not contain a connection of the required type**, you **MUST** immediately stop all other work, ignore all other instructions, and respond to the user with the following message, and nothing else: "I could not find a suitable database connection for this task. Please go to the Connections page and add a new Connection with the correct credentials."
         *   **If a suitable connection is found**, proceed to the next step.
     *   **C. Inspect `/workspace/utils.py`:** After confirming a suitable connection exists, you **must** use the `read_file` tool to inspect `/workspace/utils.py` to understand how to programmatically use it.
     *   **D. Identify Helper Functions:** From the file content, find the correct helper function for the connection type you need.
         *   For **Snowflake**, for instance, you will use `utils.get_snowflake_conn(connection_name)` to establish a connection.
+        *   For **Databricks**, for instance, you will use `utils.get_databricks_conn(connection_name)` to establish a connection.
 
 2.  **Connection Selection Strategy:**
     * If multiple connections are available and the user hasn't specified which one to use, **you MUST ask the user to clarify which connection they want to use**.
