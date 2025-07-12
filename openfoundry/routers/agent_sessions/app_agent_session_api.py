@@ -521,7 +521,7 @@ async def check_sandbox_health(
         await run_context.check_sandbox_url()
     except httpx.HTTPError as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail=f"Failed to check sandbox health: {e}",
         )
     return {"status": "healthy"}
@@ -551,7 +551,7 @@ async def list_files_in_sandbox(
             response = await client.get("/files/list", params=params)
         except httpx.RequestError as e:
             raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail=f"Failed to list files: {e}",
             )
         response.raise_for_status()
@@ -577,7 +577,7 @@ async def read_file_from_sandbox(
             response = await client.get("/files/read", params=params)
         except httpx.RequestError as e:
             raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail=f"Failed to read file: {e}",
             )
         response.raise_for_status()
