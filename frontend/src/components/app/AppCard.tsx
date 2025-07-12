@@ -23,6 +23,7 @@ import {
   Trash,
   Rocket,
 } from "lucide-react";
+import { SiDatabricks, SiSnowflake } from "@icons-pack/react-simple-icons";
 import { App } from "@/types/api";
 
 interface AppCardProps {
@@ -52,6 +53,17 @@ export function AppCard({
   onDeleteApp,
   onDeployApp,
 }: AppCardProps) {
+  const getIconForConnectionType = (type: string) => {
+    switch (type.toLowerCase()) {
+      case "snowflake":
+        return <SiSnowflake className="h-4 w-4" />;
+      case "databricks":
+        return <SiDatabricks className="h-4 w-4" />;
+      default:
+        return null;
+    }
+  };
+
   return (
     <div className="rounded-lg border bg-card text-card-foreground shadow-sm hover:shadow-md transition-shadow">
       <div className="p-6">
@@ -165,15 +177,36 @@ export function AppCard({
           </div>
         </div>
 
-        {/* Deployment status */}
-        <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4 min-h-[20px]">
-          {app.deployment_port ? (
-            <>
-              <Rocket className="h-4 w-4 text-blue-500" />
-              <span>Deployed on port {app.deployment_port}</span>
-            </>
-          ) : (
-            <span className="invisible">Deployed on port 0000</span>
+        {/* Deployment status and Connections */}
+        <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4 min-h-[20px]">
+          {/* Deployment status */}
+          <div className="flex items-center gap-2">
+            {app.deployment_port ? (
+              <>
+                <Rocket className="h-4 w-4 text-blue-500" />
+                <span>Deployed on port {app.deployment_port}</span>
+              </>
+            ) : (
+              <span className="invisible">Deployed on port 0000</span>
+            )}
+          </div>
+          {/* Connections */}
+          {app.connections && app.connections.length > 0 && (
+            <div className="flex items-center gap-1 ml-auto">
+              {app.connections.map((connection) => {
+                const icon = getIconForConnectionType(connection.type);
+                return icon ? (
+                  <Tooltip key={connection.id}>
+                    <TooltipTrigger asChild>
+                      <div className="p-1 rounded bg-muted hover:bg-muted/80 transition-colors">
+                        {icon}
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>{connection.name}</TooltipContent>
+                  </Tooltip>
+                ) : null;
+              })}
+            </div>
           )}
         </div>
 
