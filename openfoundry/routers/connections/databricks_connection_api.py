@@ -38,7 +38,7 @@ class DatabricksConnectionModel(BaseModel):
     access_token: str
     database: str
     schema_: str = Field(..., alias="schema")
-    connection_type: str
+    type: str
 
     class Config:
         from_attributes = True
@@ -64,7 +64,7 @@ def get_databricks_connection(request: Request, connection_id: UUID):
             status_code=status.HTTP_404_NOT_FOUND, detail="connection not found"
         )
 
-    setattr(connection, "connection_type", connection.type.value)
+    setattr(connection, "type", connection.type.value)
     return DatabricksConnectionModel.model_validate(connection)
 
 
@@ -113,7 +113,7 @@ def create_databricks_connection(
     db.commit()
     db.refresh(databricks_connection)
 
-    setattr(databricks_connection, "connection_type", databricks_connection.type.value)
+    setattr(databricks_connection, "type", databricks_connection.type.value)
     return DatabricksConnectionModel.model_validate(databricks_connection)
 
 
@@ -178,7 +178,7 @@ def update_databricks_connection(
     db.commit()
     db.refresh(databricks_connection)
 
-    setattr(databricks_connection, "connection_type", databricks_connection.type.value)
+    setattr(databricks_connection, "type", databricks_connection.type.value)
     return DatabricksConnectionModel.model_validate(databricks_connection)
 
 

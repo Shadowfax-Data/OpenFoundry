@@ -8,12 +8,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Search, AppWindowMac, X } from "lucide-react";
+import { Plus, Search, AppWindowMac } from "lucide-react";
 import { AppCard } from "@/components/app/AppCard";
 import { useAppDispatch, useAppSelector } from "@/store";
 import {
   fetchApps,
-  createApp,
   deleteApp,
   deployApp,
   setSearchQuery,
@@ -30,8 +29,7 @@ import {
   deleteAppAgentSession,
 } from "@/store/slices/appAgentSessionsSlice";
 import { fetchConnections } from "@/store/slices/connectionsSlice";
-import { Connection } from "@/types/api";
-import { MultiSelect } from "@/components/ui/multi-select";
+import { CreateAppDialog } from "@/components/app/CreateAppDialog";
 
 export function Apps() {
   const dispatch = useAppDispatch();
@@ -41,13 +39,8 @@ export function Apps() {
   const { sessions, error: sessionsError } = useAppSelector(
     (state) => state.appAgentSessions,
   );
-  const { connections } = useAppSelector((state) => state.connections);
 
   const [showCreateDialog, setShowCreateDialog] = useState(false);
-  const [newAppName, setNewAppName] = useState("");
-  const [selectedConnectionIds, setSelectedConnectionIds] = useState<string[]>(
-    [],
-  );
   const [isCreatingSession, setIsCreatingSession] = useState(false);
 
   // Track loading state for Edit button per app
@@ -147,42 +140,6 @@ export function Apps() {
 
   const handleSortChange = (value: string) => {
     dispatch(setSortBy(value as "recent" | "name"));
-  };
-
-  const handleCreateApp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newAppName.trim()) return;
-
-    try {
-      // Create the app first
-      const appResult = await dispatch(
-        createApp({
-          name: newAppName.trim(),
-          connection_ids: selectedConnectionIds,
-        }),
-      ).unwrap();
-      setNewAppName("");
-      setShowCreateDialog(false);
-      setSelectedConnectionIds([]);
-
-      // Show session creation loading state
-      setIsCreatingSession(true);
-
-      // Create an agent session for the new app
-      const sessionResult = await dispatch(
-        createAppAgentSession(appResult.id),
-      ).unwrap();
-
-      // Navigate to the chat page
-      navigate(
-        `/apps/${appResult.id}/sessions/${sessionResult.session.id}/chat`,
-      );
-    } catch (error) {
-      // Error is handled by Redux state
-      console.error("Failed to create app or session:", error);
-    } finally {
-      setIsCreatingSession(false);
-    }
   };
 
   // Helper to handle Edit button click
@@ -417,70 +374,11 @@ export function Apps() {
           </div>
 
           {/* Create App Dialog */}
-          {showCreateDialog && (
-            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-              <div className="bg-background rounded-lg p-6 w-full max-w-md mx-4">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-lg font-semibold">Create New App</h2>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowCreateDialog(false)}
-                    className="h-6 w-6 p-0"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-                <form onSubmit={handleCreateApp}>
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium mb-2">
-                      App Name
-                    </label>
-                    <input
-                      type="text"
-                      value={newAppName}
-                      onChange={(e) => setNewAppName(e.target.value)}
-                      placeholder="Enter app name"
-                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground"
-                      required
-                      autoFocus
-                    />
-                  </div>
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium mb-2">
-                      Connections
-                    </label>
-                    <MultiSelect
-                      options={
-                        connections.map((c: Connection) => ({
-                          value: c.id,
-                          label: c.name,
-                        })) ?? []
-                      }
-                      selected={selectedConnectionIds}
-                      onChange={setSelectedConnectionIds}
-                      placeholder="Select connections..."
-                    />
-                  </div>
-                  <div className="flex gap-2 justify-end">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setShowCreateDialog(false)}
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      type="submit"
-                      disabled={!newAppName.trim() || loading}
-                    >
-                      {loading ? "Creating..." : "Create App"}
-                    </Button>
-                  </div>
-                </form>
-              </div>
-            </div>
-          )}
+          <CreateAppDialog
+            isOpen={showCreateDialog}
+            onClose={() => setShowCreateDialog(false)}
+            onCreatingSession={setIsCreatingSession}
+          />
 
           {/* Session Creation Loading Overlay */}
           {isCreatingSession && (

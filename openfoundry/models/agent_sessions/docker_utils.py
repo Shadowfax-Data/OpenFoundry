@@ -17,6 +17,12 @@ class SecretPayload(BaseModel):
     prefix: str | None = None
 
 
+class ConnectionPayload(SecretPayload):
+    name: str
+    secrets: dict[str, str]
+    prefix: str = "connections"
+
+
 @cache
 def get_docker_client() -> docker.DockerClient:
     """Get a cached Docker client instance.

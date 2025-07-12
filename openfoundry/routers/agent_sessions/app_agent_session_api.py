@@ -15,14 +15,12 @@ from fastapi import (
     status,
 )
 from pydantic import BaseModel
-from sqlalchemy import select
 from sqlalchemy.orm import Session, joinedload
 
 from openfoundry.agents.run_context import AppAgentRunContext
 from openfoundry.agents.streamlit_app_coding_agent import (
     STREAMLIT_APP_CODING_AGENT_NAME,
 )
-from openfoundry.config import CONNECTION_DIR
 from openfoundry.logger import logger
 from openfoundry.models.agent_sessions import (
     AgentSession,
@@ -30,15 +28,15 @@ from openfoundry.models.agent_sessions import (
     AppAgentSession,
 )
 from openfoundry.models.agent_sessions.docker_utils import (
+    ConnectionPayload,
     SecretPayload,
     container_exists,
     export_workspace_from_container,
 )
 from openfoundry.models.apps import App
-from openfoundry.models.apps.app_connection import app_connection
+from openfoundry.models.apps.app_connection import AppConnection
 from openfoundry.models.connections import ALL_CONNECTION_CLASSES, Connection
 from openfoundry.models.connections.connection import ConnectionBase
-from openfoundry.models.conversation_item import ConversationItem
 
 # Define terminal statuses for agent sessions
 AGENT_SESSION_TERMINAL_STATUSES = [
@@ -175,7 +173,7 @@ def create_app_agent_session(request: Request, app_id: uuid.UUID):
     # Verify the app exists and is not deleted
     app = (
         db.query(App)
-        .options(joinedload(App.connections))
+        .options(joinedload(App.app_connections).joinedload(AppConnection.connection))
         .filter(App.id == app_id, App.deleted_on.is_(None))
         .first()
     )
@@ -207,24 +205,23 @@ def create_app_agent_session(request: Request, app_id: uuid.UUID):
     secrets: list[SecretPayload] = []
 
     # Process app connections to create secrets
-    if app.connections:
-        for connection in app.connections:
-            connection_type = connection.type
+    if app.app_connections:
+        for app_connection in app.app_connections:
+            connection_type = app_connection.connection.type
             connection_class: type[ConnectionBase] = next(
                 cls for cls in ALL_CONNECTION_CLASSES if cls.type == connection_type
             )
             concrete_connection = (
                 db.query(connection_class)
-                .filter(connection_class.id == connection.id)
+                .filter(connection_class.id == app_connection.connection_id)
                 .first()
             )
 
             if concrete_connection:
                 env_vars = concrete_connection.get_env_vars()
-                secret_payload = SecretPayload(
-                    name=connection.name,
+                secret_payload = ConnectionPayload(
+                    name=app_connection.connection.name,
                     secrets=env_vars,
-                    prefix=CONNECTION_DIR,
                 )
                 secrets.append(secret_payload)
 
@@ -482,11 +479,6 @@ def delete_app_agent_session(
             f"Container {agent_session.container_id} stopped and removed for session {session_id}"
         )
 
-    # Delete conversation items first to avoid foreign key constraint violation
-    db.query(ConversationItem).filter(
-        ConversationItem.agent_session_id == agent_session.id
-    ).delete()
-
     # Delete the app agent session and its associated agent session
     db.delete(app_agent_session)
     db.delete(agent_session)
@@ -529,7 +521,7 @@ async def check_sandbox_health(
         await run_context.check_sandbox_url()
     except httpx.HTTPError as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail=f"Failed to check sandbox health: {e}",
         )
     return {"status": "healthy"}
@@ -559,7 +551,7 @@ async def list_files_in_sandbox(
             response = await client.get("/files/list", params=params)
         except httpx.RequestError as e:
             raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail=f"Failed to list files: {e}",
             )
         response.raise_for_status()
@@ -585,7 +577,7 @@ async def read_file_from_sandbox(
             response = await client.get("/files/read", params=params)
         except httpx.RequestError as e:
             raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail=f"Failed to read file: {e}",
             )
         response.raise_for_status()
@@ -647,9 +639,9 @@ async def upload_file_to_sandbox(
 
 
 @router.post(
-    "/apps/{app_id}/sessions/{session_id}/upload_connection",
+    "/apps/{app_id}/sessions/{session_id}/add_connection",
 )
-async def upload_connection_to_sandbox(
+async def add_connection_to_sandbox(
     request: Request,
     app_id: uuid.UUID,
     session_id: uuid.UUID,
@@ -682,23 +674,24 @@ async def upload_connection_to_sandbox(
         )
 
     # Check if the connection is already linked to the app
-    existing_link = db.execute(
-        select(app_connection).where(
-            app_connection.c.app_id == app_id,
-            app_connection.c.connection_id == upload_request.connection_id,
+    existing_link = (
+        db.query(AppConnection)
+        .filter(
+            AppConnection.app_id == app_id,
+            AppConnection.connection_id == upload_request.connection_id,
         )
-    ).first()
+        .first()
+    )
 
     # If not already linked, add the connection to the app
     if not existing_link:
         logger.info(
             f"Linking connection {upload_request.connection_id} to app {app_id}"
         )
-        db.execute(
-            app_connection.insert().values(
-                app_id=app_id, connection_id=upload_request.connection_id
-            )
+        app_connection = AppConnection(
+            app_id=app_id, connection_id=upload_request.connection_id
         )
+        db.add(app_connection)
         db.commit()
 
     # Find the concrete connection class and get secrets
@@ -719,10 +712,9 @@ async def upload_connection_to_sandbox(
 
     # Extract secrets and create payload
     env_vars = concrete_connection.get_env_vars()
-    secret_payload = SecretPayload(
+    secret_payload = ConnectionPayload(
         name=connection.name,
         secrets=env_vars,
-        prefix=CONNECTION_DIR,
     )
 
     async with run_context.get_sandbox_client() as client:

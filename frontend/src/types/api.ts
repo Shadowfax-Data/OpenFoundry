@@ -4,7 +4,9 @@ export interface AppFromAPI {
   name: string;
   created_on: string; // ISO datetime string
   updated_on: string; // ISO datetime string
+  deleted_on: string | null; // ISO datetime string
   deployment_port: number | null; // Port where the app is deployed
+  connections: ConnectionFromAPI[]; // List of connected connections
 }
 
 // Frontend app type with computed UI properties
@@ -36,7 +38,7 @@ export interface CreateAppRequest {
 export interface ConnectionFromAPI {
   id: string;
   name: string;
-  connection_type: string;
+  type: string;
 }
 
 // Frontend connection type with computed UI properties
@@ -76,7 +78,7 @@ export interface SnowflakeConnectionModel {
   database: string;
   warehouse: string;
   schema: string;
-  connection_type: string;
+  type: string;
   private_key: string;
 }
 
@@ -106,5 +108,5 @@ export interface DatabricksConnectionModel {
   access_token: string;
   database?: string;
   schema?: string;
-  connection_type: string;
+  type: string;
 }
