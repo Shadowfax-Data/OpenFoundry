@@ -6,6 +6,9 @@ from pathlib import Path
 
 from openfoundry_sandbox.config import CONNECTIONS_DIR
 from openfoundry_sandbox.models.connections.connection import Connection
+from openfoundry_sandbox.models.connections.databricks_connection import (
+    DatabricksConnection,
+)
 from openfoundry_sandbox.models.connections.snowflake_connection import (
     SnowflakeConnection,
 )
@@ -22,6 +25,7 @@ class ConnectionManager:
     # Registry of connection types - easily extensible for new connection types
     _connection_types: dict[str, type[Connection]] = {
         "snowflake": SnowflakeConnection,
+        "databricks": DatabricksConnection,
         # Add more connection types here as they are implemented
     }
 

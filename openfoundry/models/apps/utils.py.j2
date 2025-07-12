@@ -11,6 +11,7 @@ def _get_connection_type(creds: dict[str, str]) -> str | None:
     """Determines connection type based on secret keys."""
     type_mapping = {
         "SNOWFLAKE_": "snowflake",
+        "DATABRICKS_": "databricks",
     }
     for key in creds:
         for prefix, conn_type in type_mapping.items():
@@ -55,19 +56,15 @@ def get_snowflake_conn(connection_name: str):
     """
     connection_secrets = load_connection_secrets()
 
-    # Get all Snowflake connections
-    snowflake_connections = {key.name: creds for key, creds in connection_secrets.items() if key.type == "snowflake"}
+    # Find the specific Snowflake connection directly
+    snowflake_key = ConnectionKey(name=connection_name, type="snowflake")
 
-    if not snowflake_connections:
-        return None
-
-    # Select the appropriate connection
-    if connection_name in snowflake_connections:
-        SNOWFLAKE_CREDS = snowflake_connections[connection_name]
-    else:
-        available_connections = list(snowflake_connections.keys())
+    if snowflake_key not in connection_secrets:
+        available_connections = [key.name for key, creds in connection_secrets.items() if key.type == "snowflake"]
         st.error(f"Snowflake connection '{connection_name}' not found. Available connections: {available_connections}")
         return None
+
+    SNOWFLAKE_CREDS = connection_secrets[snowflake_key]
 
     try:
         conn_params = {
@@ -87,4 +84,48 @@ def get_snowflake_conn(connection_name: str):
 
     except Exception as e:
         st.error(f"Failed to connect to Snowflake connection '{connection_name}': {e}")
+        return None
+
+from databricks import sql
+
+def list_databricks_connections():
+    """Returns a list of available Databricks connection names."""
+    connection_secrets = load_connection_secrets()
+    return [key.name for key, creds in connection_secrets.items() if key.type == "databricks"]
+
+def get_databricks_conn(connection_name: str):
+    """
+    Establishes a connection to Databricks.
+
+    Args:
+        connection_name: The name of the specific connection to use.
+
+    Returns:
+        Databricks connection object or None if connection fails.
+    """
+    connection_secrets = load_connection_secrets()
+
+    # Find the specific Databricks connection directly
+    databricks_key = ConnectionKey(name=connection_name, type="databricks")
+
+    if databricks_key not in connection_secrets:
+        available_connections = [key.name for key, creds in connection_secrets.items() if key.type == "databricks"]
+        st.error(f"Databricks connection '{connection_name}' not found. Available connections: {available_connections}")
+        return None
+
+    DATABRICKS_CREDS = connection_secrets[databricks_key]
+
+    try:
+        conn_params = {
+            "server_hostname": DATABRICKS_CREDS.get("DATABRICKS_HOST"),
+            "http_path": DATABRICKS_CREDS.get("DATABRICKS_HTTP_PATH"),
+            "access_token": DATABRICKS_CREDS.get("DATABRICKS_TOKEN"),
+            "catalog": DATABRICKS_CREDS.get("DATABRICKS_CATALOG"),
+            "schema": DATABRICKS_CREDS.get("DATABRICKS_SCHEMA"),
+        }
+
+        return sql.connect(**conn_params)
+
+    except Exception as e:
+        st.error(f"Failed to connect to Databricks connection '{connection_name}': {e}")
         return None
