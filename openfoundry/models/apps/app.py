@@ -17,10 +17,9 @@ from openfoundry.models.agent_sessions.docker_utils import (
     remove_docker_container,
     stop_docker_container,
 )
-from openfoundry.models.apps.app_connection import app_connection
 
 if TYPE_CHECKING:
-    from openfoundry.models.connections import Connection
+    from openfoundry.models.apps.app_connection import AppConnection
 
 
 class App(Base):
@@ -37,8 +36,9 @@ class App(Base):
     )
     deployment_port: Mapped[int | None] = mapped_column(nullable=True)
 
-    connections: Mapped[list["Connection"]] = relationship(
-        "Connection", secondary=app_connection
+    # Association objects for the many-to-many relationship
+    app_connections: Mapped[list["AppConnection"]] = relationship(
+        "AppConnection", back_populates="app", cascade="all, delete-orphan"
     )
 
     def soft_delete(self):

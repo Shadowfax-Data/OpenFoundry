@@ -1,3 +1,4 @@
 from .app import App
+from .app_connection import AppConnection
 
-__all__ = ["App"]
+__all__ = ["App", "AppConnection"]

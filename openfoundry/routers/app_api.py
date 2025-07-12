@@ -7,14 +7,15 @@ from fastapi import APIRouter, HTTPException, Request, status
 from pydantic import BaseModel
 from sqlalchemy.orm import Session, joinedload
 
-from openfoundry.config import CONNECTION_DIR, SANDBOX_IMAGE
+from openfoundry.config import SANDBOX_IMAGE
 from openfoundry.models.agent_sessions import AgentSessionStatus, AppAgentSession
 from openfoundry.models.agent_sessions.docker_utils import (
+    ConnectionPayload,
     SecretPayload,
     container_exists,
     create_docker_container,
 )
-from openfoundry.models.apps import App
+from openfoundry.models.apps import App, AppConnection
 from openfoundry.models.connections import ALL_CONNECTION_CLASSES, Connection
 from openfoundry.models.connections.connection import ConnectionBase
 
@@ -63,7 +64,11 @@ def create_app(request: Request, app_data: AppCreate):
             )
 
     # Create new app object
-    app = App(id=uuid6.uuid6(), name=app_data.name, connections=connections)
+    app = App(id=uuid6.uuid6(), name=app_data.name)
+
+    # Create AppConnection objects for each connection
+    app.app_connections = [AppConnection(connection_id=conn.id) for conn in connections]
+
     app.initialize_app_workspace()
 
     db.add(app)
@@ -175,7 +180,7 @@ def deploy_app(app_id: uuid.UUID, request: Request):
     # Get the specific non-deleted app
     app = (
         db.query(App)
-        .options(joinedload(App.connections))
+        .options(joinedload(App.app_connections).joinedload(AppConnection.connection))
         .filter(App.id == app_id, App.deleted_on.is_(None))
         .first()
     )
@@ -194,24 +199,23 @@ def deploy_app(app_id: uuid.UUID, request: Request):
 
     secrets: list[SecretPayload] = []
     # Process app connections to create secrets
-    if app.connections:
-        for connection in app.connections:
-            connection_type = connection.type
+    if app.app_connections:
+        for app_connection in app.app_connections:
+            connection_type = app_connection.connection.type
             connection_class: type[ConnectionBase] = next(
                 cls for cls in ALL_CONNECTION_CLASSES if cls.type == connection_type
             )
             concrete_connection = (
                 db.query(connection_class)
-                .filter(connection_class.id == connection.id)
+                .filter(connection_class.id == app_connection.connection_id)
                 .first()
             )
 
             if concrete_connection:
                 env_vars = concrete_connection.get_env_vars()
-                secret_payload = SecretPayload(
-                    name=connection.name,
+                secret_payload = ConnectionPayload(
+                    name=app_connection.connection.name,
                     secrets=env_vars,
-                    prefix=CONNECTION_DIR,
                 )
                 secrets.append(secret_payload)
 

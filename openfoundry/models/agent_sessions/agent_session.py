@@ -1,6 +1,7 @@
 import enum
 import uuid
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 import uuid6
 from sqlalchemy import DateTime, Enum, ForeignKey
@@ -12,6 +13,9 @@ from openfoundry.config import SANDBOX_IMAGE, SANDBOX_PORT
 from openfoundry.database import Base
 from openfoundry.logger import logger
 from openfoundry.models.agent_sessions import docker_utils
+
+if TYPE_CHECKING:
+    from openfoundry.models.conversation_item import ConversationItem
 
 
 class AgentSessionType(enum.Enum):
@@ -43,6 +47,11 @@ class AgentSession(Base):
     last_message_id: Mapped[str | None] = mapped_column(nullable=True)
     container_id: Mapped[str] = mapped_column(nullable=False)
     port: Mapped[int] = mapped_column(nullable=False)
+
+    # Relationship to conversation items
+    conversation_items: Mapped[list["ConversationItem"]] = relationship(
+        back_populates="agent_session", cascade="all, delete-orphan"
+    )
 
 
 class AgentSessionBase(Base):

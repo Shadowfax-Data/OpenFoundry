@@ -19,4 +19,6 @@ class ConversationItem(Base):
         PostgresUUID, ForeignKey("agent_sessions.id"), nullable=False
     )
     message: Mapped[dict] = mapped_column(JSONB, nullable=False)
-    agent_session: Mapped[AgentSession] = relationship(backref="conversation_items")
+    agent_session: Mapped[AgentSession] = relationship(
+        back_populates="conversation_items"
+    )
