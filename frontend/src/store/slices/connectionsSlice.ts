@@ -1,14 +1,15 @@
-import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
+import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
+
+import { generateColorFromText } from "@/lib/utils";
+import { ConnectionsState } from "@/store/types";
 import {
   Connection,
   ConnectionFromAPI,
-  SnowflakeConnectionCreate,
-  SnowflakeConnectionUpdate,
   DatabricksConnectionCreate,
   DatabricksConnectionUpdate,
+  SnowflakeConnectionCreate,
+  SnowflakeConnectionUpdate,
 } from "@/types/api";
-import { ConnectionsState } from "@/store/types";
-import { generateColorFromText } from "@/lib/utils";
 
 // Helper function to transform backend connection to frontend connection
 const transformConnectionFromAPI = (

@@ -1,11 +1,12 @@
 import { createBrowserRouter } from "react-router";
-import { Layout } from "@/components/layout";
-import { Home } from "@/pages/Home";
-import { Apps } from "@/pages/Apps";
+
+import { Layout } from "@/components/layout/layout";
 import { AppChat } from "@/pages/AppChat";
+import { Apps } from "@/pages/Apps";
 import { Connections } from "@/pages/Connections";
-import { SnowflakeConnectionPage } from "@/pages/SnowflakeConnectionPage";
 import { DatabricksConnectionPage } from "@/pages/DatabricksConnectionPage";
+import { Home } from "@/pages/Home";
+import { SnowflakeConnectionPage } from "@/pages/SnowflakeConnectionPage";
 
 export const router = createBrowserRouter([
   {

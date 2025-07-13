@@ -1,3 +1,5 @@
+import { MessageSquareHeart } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 
@@ -24,6 +26,7 @@ export function Navbar() {
                 rel="noopener noreferrer"
               >
                 Feedback
+                <MessageSquareHeart />
               </a>
             </Button>
           </nav>

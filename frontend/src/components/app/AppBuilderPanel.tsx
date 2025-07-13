@@ -1,16 +1,18 @@
+import { Code, Eye, Grid2X2Plus, Rocket, Save } from "lucide-react";
 import React, { useState } from "react";
+
+import { AppPreview } from "@/components/app/AppPreview";
+import { CodePanel } from "@/components/code/CodePanel";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Eye, Code, Save, Rocket, Grid2X2Plus } from "lucide-react";
-import { AppPreview } from "@/components/app/AppPreview";
-import { CodePanel } from "@/components/code/CodePanel";
-import { CurrentWriteFileInfo } from "@/store/slices/chatSliceFactory";
 import { useAppDispatch } from "@/store";
 import { deployApp } from "@/store/slices/appsSlice";
+import { CurrentWriteFileInfo } from "@/store/slices/chatSliceFactory";
+
 import { ManageConnectionsDialog } from "./ManageConnectionsDialog";
 
 interface AppBuilderPanelProps {

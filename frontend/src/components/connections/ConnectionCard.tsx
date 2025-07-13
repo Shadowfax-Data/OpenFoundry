@@ -1,3 +1,6 @@
+import { SiDatabricks, SiSnowflake } from "@icons-pack/react-simple-icons";
+import { Database, FilePenLine, MoreVertical, Trash2 } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -6,8 +9,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreVertical, Database, Trash2, FilePenLine } from "lucide-react";
-import { SiDatabricks, SiSnowflake } from "@icons-pack/react-simple-icons";
 import { Connection } from "@/types/api";
 
 interface ConnectionCardProps {

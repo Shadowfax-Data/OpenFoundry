@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
+
+import { ConnectionMultiSelect } from "@/components/connections/ConnectionMultiSelect";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -8,9 +10,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useAppDispatch, useAppSelector } from "@/store";
-import { createApp } from "@/store/slices/appsSlice";
 import { createAppAgentSession } from "@/store/slices/appAgentSessionsSlice";
-import { ConnectionMultiSelect } from "@/components/connections/ConnectionMultiSelect";
+import { createApp } from "@/store/slices/appsSlice";
 
 interface CreateAppDialogProps {
   onCreatingSession: (isCreating: boolean) => void;

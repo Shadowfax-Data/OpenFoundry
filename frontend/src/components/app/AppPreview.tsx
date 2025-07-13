@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { Eye, RefreshCw, ExternalLink, Loader2 } from "lucide-react";
+import { ExternalLink, Eye, Loader2, RefreshCw } from "lucide-react";
+import React, { useEffect, useState } from "react";
 
 interface AppPreviewProps {
   previewUrl?: string;

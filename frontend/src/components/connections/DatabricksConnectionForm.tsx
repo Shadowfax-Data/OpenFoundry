@@ -1,7 +1,7 @@
-import { useEffect } from "react";
-import { useNavigate } from "react-router";
-import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { useNavigate } from "react-router";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { useDatabricksConnection } from "@/hooks/useConnection";
 import { useAppDispatch, useAppSelector } from "@/store";
 import {
   createDatabricksConnection,
@@ -24,7 +25,6 @@ import {
   DatabricksConnectionCreate,
   DatabricksConnectionUpdate,
 } from "@/types/api";
-import { useDatabricksConnection } from "@/hooks/useConnection";
 
 const databricksConnectionSchema = z.object({
   name: z.string().min(1, "Name is required"),

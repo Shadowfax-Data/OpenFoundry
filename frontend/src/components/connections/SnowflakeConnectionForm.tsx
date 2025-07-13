@@ -1,8 +1,8 @@
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect } from "react";
-import { useNavigate } from "react-router";
 import { useDropzone } from "react-dropzone";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useNavigate } from "react-router";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { useSnowflakeConnection } from "@/hooks/useConnection";
 import { useAppDispatch, useAppSelector } from "@/store";
 import {
   createSnowflakeConnection,
@@ -26,7 +27,6 @@ import {
   SnowflakeConnectionCreate,
   SnowflakeConnectionUpdate,
 } from "@/types/api";
-import { useSnowflakeConnection } from "@/hooks/useConnection";
 
 const snowflakeConnectionSchema = z.object({
   name: z.string().min(1, "Name is required"),

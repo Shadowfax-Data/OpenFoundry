@@ -1,8 +1,9 @@
 import { configureStore } from "@reduxjs/toolkit";
-import { useDispatch, useSelector, TypedUseSelectorHook } from "react-redux";
-import appsReducer from "./slices/appsSlice";
+import { TypedUseSelectorHook, useDispatch, useSelector } from "react-redux";
+
 import appAgentSessionsReducer from "./slices/appAgentSessionsSlice";
 import appChatReducer from "./slices/appChatSlice";
+import appsReducer from "./slices/appsSlice";
 import connectionsReducer from "./slices/connectionsSlice";
 import { RootState } from "./types";
 

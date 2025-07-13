@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
+
 import {
-  SnowflakeConnectionModel,
   DatabricksConnectionModel,
+  SnowflakeConnectionModel,
 } from "@/types/api";
 
 interface UseConnectionReturn<T> {

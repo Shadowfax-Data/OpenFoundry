@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from "react";
-import { ArrowUp, Paperclip, Sparkles, BarChart3 } from "lucide-react";
+import { ArrowUp, BarChart3, Paperclip, Sparkles } from "lucide-react";
+import React, { useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";

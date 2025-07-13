@@ -1,8 +1,9 @@
-import { DatabricksConnectionForm } from "@/components/connections/DatabricksConnectionForm";
 import { SiDatabricks } from "@icons-pack/react-simple-icons";
-import DatabricksConnectionGuide from "@/components/connections/DatabricksConnectionGuide";
-import { ConnectionPageLayout } from "@/components/connections/ConnectionPageLayout";
 import { useParams } from "react-router";
+
+import { ConnectionPageLayout } from "@/components/connections/ConnectionPageLayout";
+import { DatabricksConnectionForm } from "@/components/connections/DatabricksConnectionForm";
+import DatabricksConnectionGuide from "@/components/connections/DatabricksConnectionGuide";
 
 export function DatabricksConnectionPage() {
   const { connectionId } = useParams<{ connectionId: string }>();

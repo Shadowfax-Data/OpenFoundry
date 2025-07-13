@@ -1,4 +1,6 @@
+import { SiDatabricks, SiSnowflake } from "@icons-pack/react-simple-icons";
 import { useNavigate } from "react-router";
+
 import {
   Dialog,
   DialogContent,
@@ -7,7 +9,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { SiDatabricks, SiSnowflake } from "@icons-pack/react-simple-icons";
 
 interface NewConnectionDialogProps {
   children: React.ReactNode;

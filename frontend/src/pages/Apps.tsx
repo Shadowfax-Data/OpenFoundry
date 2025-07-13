@@ -1,6 +1,10 @@
-import { useEffect, useMemo, useState, useCallback } from "react";
-import { Button } from "@/components/ui/button";
+import { AppWindowMac, Plus, Search } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
+
+import { AppCard } from "@/components/app/AppCard";
+import { CreateAppDialog } from "@/components/app/CreateAppDialog";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -8,28 +12,25 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, AppWindowMac, Plus } from "lucide-react";
-import { AppCard } from "@/components/app/AppCard";
 import { useAppDispatch, useAppSelector } from "@/store";
 import {
-  fetchApps,
-  deleteApp,
-  deployApp,
-  setSearchQuery,
-  setStatusFilter,
-  setSortBy,
-  clearError,
-} from "@/store/slices/appsSlice";
-import {
-  fetchAppAgentSessions,
   clearError as clearSessionsError,
   createAppAgentSession,
-  stopAppAgentSession,
-  resumeAppAgentSession,
   deleteAppAgentSession,
+  fetchAppAgentSessions,
+  resumeAppAgentSession,
+  stopAppAgentSession,
 } from "@/store/slices/appAgentSessionsSlice";
+import {
+  clearError,
+  deleteApp,
+  deployApp,
+  fetchApps,
+  setSearchQuery,
+  setSortBy,
+  setStatusFilter,
+} from "@/store/slices/appsSlice";
 import { fetchConnections } from "@/store/slices/connectionsSlice";
-import { CreateAppDialog } from "@/components/app/CreateAppDialog";
 
 interface AppsProps {
   autoOpenCreateDialog?: boolean;

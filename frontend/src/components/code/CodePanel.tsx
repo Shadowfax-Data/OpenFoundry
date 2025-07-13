@@ -1,22 +1,24 @@
-import { useState, useEffect } from "react";
-import {
-  ResizablePanelGroup,
-  ResizablePanel,
-  ResizableHandle,
-} from "@/components/ui/resizable";
+import { ArrowLeftToLine, ArrowRightToLine } from "lucide-react";
+import { RefreshCw } from "lucide-react";
+import { useEffect, useState } from "react";
+
+import { Button } from "@/components/ui/button";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { ArrowLeftToLine, ArrowRightToLine } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "@/components/ui/resizable";
+import { useAgentSessionFiles } from "@/hooks/useAgentSessionFiles";
+import { CurrentWriteFileInfo } from "@/store/slices/appChatSlice";
+import { ReadFileResponse } from "@/types/files";
+
 import { FileBrowser } from "./FileBrowser";
 import { FileEditor } from "./FileEditor";
-import { CurrentWriteFileInfo } from "@/store/slices/appChatSlice";
-import { useAgentSessionFiles } from "@/hooks/useAgentSessionFiles";
-import { ReadFileResponse } from "@/types/files";
-import { RefreshCw } from "lucide-react";
 
 interface CodePanelProps {
   currentWriteFileInfo: CurrentWriteFileInfo | null;

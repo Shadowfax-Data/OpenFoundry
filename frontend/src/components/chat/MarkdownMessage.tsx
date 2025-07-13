@@ -1,8 +1,8 @@
+import { Check, Clipboard, File } from "lucide-react";
 import React, { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import rehypeHighlight from "rehype-highlight";
 import remarkGfm from "remark-gfm";
-import { File, Clipboard, Check } from "lucide-react";
 
 interface CodeBlockProps {
   children?: React.ReactNode;

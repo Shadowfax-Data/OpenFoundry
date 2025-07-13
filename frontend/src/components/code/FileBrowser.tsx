@@ -1,5 +1,3 @@
-import { useState, useMemo, useEffect } from "react";
-import { useDropzone } from "react-dropzone";
 import {
   ChevronDown,
   ChevronRight,
@@ -8,6 +6,9 @@ import {
   RefreshCw,
   Upload,
 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { useDropzone } from "react-dropzone";
+
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { DirectoryEntry, ReadFileResponse } from "@/types/files";

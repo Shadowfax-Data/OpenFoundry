@@ -1,5 +1,9 @@
+import { Database, Plus, Search } from "lucide-react";
 import { useEffect, useMemo } from "react";
 import { useNavigate } from "react-router";
+
+import { ConnectionCard } from "@/components/connections/ConnectionCard";
+import { NewConnectionDialog } from "@/components/connections/NewConnectionDialog";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -8,17 +12,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Search, Database } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/store";
 import {
-  fetchConnections,
+  clearConnectionsError,
   deleteConnection,
+  fetchConnections,
   setConnectionsSearchQuery,
   setConnectionsSortBy,
-  clearConnectionsError,
 } from "@/store/slices/connectionsSlice";
-import { ConnectionCard } from "@/components/connections/ConnectionCard";
-import { NewConnectionDialog } from "@/components/connections/NewConnectionDialog";
 
 export function Connections() {
   const dispatch = useAppDispatch();
