@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/store";
 import { fetchConnections } from "@/store/slices/connectionsSlice";
+import { fetchApp } from "@/store/slices/appsSlice";
 import { ConnectionMultiSelect } from "@/components/connections/ConnectionMultiSelect";
 import { toast } from "sonner";
 
@@ -13,7 +14,7 @@ interface AddConnectionDialogProps {
   sessionId: string;
 }
 
-export function AddConnectionDialog({
+export function ManageConnectionsDialog({
   isOpen,
   onClose,
   appId,
@@ -21,17 +22,33 @@ export function AddConnectionDialog({
 }: AddConnectionDialogProps) {
   const dispatch = useAppDispatch();
   const { connections, loading } = useAppSelector((state) => state.connections);
+  const { apps } = useAppSelector((state) => state.apps);
   const [selectedConnectionIds, setSelectedConnectionIds] = useState<string[]>(
     [],
   );
   const [isAdding, setIsAdding] = useState(false);
 
-  // Fetch connections when dialog opens
+  // Get the current app data
+  const currentApp = apps.find((app) => app.id === appId);
+
+  // Always fetch connections and the latest app data when dialog opens
   useEffect(() => {
     if (isOpen) {
       dispatch(fetchConnections());
+      dispatch(fetchApp(appId));
     }
-  }, [isOpen, dispatch]);
+  }, [isOpen, dispatch, appId]);
+
+  // Set selected connections after app data is loaded
+  useEffect(() => {
+    if (isOpen && currentApp && currentApp.connections) {
+      // Ensure all IDs are strings
+      const existingConnectionIds = currentApp.connections.map((conn) =>
+        String(conn.id),
+      );
+      setSelectedConnectionIds(existingConnectionIds);
+    }
+  }, [isOpen, currentApp]);
 
   const handleAddConnections = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,8 +56,22 @@ export function AddConnectionDialog({
 
     setIsAdding(true);
     try {
-      // Add each selected connection to the app session
-      for (const connectionId of selectedConnectionIds) {
+      // Get existing connection IDs for this app
+      const existingConnectionIds =
+        currentApp?.connections?.map((conn) => conn.id) || [];
+
+      // Only add connections that aren't already added
+      const newConnectionIds = selectedConnectionIds.filter(
+        (id) => !existingConnectionIds.includes(id),
+      );
+
+      if (newConnectionIds.length === 0) {
+        onClose();
+        return;
+      }
+
+      // Add each new connection to the app session
+      for (const connectionId of newConnectionIds) {
         const response = await fetch(
           `/api/apps/${appId}/sessions/${sessionId}/add_connection`,
           {
@@ -61,7 +92,15 @@ export function AddConnectionDialog({
       // Reset form and close dialog
       setSelectedConnectionIds([]);
       onClose();
-      toast.success("Connections added successfully");
+
+      // Refresh the app data to reflect the new connections
+      await dispatch(fetchApp(appId));
+
+      const message =
+        newConnectionIds.length === 1
+          ? "Connection added successfully"
+          : `${newConnectionIds.length} connections added successfully`;
+      toast.success(message);
     } catch (error) {
       console.error("Failed to add connections:", error);
       toast.error(
@@ -85,7 +124,7 @@ export function AddConnectionDialog({
       <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
         <div className="bg-background rounded-lg p-6 w-full max-w-md mx-4">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold">Add Connections</h2>
+            <h2 className="text-lg font-semibold">Manage Connections</h2>
             <Button
               variant="ghost"
               size="sm"
@@ -104,20 +143,15 @@ export function AddConnectionDialog({
                 connections={connections}
                 selectedConnectionIds={selectedConnectionIds}
                 onSelectionChange={setSelectedConnectionIds}
-                placeholder="Select connections to add..."
+                placeholder="Select connections for this app..."
               />
             </div>
             <div className="flex gap-2 justify-end">
               <Button type="button" variant="outline" onClick={handleClose}>
                 Cancel
               </Button>
-              <Button
-                type="submit"
-                disabled={
-                  selectedConnectionIds.length === 0 || loading || isAdding
-                }
-              >
-                {isAdding ? "Adding..." : "Add Connections"}
+              <Button type="submit" disabled={loading || isAdding}>
+                {isAdding ? "Saving..." : "Save Changes"}
               </Button>
             </div>
           </form>

@@ -11,7 +11,7 @@ import { CodePanel } from "@/components/code/CodePanel";
 import { CurrentWriteFileInfo } from "@/store/slices/chatSliceFactory";
 import { useAppDispatch } from "@/store";
 import { deployApp } from "@/store/slices/appsSlice";
-import { AddConnectionDialog } from "./AddConnectionDialog";
+import { ManageConnectionsDialog } from "./ManageConnectionsDialog";
 
 interface AppBuilderPanelProps {
   previewUrl?: string;
@@ -104,7 +104,7 @@ export const AppBuilderPanel: React.FC<AppBuilderPanelProps> = ({
                   <Grid2X2Plus className="h-3 w-3" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Add Connection</TooltipContent>
+              <TooltipContent>Manage Connections</TooltipContent>
             </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -157,7 +157,7 @@ export const AppBuilderPanel: React.FC<AppBuilderPanelProps> = ({
       </div>
 
       {/* Add Connection Dialog */}
-      <AddConnectionDialog
+      <ManageConnectionsDialog
         isOpen={showAddConnectionDialog}
         onClose={() => setShowAddConnectionDialog(false)}
         appId={appId}
