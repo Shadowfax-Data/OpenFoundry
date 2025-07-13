@@ -65,16 +65,23 @@ export function AppCard({
   };
 
   return (
-    <div className="rounded-lg border bg-card text-card-foreground shadow-sm hover:shadow-md transition-shadow">
+    <div className="rounded-lg border bg-card text-card-foreground shadow-sm hover:shadow-md transition-shadow group">
       <div className="p-6">
         <div className="flex items-start justify-between mb-4">
           {app.deployment_port ? (
-            <div
-              className={`h-12 w-12 rounded-lg ${app.color} flex items-center justify-center text-white cursor-pointer hover:opacity-80 transition-opacity`}
-              onClick={() => onOpenApp?.(app.id)}
-            >
-              <AppWindowMac className="h-6 w-6" />
-            </div>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div
+                  className={`h-12 w-12 rounded-lg ${app.color} flex items-center justify-center text-white cursor-pointer hover:opacity-80 transition-opacity`}
+                  onClick={() => onOpenApp?.(app.id)}
+                >
+                  <AppWindowMac className="h-6 w-6 group-hover:animate-bounce" />
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Click to open app</p>
+              </TooltipContent>
+            </Tooltip>
           ) : (
             <Tooltip>
               <TooltipTrigger asChild>

@@ -48,6 +48,15 @@ repos:
         pass_filenames: false
         files: ^openfoundry/.*\.py$
 
+  - repo: local
+    hooks:
+      - id: frontend-lint
+        name: Frontend Lint & Format
+        entry: bash -c 'cd frontend && npm run lint:fix'
+        language: system
+        files: ^frontend/.*\.(ts|tsx|js|jsx)$
+        pass_filenames: false
+
   - repo: https://github.com/GitGuardian/ggshield
     rev: v1.41.0
     hooks:
@@ -56,13 +65,4 @@ repos:
         entry: ggshield secret scan pre-commit
         language: system
         always_run: true
-        pass_filenames: false
-
-  - repo: local
-    hooks:
-      - id: frontend-lint
-        name: Frontend Lint & Format
-        entry: bash -c 'cd frontend && npm run lint:fix'
-        language: system
-        files: ^frontend/.*\.(ts|tsx|js|jsx)$
         pass_filenames: false
