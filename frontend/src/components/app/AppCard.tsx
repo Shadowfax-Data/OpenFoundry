@@ -78,9 +78,7 @@ export function AppCard({
                   <AppWindowMac className="h-6 w-6 group-hover:animate-bounce" />
                 </div>
               </TooltipTrigger>
-              <TooltipContent>
-                <p>Click to open app</p>
-              </TooltipContent>
+              <TooltipContent>Open app in new tab</TooltipContent>
             </Tooltip>
           ) : (
             <Tooltip>
@@ -91,9 +89,7 @@ export function AppCard({
                   <AppWindowMac className="h-6 w-6" />
                 </div>
               </TooltipTrigger>
-              <TooltipContent>
-                <p>App is not deployed</p>
-              </TooltipContent>
+              <TooltipContent>App is not deployed</TooltipContent>
             </Tooltip>
           )}
           <DropdownMenu>
