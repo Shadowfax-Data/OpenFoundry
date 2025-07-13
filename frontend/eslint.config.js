@@ -32,6 +32,8 @@ export default tseslint.config([
     files: ["**/ui/**/*.ts", "**/ui/**/*.tsx", "**/tools/theme-provider.tsx"],
     rules: {
       "react-refresh/only-export-components": "off",
+      "simple-import-sort/imports": "off",
+      "simple-import-sort/exports": "off",
     },
   },
 ]);
