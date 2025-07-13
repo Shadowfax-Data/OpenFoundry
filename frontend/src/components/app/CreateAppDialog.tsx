@@ -6,21 +6,21 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { useAppDispatch, useAppSelector } from "@/store";
 import { createApp } from "@/store/slices/appsSlice";
 import { createAppAgentSession } from "@/store/slices/appAgentSessionsSlice";
 import { ConnectionMultiSelect } from "@/components/connections/ConnectionMultiSelect";
-import { Plus } from "lucide-react";
 
 interface CreateAppDialogProps {
   onCreatingSession: (isCreating: boolean) => void;
+  onClose: () => void;
   disabled?: boolean;
 }
 
 export function CreateAppDialog({
   onCreatingSession,
+  onClose,
   disabled = false,
 }: CreateAppDialogProps) {
   const dispatch = useAppDispatch();
@@ -32,7 +32,6 @@ export function CreateAppDialog({
   const [selectedConnectionIds, setSelectedConnectionIds] = useState<string[]>(
     [],
   );
-  const [isOpen, setIsOpen] = useState(false);
 
   const handleCreateApp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,7 +49,7 @@ export function CreateAppDialog({
       // Reset form
       setNewAppName("");
       setSelectedConnectionIds([]);
-      setIsOpen(false);
+      onClose();
 
       // Show session creation loading state
       onCreatingSession(true);
@@ -75,20 +74,11 @@ export function CreateAppDialog({
   const handleClose = () => {
     setNewAppName("");
     setSelectedConnectionIds([]);
-    setIsOpen(false);
+    onClose();
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        <Button
-          className="flex items-center gap-2"
-          disabled={disabled || loading}
-        >
-          <Plus className="h-4 w-4" />
-          New App
-        </Button>
-      </DialogTrigger>
+    <Dialog open onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Create New App</DialogTitle>
@@ -121,7 +111,10 @@ export function CreateAppDialog({
             <Button type="button" variant="outline" onClick={handleClose}>
               Cancel
             </Button>
-            <Button type="submit" disabled={!newAppName.trim() || loading}>
+            <Button
+              type="submit"
+              disabled={!newAppName.trim() || loading || disabled}
+            >
               {loading ? "Creating..." : "Create App"}
             </Button>
           </div>

@@ -1,5 +1,4 @@
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 
 export function Navbar() {
@@ -18,15 +17,15 @@ export function Navbar() {
             {/* Search would go here */}
           </div>
           <nav className="flex items-center space-x-2">
-            <Button variant="ghost" size="sm">
-              Feedback
+            <Button variant="ghost" size="sm" asChild>
+              <a
+                href="https://github.com/Shadowfax-Data/OpenFoundry/issues/new"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Feedback
+              </a>
             </Button>
-            <Avatar className="h-8 w-8">
-              <AvatarImage src="" alt="User" />
-              <AvatarFallback className="bg-emerald-600 text-white">
-                U
-              </AvatarFallback>
-            </Avatar>
           </nav>
         </div>
       </div>

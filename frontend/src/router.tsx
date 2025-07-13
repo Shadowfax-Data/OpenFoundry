@@ -21,6 +21,10 @@ export const router = createBrowserRouter([
         element: <Apps />,
       },
       {
+        path: "apps/new",
+        element: <Apps autoOpenCreateDialog={true} />,
+      },
+      {
         path: "apps/:appId/sessions/:sessionId/chat",
         element: <AppChat />,
       },
