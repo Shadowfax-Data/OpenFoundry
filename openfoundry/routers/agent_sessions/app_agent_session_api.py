@@ -115,10 +115,10 @@ class WriteFileResponse(BaseModel):
     file_info: FileInfo
 
 
-class UploadConnectionRequest(BaseModel):
-    """Request model for uploading connection to sandbox."""
+class UpdateConnectionsRequest(BaseModel):
+    """Request model for updating connections on an app."""
 
-    connection_id: uuid.UUID
+    connection_ids: list[uuid.UUID]
 
 
 def get_app_agent_run_context(
@@ -639,16 +639,16 @@ async def upload_file_to_sandbox(
 
 
 @router.post(
-    "/apps/{app_id}/sessions/{session_id}/add_connection",
+    "/apps/{app_id}/sessions/{session_id}/connections",
 )
-async def add_connection_to_sandbox(
+async def update_connections(
     request: Request,
     app_id: uuid.UUID,
     session_id: uuid.UUID,
-    upload_request: UploadConnectionRequest,
+    update_request: UpdateConnectionsRequest,
     run_context: AppAgentRunContext = Depends(get_app_agent_run_context),
 ):
-    """Upload connection to the sandbox based on connection type and ID."""
+    """Update all connections on an app by replacing existing connections with the provided list."""
     db: Session = request.state.db
 
     # Verify the app exists
@@ -658,78 +658,93 @@ async def add_connection_to_sandbox(
             status_code=status.HTTP_404_NOT_FOUND, detail=f"App {app_id} not found"
         )
 
-    # Verify the connection exists
-    connection = (
+    # Verify all connections exist
+    connections = (
         db.query(Connection)
         .filter(
-            Connection.id == upload_request.connection_id,
+            Connection.id.in_(update_request.connection_ids),
             Connection.deleted_on.is_(None),
         )
-        .first()
+        .all()
     )
-    if not connection:
+
+    if len(connections) != len(update_request.connection_ids):
+        found_ids = {conn.id for conn in connections}
+        missing_ids = set(update_request.connection_ids) - found_ids
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Connection {upload_request.connection_id} not found",
+            detail=f"Connections not found: {missing_ids}",
         )
 
-    # Check if the connection is already linked to the app
-    existing_link = (
-        db.query(AppConnection)
-        .filter(
-            AppConnection.app_id == app_id,
-            AppConnection.connection_id == upload_request.connection_id,
-        )
-        .first()
-    )
+    # Remove all existing app connections
+    db.query(AppConnection).filter(AppConnection.app_id == app_id).delete()
 
-    # If not already linked, add the connection to the app
-    if not existing_link:
-        logger.info(
-            f"Linking connection {upload_request.connection_id} to app {app_id}"
-        )
-        app_connection = AppConnection(
-            app_id=app_id, connection_id=upload_request.connection_id
-        )
-        db.add(app_connection)
-        db.commit()
+    # Add new app connections
+    new_app_connections = []
+    for connection_id in update_request.connection_ids:
+        app_connection = AppConnection(app_id=app_id, connection_id=connection_id)
+        new_app_connections.append(app_connection)
 
-    # Find the concrete connection class and get secrets
-    connection_class: type[ConnectionBase] = next(
-        (cls for cls in ALL_CONNECTION_CLASSES if cls.type == connection.type)
-    )
+    db.add_all(new_app_connections)
+    db.commit()
 
-    # Query the concrete connection
-    concrete_connection = (
-        db.query(connection_class).filter(connection_class.id == connection.id).first()
-    )
-
-    if not concrete_connection:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Concrete connection with id {connection.id} not found",
-        )
-
-    # Extract secrets and create payload
-    env_vars = concrete_connection.get_env_vars()
-    secret_payload = ConnectionPayload(
-        name=connection.name,
-        secrets=env_vars,
-    )
-
+    # Upload all connections to the sandbox
+    uploaded_connections = []
     async with run_context.get_sandbox_client() as client:
+        # Remove all existing connections from the sandbox
         try:
-            response = await client.put("/secrets/", json=secret_payload.model_dump())
+            response = await client.delete(
+                "/secrets/",
+                params={"prefix": "connections", "name": ""},
+            )
         except httpx.RequestError as e:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Failed to upload connection: {e}",
+                detail=f"Failed to remove existing connections: {e}",
             )
-        response.raise_for_status()
+
+        for connection in connections:
+            # Find the concrete connection class and get secrets
+            connection_class: type[ConnectionBase] = next(
+                (cls for cls in ALL_CONNECTION_CLASSES if cls.type == connection.type)
+            )
+
+            # Query the concrete connection
+            concrete_connection = (
+                db.query(connection_class)
+                .filter(connection_class.id == connection.id)
+                .first()
+            )
+
+            if not concrete_connection:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"Concrete connection with id {connection.id} not found",
+                )
+
+            # Extract secrets and create payload
+            env_vars = concrete_connection.get_env_vars()
+            secret_payload = ConnectionPayload(
+                name=connection.name,
+                secrets=env_vars,
+            )
+
+            try:
+                response = await client.put(
+                    "/secrets/", json=secret_payload.model_dump()
+                )
+            except httpx.RequestError as e:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail=f"Failed to upload connection {connection.name}: {e}",
+                )
+            response.raise_for_status()
+
+            uploaded_connections.append({"id": connection.id, "name": connection.name})
 
     return {
-        "message": f"Connection '{connection.name}' uploaded successfully",
-        "id": upload_request.connection_id,
+        "message": f"Successfully updated {len(uploaded_connections)} connections",
+        "connections": uploaded_connections,
     }
 
 

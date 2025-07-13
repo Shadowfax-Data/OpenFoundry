@@ -3,7 +3,7 @@ import shutil
 from pathlib import Path
 from typing import Dict, Optional
 
-from fastapi import APIRouter, Body, HTTPException, status
+from fastapi import APIRouter, Body, HTTPException, Query, status
 from pydantic import BaseModel, Field
 
 from openfoundry_sandbox.config import CONNECTIONS_DIR, SECRETS_BASE
@@ -60,7 +60,7 @@ def put_secret(payload: SecretPayload = Body(...)):
 
 
 @router.delete("/")
-def delete_secret(prefix: str = Body(...), name: str = Body(...)):
+def delete_secret(prefix: str = Query(...), name: str = Query(...)):
     secret_dir = get_secret_dir(prefix, name)
     if secret_dir.exists():
         shutil.rmtree(secret_dir)
