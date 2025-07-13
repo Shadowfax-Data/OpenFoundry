@@ -1,10 +1,10 @@
 import js from "@eslint/js";
+import { globalIgnores } from "eslint/config";
 import globals from "globals";
 import reactHooks from "eslint-plugin-react-hooks";
 import reactRefresh from "eslint-plugin-react-refresh";
-import tseslint from "typescript-eslint";
-import { globalIgnores } from "eslint/config";
 import simpleImportSort from "eslint-plugin-simple-import-sort";
+import tseslint from "typescript-eslint";
 
 export default tseslint.config([
   globalIgnores(["dist"]),

@@ -1,6 +1,6 @@
 import { createBrowserRouter } from "react-router";
 
-import { Layout } from "@/components/layout";
+import { Layout } from "@/components/layout/layout";
 import { AppChat } from "@/pages/AppChat";
 import { Apps } from "@/pages/Apps";
 import { Connections } from "@/pages/Connections";
