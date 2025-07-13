@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from pydantic import BaseModel
 
 from openfoundry_sandbox.connection_manager import connection_manager
@@ -22,24 +22,19 @@ def list_connections():
     Connection names are determined by successfully initialized connections
     from /etc/secrets/connections/.
     """
-    try:
-        connection_names = connection_manager.list_connections()
-        connections_info = []
+    connection_names = connection_manager.list_connections()
+    connections_info = []
 
-        for name in connection_names:
-            connection = connection_manager.get_connection(name)
-            if connection is not None:
-                # Determine connection type from class name
-                connection_type = connection.__class__.__name__.lower().replace(
-                    "connection", ""
-                )
-                connections_info.append(ConnectionInfo(name=name, type=connection_type))
+    for name in connection_names:
+        connection = connection_manager.get_connection(name)
+        if connection is not None:
+            # Determine connection type from class name
+            connection_type = connection.__class__.__name__.lower().replace(
+                "connection", ""
+            )
+            connections_info.append(ConnectionInfo(name=name, type=connection_type))
 
-        return connections_info
-    except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Error retrieving connections: {e}"
-        )
+    return connections_info
 
 
 def get_connection(connection_name: str) -> Connection | None:

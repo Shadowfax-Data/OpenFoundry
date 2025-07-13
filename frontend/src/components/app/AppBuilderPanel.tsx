@@ -5,12 +5,13 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Eye, Code, Save, Rocket } from "lucide-react";
+import { Eye, Code, Save, Rocket, Grid2X2Plus } from "lucide-react";
 import { AppPreview } from "@/components/app/AppPreview";
 import { CodePanel } from "@/components/code/CodePanel";
 import { CurrentWriteFileInfo } from "@/store/slices/chatSliceFactory";
 import { useAppDispatch } from "@/store";
 import { deployApp } from "@/store/slices/appsSlice";
+import { ManageConnectionsDialog } from "./ManageConnectionsDialog";
 
 interface AppBuilderPanelProps {
   previewUrl?: string;
@@ -29,6 +30,8 @@ export const AppBuilderPanel: React.FC<AppBuilderPanelProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<"preview" | "code">("preview");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [showManageConnectionsDialog, setShowManageConnectionsDialog] =
+    useState(false);
   const dispatch = useAppDispatch();
 
   const handleSaveWorkspace = async () => {
@@ -97,13 +100,26 @@ export const AppBuilderPanel: React.FC<AppBuilderPanelProps> = ({
                   variant="ghost"
                   size="sm"
                   className="h-7 w-7 p-0"
+                  onClick={() => setShowManageConnectionsDialog(true)}
+                >
+                  <Grid2X2Plus className="h-3 w-3" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Manage Connections</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 w-7 p-0"
                   onClick={handleSaveWorkspace}
                   disabled={isProcessing}
                 >
                   <Save className="h-3 w-3" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Save workspace</TooltipContent>
+              <TooltipContent>Save</TooltipContent>
             </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -140,6 +156,15 @@ export const AppBuilderPanel: React.FC<AppBuilderPanelProps> = ({
           />
         </div>
       </div>
+
+      {/* Manage Connections Dialog */}
+      {showManageConnectionsDialog && (
+        <ManageConnectionsDialog
+          onClose={() => setShowManageConnectionsDialog(false)}
+          appId={appId}
+          sessionId={sessionId}
+        />
+      )}
     </div>
   );
 };

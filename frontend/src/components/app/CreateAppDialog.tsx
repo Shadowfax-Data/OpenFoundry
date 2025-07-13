@@ -1,22 +1,27 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { Button } from "@/components/ui/button";
-import { X } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { useAppDispatch, useAppSelector } from "@/store";
 import { createApp } from "@/store/slices/appsSlice";
 import { createAppAgentSession } from "@/store/slices/appAgentSessionsSlice";
 import { ConnectionMultiSelect } from "@/components/connections/ConnectionMultiSelect";
+import { Plus } from "lucide-react";
 
 interface CreateAppDialogProps {
-  isOpen: boolean;
-  onClose: () => void;
   onCreatingSession: (isCreating: boolean) => void;
+  disabled?: boolean;
 }
 
 export function CreateAppDialog({
-  isOpen,
-  onClose,
   onCreatingSession,
+  disabled = false,
 }: CreateAppDialogProps) {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
@@ -27,6 +32,7 @@ export function CreateAppDialog({
   const [selectedConnectionIds, setSelectedConnectionIds] = useState<string[]>(
     [],
   );
+  const [isOpen, setIsOpen] = useState(false);
 
   const handleCreateApp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,7 +50,7 @@ export function CreateAppDialog({
       // Reset form
       setNewAppName("");
       setSelectedConnectionIds([]);
-      onClose();
+      setIsOpen(false);
 
       // Show session creation loading state
       onCreatingSession(true);
@@ -69,62 +75,58 @@ export function CreateAppDialog({
   const handleClose = () => {
     setNewAppName("");
     setSelectedConnectionIds([]);
-    onClose();
+    setIsOpen(false);
   };
 
-  if (!isOpen) return null;
-
   return (
-    <>
-      {/* Create App Dialog */}
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-        <div className="bg-background rounded-lg p-6 w-full max-w-md mx-4">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold">Create New App</h2>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleClose}
-              className="h-6 w-6 p-0"
-            >
-              <X className="h-4 w-4" />
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogTrigger asChild>
+        <Button
+          className="flex items-center gap-2"
+          disabled={disabled || loading}
+        >
+          <Plus className="h-4 w-4" />
+          New App
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Create New App</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleCreateApp}>
+          <div className="mb-4">
+            <label className="block text-sm font-medium mb-2">App Name</label>
+            <input
+              type="text"
+              value={newAppName}
+              onChange={(e) => setNewAppName(e.target.value)}
+              placeholder="Enter app name"
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground"
+              required
+              autoFocus
+            />
+          </div>
+          <div className="mb-4">
+            <label className="block text-sm font-medium mb-2">
+              Connections
+            </label>
+            <ConnectionMultiSelect
+              connections={connections}
+              selectedConnectionIds={selectedConnectionIds}
+              onSelectionChange={setSelectedConnectionIds}
+              placeholder="Select connections..."
+            />
+          </div>
+          <div className="flex gap-2 justify-end">
+            <Button type="button" variant="outline" onClick={handleClose}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={!newAppName.trim() || loading}>
+              {loading ? "Creating..." : "Create App"}
             </Button>
           </div>
-          <form onSubmit={handleCreateApp}>
-            <div className="mb-4">
-              <label className="block text-sm font-medium mb-2">App Name</label>
-              <input
-                type="text"
-                value={newAppName}
-                onChange={(e) => setNewAppName(e.target.value)}
-                placeholder="Enter app name"
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground"
-                required
-                autoFocus
-              />
-            </div>
-            <div className="mb-4">
-              <label className="block text-sm font-medium mb-2">
-                Connections
-              </label>
-              <ConnectionMultiSelect
-                connections={connections}
-                selectedConnectionIds={selectedConnectionIds}
-                onSelectionChange={setSelectedConnectionIds}
-                placeholder="Select connections..."
-              />
-            </div>
-            <div className="flex gap-2 justify-end">
-              <Button type="button" variant="outline" onClick={handleClose}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={!newAppName.trim() || loading}>
-                {loading ? "Creating..." : "Create App"}
-              </Button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
