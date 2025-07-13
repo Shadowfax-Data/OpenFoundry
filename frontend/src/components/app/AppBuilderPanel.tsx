@@ -158,12 +158,13 @@ export const AppBuilderPanel: React.FC<AppBuilderPanelProps> = ({
       </div>
 
       {/* Manage Connections Dialog */}
-      <ManageConnectionsDialog
-        isOpen={showManageConnectionsDialog}
-        onClose={() => setShowManageConnectionsDialog(false)}
-        appId={appId}
-        sessionId={sessionId}
-      />
+      {showManageConnectionsDialog && (
+        <ManageConnectionsDialog
+          onClose={() => setShowManageConnectionsDialog(false)}
+          appId={appId}
+          sessionId={sessionId}
+        />
+      )}
     </div>
   );
 };

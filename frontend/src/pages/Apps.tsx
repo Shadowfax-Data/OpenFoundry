@@ -8,7 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Search, AppWindowMac } from "lucide-react";
+import { Search, AppWindowMac } from "lucide-react";
 import { AppCard } from "@/components/app/AppCard";
 import { useAppDispatch, useAppSelector } from "@/store";
 import {
@@ -40,7 +40,6 @@ export function Apps() {
     (state) => state.appAgentSessions,
   );
 
-  const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [isCreatingSession, setIsCreatingSession] = useState(false);
 
   // Track loading state for Edit button per app
@@ -329,14 +328,10 @@ export function Apps() {
                   Manage and create your data applications
                 </p>
               </div>
-              <Button
-                className="flex items-center gap-2"
-                onClick={() => setShowCreateDialog(true)}
+              <CreateAppDialog
+                onCreatingSession={setIsCreatingSession}
                 disabled={loading}
-              >
-                <Plus className="h-4 w-4" />
-                New App
-              </Button>
+              />
             </div>
 
             {/* Search and filters */}
@@ -372,13 +367,6 @@ export function Apps() {
               </Select>
             </div>
           </div>
-
-          {/* Create App Dialog */}
-          <CreateAppDialog
-            isOpen={showCreateDialog}
-            onClose={() => setShowCreateDialog(false)}
-            onCreatingSession={setIsCreatingSession}
-          />
 
           {/* Session Creation Loading Overlay */}
           {isCreatingSession && (
@@ -447,10 +435,12 @@ export function Apps() {
                     ? "Get started by creating your first data application"
                     : "Try adjusting your search or filter criteria"}
                 </p>
-                <Button onClick={() => setShowCreateDialog(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create App
-                </Button>
+                <div className="flex justify-center">
+                  <CreateAppDialog
+                    onCreatingSession={setIsCreatingSession}
+                    disabled={loading}
+                  />
+                </div>
               </div>
             </div>
           )}
