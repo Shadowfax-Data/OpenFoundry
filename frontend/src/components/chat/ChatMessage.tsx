@@ -1,5 +1,5 @@
+import { BotMessageSquare, User } from "lucide-react";
 import React from "react";
-import { User, BotMessageSquare } from "lucide-react";
 
 import { Message } from "@/store/slices/chatSliceFactory";
 

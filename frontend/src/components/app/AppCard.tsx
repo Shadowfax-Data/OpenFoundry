@@ -1,3 +1,17 @@
+import { SiDatabricks, SiSnowflake } from "@icons-pack/react-simple-icons";
+import {
+  AppWindowMac,
+  Calendar,
+  CircleX,
+  ExternalLink,
+  MoreVertical,
+  Pause,
+  Play,
+  Rocket,
+  Square,
+  Trash,
+} from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -11,19 +25,6 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import {
-  MoreVertical,
-  Calendar,
-  AppWindowMac,
-  Play,
-  Square,
-  Pause,
-  ExternalLink,
-  CircleX,
-  Trash,
-  Rocket,
-} from "lucide-react";
-import { SiDatabricks, SiSnowflake } from "@icons-pack/react-simple-icons";
 import { App } from "@/types/api";
 
 interface AppCardProps {

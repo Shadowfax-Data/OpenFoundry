@@ -1,22 +1,22 @@
-import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router";
+import { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router";
+import { toast } from "sonner";
+
+import { AppBuilderPanel } from "@/components/app/AppBuilderPanel";
 import { ChatConversation } from "@/components/chat/ChatConversation";
 import {
-  ResizablePanelGroup,
-  ResizablePanel,
   ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
 } from "@/components/ui/resizable";
 import { useAppChat } from "@/hooks/useAppChat";
-import { useAppSelector, useAppDispatch } from "@/store";
+import { useAppDispatch, useAppSelector } from "@/store";
 import {
-  selectAppAgentSessionById,
-  fetchAppAgentSessions,
-  deleteAppAgentSession,
   createAppAgentSession,
+  deleteAppAgentSession,
+  fetchAppAgentSessions,
+  selectAppAgentSessionById,
 } from "@/store/slices/appAgentSessionsSlice";
-import { AppBuilderPanel } from "@/components/app/AppBuilderPanel";
-
-import { toast } from "sonner";
 
 export function AppChat() {
   const { appId, sessionId } = useParams<{

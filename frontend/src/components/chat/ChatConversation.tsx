@@ -1,9 +1,11 @@
+import { RotateCcw } from "lucide-react";
 import { useEffect, useRef } from "react";
+
 import { Button } from "@/components/ui/button";
+import { Message } from "@/store/slices/chatSliceFactory";
+
 import { ChatInput } from "./ChatInput";
 import { ChatMessage } from "./ChatMessage";
-import { Message } from "@/store/slices/chatSliceFactory";
-import { RotateCcw } from "lucide-react";
 
 interface ChatConversationProps {
   title?: string;

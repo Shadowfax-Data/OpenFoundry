@@ -1,17 +1,18 @@
-import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router";
+import { IconChartArcs } from "@tabler/icons-react";
 import {
+  ArrowUp,
   BarChart3,
   FileText,
+  Hammer,
+  Mic,
+  Paperclip,
   Target,
   TrendingUp,
   Users,
-  Hammer,
-  Paperclip,
-  Mic,
-  ArrowUp,
 } from "lucide-react";
-import { IconChartArcs } from "@tabler/icons-react";
+import { useNavigate } from "react-router";
+
+import { Button } from "@/components/ui/button";
 
 export function Home() {
   const navigate = useNavigate();

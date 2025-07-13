@@ -1,8 +1,9 @@
+import Editor from "@monaco-editor/react";
+import { Copy, Download, File } from "lucide-react";
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Copy, Download, File } from "lucide-react";
 import { ReadFileResponse } from "@/types/files";
-import Editor from "@monaco-editor/react";
 
 interface FileEditorProps {
   selectedFile: ReadFileResponse | null;

@@ -1,17 +1,18 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+
+import { ConnectionMultiSelect } from "@/components/connections/ConnectionMultiSelect";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from "@/components/ui/dialog";
 import { useAppDispatch, useAppSelector } from "@/store";
-import { fetchConnections } from "@/store/slices/connectionsSlice";
 import { fetchApp } from "@/store/slices/appsSlice";
-import { ConnectionMultiSelect } from "@/components/connections/ConnectionMultiSelect";
-import { toast } from "sonner";
+import { fetchConnections } from "@/store/slices/connectionsSlice";
 
 interface ManageConnectionsDialogProps {
   onClose: () => void;

@@ -1,8 +1,9 @@
-import { SnowflakeConnectionForm } from "@/components/connections/SnowflakeConnectionForm";
 import { SiSnowflake } from "@icons-pack/react-simple-icons";
-import SnowflakeConnectionGuide from "@/components/connections/SnowflakeConnectionGuide";
-import { ConnectionPageLayout } from "@/components/connections/ConnectionPageLayout";
 import { useParams } from "react-router";
+
+import { ConnectionPageLayout } from "@/components/connections/ConnectionPageLayout";
+import { SnowflakeConnectionForm } from "@/components/connections/SnowflakeConnectionForm";
+import SnowflakeConnectionGuide from "@/components/connections/SnowflakeConnectionGuide";
 
 export function SnowflakeConnectionPage() {
   const { connectionId } = useParams<{ connectionId: string }>();

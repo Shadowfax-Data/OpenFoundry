@@ -1,9 +1,8 @@
-import * as React from "react";
 import { Check, ChevronsUpDown, X } from "lucide-react";
+import * as React from "react";
 
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Command,
   CommandEmpty,
@@ -17,6 +16,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 import { Connection } from "@/types/api";
 
 interface ConnectionMultiSelectProps {
