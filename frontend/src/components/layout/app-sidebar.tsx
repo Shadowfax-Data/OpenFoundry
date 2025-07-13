@@ -41,7 +41,7 @@ export function AppSidebar() {
             <Button className="w-full justify-between" size="sm">
               <div className="flex items-center">
                 <IconChartArcs className="mr-2 h-4 w-4" />
-                Create
+                Create a new &hellip;
               </div>
               <ChevronDown className="h-4 w-4" />
             </Button>
