@@ -15,6 +15,7 @@ import {
   createAppAgentSession,
 } from "@/store/slices/appAgentSessionsSlice";
 import { AppBuilderPanel } from "@/components/app/AppBuilderPanel";
+
 import { toast } from "sonner";
 
 export function AppChat() {
@@ -26,6 +27,7 @@ export function AppChat() {
   const dispatch = useAppDispatch();
   const [isSandboxReady, setIsSandboxReady] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
+
   const {
     messages,
     isStreaming,
