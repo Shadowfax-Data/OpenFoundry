@@ -119,7 +119,11 @@ export function ManageConnectionsDialog({
           <form onSubmit={handleUpdateConnections}>
             <div className="mb-4">
               <label className="block text-sm font-medium mb-2">
-                Select Connections
+                {selectedConnectionIds.length === 0
+                  ? "No connections selected"
+                  : selectedConnectionIds.length === 1
+                    ? "1 connection selected"
+                    : `${selectedConnectionIds.length} connections selected`}
               </label>
               <ConnectionMultiSelect
                 connections={connections}
