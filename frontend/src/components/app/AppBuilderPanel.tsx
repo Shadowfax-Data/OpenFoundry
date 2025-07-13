@@ -30,7 +30,8 @@ export const AppBuilderPanel: React.FC<AppBuilderPanelProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<"preview" | "code">("preview");
   const [isProcessing, setIsProcessing] = useState(false);
-  const [showAddConnectionDialog, setShowAddConnectionDialog] = useState(false);
+  const [showManageConnectionsDialog, setShowManageConnectionsDialog] =
+    useState(false);
   const dispatch = useAppDispatch();
 
   const handleSaveWorkspace = async () => {
@@ -99,7 +100,7 @@ export const AppBuilderPanel: React.FC<AppBuilderPanelProps> = ({
                   variant="ghost"
                   size="sm"
                   className="h-7 w-7 p-0"
-                  onClick={() => setShowAddConnectionDialog(true)}
+                  onClick={() => setShowManageConnectionsDialog(true)}
                 >
                   <Grid2X2Plus className="h-3 w-3" />
                 </Button>
@@ -156,10 +157,10 @@ export const AppBuilderPanel: React.FC<AppBuilderPanelProps> = ({
         </div>
       </div>
 
-      {/* Add Connection Dialog */}
+      {/* Manage Connections Dialog */}
       <ManageConnectionsDialog
-        isOpen={showAddConnectionDialog}
-        onClose={() => setShowAddConnectionDialog(false)}
+        isOpen={showManageConnectionsDialog}
+        onClose={() => setShowManageConnectionsDialog(false)}
         appId={appId}
         sessionId={sessionId}
       />
