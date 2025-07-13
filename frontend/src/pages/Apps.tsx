@@ -8,7 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, AppWindowMac } from "lucide-react";
+import { Search, AppWindowMac, Plus } from "lucide-react";
 import { AppCard } from "@/components/app/AppCard";
 import { useAppDispatch, useAppSelector } from "@/store";
 import {
@@ -31,7 +31,11 @@ import {
 import { fetchConnections } from "@/store/slices/connectionsSlice";
 import { CreateAppDialog } from "@/components/app/CreateAppDialog";
 
-export function Apps() {
+interface AppsProps {
+  autoOpenCreateDialog?: boolean;
+}
+
+export function Apps({ autoOpenCreateDialog = false }: AppsProps) {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const { apps, loading, error, searchQuery, statusFilter, sortBy } =
@@ -41,6 +45,7 @@ export function Apps() {
   );
 
   const [isCreatingSession, setIsCreatingSession] = useState(false);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
   // Track loading state for Edit button per app
   const [editLoadingAppId, setEditLoadingAppId] = useState<string | null>(null);
@@ -49,6 +54,13 @@ export function Apps() {
   const [deployLoadingAppId, setDeployLoadingAppId] = useState<string | null>(
     null,
   );
+
+  // Auto-open create dialog if prop is true
+  useEffect(() => {
+    if (autoOpenCreateDialog) {
+      setIsCreateDialogOpen(true);
+    }
+  }, [autoOpenCreateDialog]);
 
   // Fetch apps on component mount
   useEffect(() => {
@@ -328,10 +340,14 @@ export function Apps() {
                   Manage and create your data applications
                 </p>
               </div>
-              <CreateAppDialog
-                onCreatingSession={setIsCreatingSession}
+              <Button
+                className="flex items-center gap-2"
                 disabled={loading}
-              />
+                onClick={() => setIsCreateDialogOpen(true)}
+              >
+                <Plus className="h-4 w-4" />
+                New App
+              </Button>
             </div>
 
             {/* Search and filters */}
@@ -436,16 +452,29 @@ export function Apps() {
                     : "Try adjusting your search or filter criteria"}
                 </p>
                 <div className="flex justify-center">
-                  <CreateAppDialog
-                    onCreatingSession={setIsCreatingSession}
+                  <Button
+                    className="flex items-center gap-2"
                     disabled={loading}
-                  />
+                    onClick={() => setIsCreateDialogOpen(true)}
+                  >
+                    <Plus className="h-4 w-4" />
+                    New App
+                  </Button>
                 </div>
               </div>
             </div>
           )}
         </div>
       </div>
+
+      {/* Create App Dialog - rendered conditionally */}
+      {isCreateDialogOpen && (
+        <CreateAppDialog
+          onCreatingSession={setIsCreatingSession}
+          onClose={() => setIsCreateDialogOpen(false)}
+          disabled={loading}
+        />
+      )}
     </div>
   );
 }

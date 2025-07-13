@@ -120,9 +120,9 @@ export function AppCard({
                     ? "Redeploy App"
                     : "Deploy App"}
               </DropdownMenuItem>
+              <DropdownMenuSeparator />
               {sessionStatus === "active" && (
                 <>
-                  <DropdownMenuSeparator />
                   <DropdownMenuItem
                     onClick={() => onStopSession?.(app.id)}
                     variant="destructive"
@@ -135,7 +135,6 @@ export function AppCard({
               )}
               {sessionCount > 0 && (
                 <>
-                  <DropdownMenuSeparator />
                   <DropdownMenuItem
                     onClick={() => onDeleteSession?.(app.id)}
                     variant="destructive"
@@ -146,7 +145,6 @@ export function AppCard({
                   </DropdownMenuItem>
                 </>
               )}
-              <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={() => onDeleteApp?.(app.id)}
                 variant="destructive"

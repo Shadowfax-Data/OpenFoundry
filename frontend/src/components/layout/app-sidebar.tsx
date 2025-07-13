@@ -13,15 +13,22 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   Search,
   Folder,
   Clock,
   Users,
-  Plus,
   Home,
   AppWindow,
   Database,
+  ChevronDown,
 } from "lucide-react";
+import { IconChartArcs } from "@tabler/icons-react";
 
 export function AppSidebar() {
   const location = useLocation();
@@ -29,10 +36,25 @@ export function AppSidebar() {
   return (
     <Sidebar className="border-none">
       <SidebarHeader className="p-4">
-        <Button className="w-full justify-start" size="sm">
-          <Plus className="mr-2 h-4 w-4" />
-          New Chat
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button className="w-full justify-between" size="sm">
+              <div className="flex items-center">
+                <IconChartArcs className="mr-2 h-4 w-4" />
+                Create a new &hellip;
+              </div>
+              <ChevronDown className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-56">
+            <DropdownMenuItem asChild>
+              <Link to="/apps/new" className="flex items-center cursor-pointer">
+                <AppWindow className="mr-2 h-4 w-4" />
+                Application
+              </Link>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </SidebarHeader>
 
       <SidebarContent>
