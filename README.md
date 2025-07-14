@@ -2,11 +2,13 @@
 
 **The fastest way to build data products with AI.**
 
-Everyone wants to own their data — so why trust a black-box AI to operate on it?
+Welcome to OpenFoundry, a platform for analysts and non‑technical users to build powerful data products with the help of AI agents. OpenFoundry helps you build rich dashboards, analyses, and data applications on top of your private data by taking care of all of the code implementation and data connections underneath.
 
-While projects like Apache Iceberg give users control over how data is stored, analytics agents and products remain proprietary and opaque. OpenFoundry is an open-source platform for building data products with AI — without giving up control. It’s fully extensible, easy to customize with organization-specific tools, and designed to work transparently on your data, in your environment.
+- **Totally transparent** – peek under the hood of every AI feature
+- **Fully customizable** – plug in your own tools and workflows
+- **Instant setup** – run in your environment in minutes
 
-Take back control — not just of your data, but of the agents that work with it.
+**Take back full control** — over your data and the AI that works with it.
 
 ## 🚀 Features
 
