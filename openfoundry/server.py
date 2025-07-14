@@ -2,7 +2,6 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI
-from fastapi.staticfiles import StaticFiles
 
 from openfoundry.config import STORAGE_DIR
 from openfoundry.database import session_local
@@ -18,6 +17,7 @@ from openfoundry.routers.connections import (
     databricks_connection_api_router,
     snowflake_connection_api_router,
 )
+from openfoundry.static import SPAStaticFiles
 
 
 def initialize_storage():
@@ -64,4 +64,4 @@ async def health():
     return {"status": "ok"}
 
 
-app.mount("/", StaticFiles(directory="frontend/dist", html=True), name="static")
+app.mount("/", SPAStaticFiles(directory="frontend/dist", html=True), name="static")
