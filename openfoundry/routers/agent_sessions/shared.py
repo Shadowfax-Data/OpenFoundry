@@ -29,7 +29,7 @@ from openai.types.responses import (
 from pydantic import BaseModel
 from sqlalchemy import func
 
-from openfoundry.agents import NAME_TO_AGENT_FACTORY
+from openfoundry.agents import NAME_TO_AGENT_FACTORY, get_model_name_and_settings
 from openfoundry.agents.run_context import (
     AgentRunContext,
     AppAgentRunContext,
@@ -52,6 +52,7 @@ class MessageRequest(BaseModel):
     """Model for message request data from client."""
 
     message: str
+    model: str | None = None
 
 
 class MessageResponse(BaseModel):
@@ -174,11 +175,11 @@ async def send_agent_chat_message(
     )
 
     input_items: list[TResponseInputItem] = [new_input_item]
+
+    model_name, model_settings = get_model_name_and_settings(message_request.model)
     current_agent: Agent = NAME_TO_AGENT_FACTORY[current_agent_name](
-        message_queue,
-        previous_response_id=last_message_id,
-        run_config=run_config,
-        context=context,
+        model=model_name,
+        model_settings=model_settings,
     )
 
     # Launch agent turn in the background

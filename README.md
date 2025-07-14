@@ -1,7 +1,4 @@
 # ![OpenFoundry Logo](frontend/public/arcs.svg) OpenFoundry
-
-
-
 **The fastest way to build data products with AI.**
 
 Welcome to OpenFoundry, a platform for analysts and non‑technical users to build powerful data products with the help of AI agents. OpenFoundry helps you build rich dashboards, analyses, and data applications on top of your private data by taking care of all of the code implementation and data connections underneath.
