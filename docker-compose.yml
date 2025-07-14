@@ -1,6 +1,9 @@
 # docker-compose.yml
 services:
   control-plane:
+    build:
+      context: .
+      dockerfile: Dockerfile
     image: openfoundry:latest
     network_mode: "host"
     volumes:
@@ -9,3 +12,9 @@ services:
       # pulled from .env
       DATABASE_URL: "${DATABASE_URL}"
       OPENAI_API_KEY: "${OPENAI_API_KEY}"
+
+  agent-sandbox:
+    build:
+      context: ./sandbox
+      dockerfile: Dockerfile
+    image: openfoundry-sandbox:latest
