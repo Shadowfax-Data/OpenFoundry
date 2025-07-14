@@ -13,7 +13,6 @@ from openfoundry.agents.common_tools import (
     list_connections,
     list_files,
     read_file,
-    visualize_app,
     write_file,
 )
 from openfoundry.agents.run_context import AppAgentRunContext
@@ -42,7 +41,6 @@ def get_streamlit_app_coding_agent(
             list_files,
             list_processes,
             tail_process_logs,
-            visualize_app,
             list_connections,
             execute_sql,
         ],
