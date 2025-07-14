@@ -1,4 +1,6 @@
-# OpenFoundry
+# ![OpenFoundry Logo](frontend/public/arcs.svg) OpenFoundry
+
+
 
 **The fastest way to build data products with AI.**
 
