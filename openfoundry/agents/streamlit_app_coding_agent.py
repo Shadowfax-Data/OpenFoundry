@@ -1,8 +1,4 @@
-import asyncio
-
-from agents import Agent, ModelSettings, RunConfig
-from agents.items import TResponseStreamEvent
-from openai.types.shared.reasoning import Reasoning
+from agents import Agent, ModelSettings
 
 from openfoundry.agents.bash_tools import (
     list_processes,
@@ -15,19 +11,14 @@ from openfoundry.agents.common_tools import (
     read_file,
     write_file,
 )
-from openfoundry.agents.run_context import AppAgentRunContext
 from openfoundry.agents.utils.template_loader import load_prompt_template
 
 STREAMLIT_APP_CODING_AGENT_NAME = "streamlit_app_coding_agent"
 
 
 def get_streamlit_app_coding_agent(
-    _: asyncio.Queue[tuple[str, TResponseStreamEvent] | None],
-    previous_response_id: str | None = None,
-    run_config: RunConfig | None = None,
-    context: AppAgentRunContext | None = None,
-    *args,
-    **kwargs,
+    model: str,
+    model_settings: ModelSettings,
 ) -> Agent:
     template_name = "apps/streamlit_app_coding_agent.j2"
     selected_prompt = load_prompt_template(template_name)
@@ -44,12 +35,6 @@ def get_streamlit_app_coding_agent(
             list_connections,
             execute_sql,
         ],
-        model="o4-mini",
-        model_settings=ModelSettings(
-            parallel_tool_calls=False,
-            reasoning=Reasoning(
-                effort="high",
-                summary="auto",
-            ),
-        ),
+        model=model,
+        model_settings=model_settings,
     )

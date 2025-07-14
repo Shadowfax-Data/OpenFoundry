@@ -68,7 +68,7 @@ export const useBaseChat = ({
     actions,
   });
 
-  const sendMessage = async (inputMessage: string) => {
+  const sendMessage = async (inputMessage: string, model?: string) => {
     if (!inputMessage.trim()) return;
 
     let currentToolCall: { name: string; arguments: string } | null = null;
@@ -95,7 +95,10 @@ export const useBaseChat = ({
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ message: inputMessage }),
+          body: JSON.stringify({
+            message: inputMessage,
+            model: model,
+          }),
         },
       );
 

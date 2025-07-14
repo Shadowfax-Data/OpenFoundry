@@ -12,7 +12,7 @@ interface ChatConversationProps {
   messages: Message[];
   isStreaming: boolean;
   error?: string | null;
-  onSendMessage: (message: string) => Promise<void> | void;
+  onSendMessage: (message: string, model?: string) => Promise<void> | void;
   placeholder?: string;
   className?: string;
   disabled?: boolean;

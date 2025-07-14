@@ -2,15 +2,27 @@ import { ArrowUp, BarChart3, Paperclip, Sparkles } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Textarea } from "@/components/ui/textarea";
 
 interface ChatInputProps {
   isStreaming: boolean;
   error?: string | null;
-  onSendMessage: (message: string) => Promise<void> | void;
+  onSendMessage: (message: string, model?: string) => Promise<void> | void;
   placeholder?: string;
   disabled?: boolean;
 }
+
+const MODEL_OPTIONS = [
+  { value: "o4-mini", label: "o4-mini" },
+  { value: "gpt-4.1", label: "gpt-4.1" },
+  { value: "o3", label: "o3" },
+];
 
 export function ChatInput({
   isStreaming,
@@ -20,6 +32,7 @@ export function ChatInput({
   disabled = false,
 }: ChatInputProps) {
   const [inputMessage, setInputMessage] = useState<string>("");
+  const [selectedModel, setSelectedModel] = useState<string>("o4-mini");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -31,7 +44,7 @@ export function ChatInput({
 
   const handleSendMessage = async () => {
     if (!inputMessage.trim() || isStreaming || disabled) return;
-    const result = onSendMessage(inputMessage);
+    const result = onSendMessage(inputMessage, selectedModel);
     if (result instanceof Promise) {
       await result;
     }
@@ -62,9 +75,30 @@ export function ChatInput({
       />
       <div className="flex items-center justify-between p-2 mt-1">
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
-            <BarChart3 className="w-4 h-4" />
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-7 px-2">
+                <BarChart3 className="w-4 h-4 mr-1" />
+                <span className="text-xs">{selectedModel}</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              {MODEL_OPTIONS.map((model) => (
+                <DropdownMenuItem
+                  key={model.value}
+                  onClick={() => setSelectedModel(model.value)}
+                  className="cursor-pointer"
+                >
+                  {model.label}
+                  {selectedModel === model.value && (
+                    <span className="ml-2 text-xs text-muted-foreground">
+                      ✓
+                    </span>
+                  )}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
