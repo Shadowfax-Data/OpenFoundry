@@ -13,7 +13,8 @@ COPY pyproject.toml poetry.lock /app/
 WORKDIR /app
 RUN pip install --upgrade pip poetry==2.1.2 \
  && poetry config virtualenvs.create false \
- && poetry install --no-interaction
+ && poetry install --no-interaction --without dev \
+ && rm -rf /root/.cache/pypoetry
 
 # ─────────────────────────────────────────────
 # STAGE 2 — Final minimal image
@@ -23,6 +24,7 @@ FROM python:3.12-slim
 ARG OPENFOUNDRY_BUILD_VERSION
 ENV OPENFOUNDRY_BUILD_VERSION=$OPENFOUNDRY_BUILD_VERSION
 ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
 
 # Copy Python packages from builder
 COPY --from=builder /usr/local /usr/local
@@ -42,4 +44,4 @@ WORKDIR /app
 RUN mkdir -p /workspace
 
 # Set the default command to run the untrusted server
-CMD ["python", "-m", "uvicorn", "openfoundry_sandbox.sandbox_server:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "openfoundry_sandbox.sandbox_server:app", "--host", "0.0.0.0", "--port", "8000"]
