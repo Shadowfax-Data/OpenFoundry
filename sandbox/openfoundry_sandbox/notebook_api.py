@@ -1,14 +1,47 @@
 import logging
+from functools import cache
 from typing import Any
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
-from openfoundry_sandbox.notebook_runner import get_kernel_manager
+from openfoundry_sandbox.notebook_runner import JupyterKernelManager
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/notebook", tags=["notebook"])
+
+
+@cache
+def get_kernel_manager() -> JupyterKernelManager:
+    """Get a cached kernel manager instance."""
+    return JupyterKernelManager()
+
+
+async def get_ready_kernel_manager(
+    kernel_manager: JupyterKernelManager = Depends(get_kernel_manager),
+) -> JupyterKernelManager:
+    """Get a kernel manager and ensure it's ready."""
+    if not kernel_manager.is_ready and not kernel_manager.is_starting:
+        logger.info("Starting kernel manager on first request")
+        success = await kernel_manager.start_kernel()
+        if not success:
+            raise HTTPException(
+                status_code=503,
+                detail="Failed to start kernel. Please try again.",
+            )
+    elif kernel_manager.is_starting:
+        raise HTTPException(
+            status_code=503,
+            detail="Kernel is starting. Please wait and try again.",
+        )
+    elif not kernel_manager.is_ready:
+        raise HTTPException(
+            status_code=503,
+            detail="Kernel is not ready. Please check kernel status.",
+        )
+
+    return kernel_manager
 
 
 # Pydantic models for request/response
@@ -42,21 +75,16 @@ class KernelStatusResponse(BaseModel):
 
 
 @router.post("/execute", response_model=ExecuteCellResponse)
-async def execute_cell(request: ExecuteCellRequest):
+async def execute_cell(
+    request: ExecuteCellRequest,
+    kernel_manager: JupyterKernelManager = Depends(get_ready_kernel_manager),
+):
     """Execute a cell of Python code in the Jupyter kernel.
 
     The code will be executed in the persistent kernel, maintaining state
     between executions (variables, imports, etc.).
     """
     try:
-        kernel_manager = await get_kernel_manager()
-
-        if not kernel_manager.is_ready:
-            raise HTTPException(
-                status_code=503,
-                detail="Kernel is not ready. Please check kernel status.",
-            )
-
         # Execute the cell
         result = await kernel_manager.execute_cell(
             code=request.code, cell_id=request.cell_id
@@ -70,10 +98,11 @@ async def execute_cell(request: ExecuteCellRequest):
 
 
 @router.get("/status", response_model=KernelStatusResponse)
-async def get_kernel_status():
+async def get_kernel_status(
+    kernel_manager: JupyterKernelManager = Depends(get_kernel_manager),
+):
     """Get the current status of the Jupyter kernel."""
     try:
-        kernel_manager = await get_kernel_manager()
         status = kernel_manager.get_kernel_status()
         return KernelStatusResponse(**status)
 
@@ -83,10 +112,12 @@ async def get_kernel_status():
 
 
 @router.get("/results/{cell_id}", response_model=ExecuteCellResponse)
-async def get_execution_result(cell_id: str):
+async def get_execution_result(
+    cell_id: str,
+    kernel_manager: JupyterKernelManager = Depends(get_kernel_manager),
+):
     """Get the result of a specific cell execution by ID."""
     try:
-        kernel_manager = await get_kernel_manager()
         result = kernel_manager.get_execution_result(cell_id)
 
         if not result:
@@ -105,10 +136,11 @@ async def get_execution_result(cell_id: str):
 
 
 @router.get("/results", response_model=list[ExecuteCellResponse])
-async def list_execution_results():
+async def list_execution_results(
+    kernel_manager: JupyterKernelManager = Depends(get_kernel_manager),
+):
     """Get all execution results from the current session."""
     try:
-        kernel_manager = await get_kernel_manager()
         results = kernel_manager.list_execution_results()
 
         return [ExecuteCellResponse(**result.to_dict()) for result in results]
@@ -119,14 +151,15 @@ async def list_execution_results():
 
 
 @router.post("/restart")
-async def restart_kernel():
+async def restart_kernel(
+    kernel_manager: JupyterKernelManager = Depends(get_kernel_manager),
+):
     """Restart the Jupyter kernel.
 
     This will clear all variables and state, starting fresh.
     All previous execution results will be preserved.
     """
     try:
-        kernel_manager = await get_kernel_manager()
         success = await kernel_manager.restart_kernel()
 
         if not success:
@@ -144,15 +177,15 @@ async def restart_kernel():
 
 
 @router.post("/start")
-async def start_kernel():
+async def start_kernel(
+    kernel_manager: JupyterKernelManager = Depends(get_kernel_manager),
+):
     """Start the Jupyter kernel if it's not already running.
 
-    This is typically called automatically on server startup,
+    This is typically called automatically on first request,
     but can be used to manually start the kernel if needed.
     """
     try:
-        kernel_manager = await get_kernel_manager()
-
         if kernel_manager.is_ready:
             return {"message": "Kernel is already running", "success": True}
 
@@ -171,10 +204,11 @@ async def start_kernel():
 
 
 @router.delete("/clear-results")
-async def clear_execution_results():
+async def clear_execution_results(
+    kernel_manager: JupyterKernelManager = Depends(get_kernel_manager),
+):
     """Clear all stored execution results (but keep the kernel running)."""
     try:
-        kernel_manager = await get_kernel_manager()
         kernel_manager._execution_results.clear()
 
         return {"message": "Execution results cleared", "success": True}
@@ -188,10 +222,11 @@ async def clear_execution_results():
 
 # Health check endpoint specifically for notebook functionality
 @router.get("/health")
-async def notebook_health():
+async def notebook_health(
+    kernel_manager: JupyterKernelManager = Depends(get_kernel_manager),
+):
     """Health check for notebook functionality."""
     try:
-        kernel_manager = await get_kernel_manager()
         status = kernel_manager.get_kernel_status()
 
         return {

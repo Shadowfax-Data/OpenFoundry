@@ -171,29 +171,3 @@ class JupyterKernelManager:
             if self.client and hasattr(self.client, "km") and self.client.km
             else None,
         }
-
-
-# Global kernel manager instance
-kernel_manager = JupyterKernelManager()
-
-
-async def get_kernel_manager() -> JupyterKernelManager:
-    """Get the global kernel manager instance."""
-    return kernel_manager
-
-
-async def initialize_kernel():
-    """Initialize the kernel on startup."""
-    logger.info("Initializing Jupyter kernel...")
-    success = await kernel_manager.start_kernel()
-    if success:
-        logger.info("Kernel initialized successfully")
-    else:
-        logger.error("Failed to initialize kernel")
-    return success
-
-
-async def shutdown_kernel():
-    """Shutdown the kernel on app shutdown."""
-    logger.info("Shutting down Jupyter kernel...")
-    await kernel_manager.stop_kernel()
