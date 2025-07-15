@@ -1,7 +1,7 @@
 # docker-compose.yml
 services:
   openfoundry:
-    image: openfoundry:latest
+    image: ghcr.io/shadowfax-data/openfoundry:main
     network_mode: host
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
@@ -10,3 +10,4 @@ services:
       # pulled from .env
       DATABASE_URL: "${DATABASE_URL}"
       OPENAI_API_KEY: "${OPENAI_API_KEY}"
+      SANDBOX_IMAGE: "ghcr.io/shadowfax-data/openfoundry-sandbox:main"
