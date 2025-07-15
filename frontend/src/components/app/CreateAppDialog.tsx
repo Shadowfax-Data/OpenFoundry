@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router";
+import { z } from "zod";
 
 import { ConnectionMultiSelect } from "@/components/connections/ConnectionMultiSelect";
 import { Badge } from "@/components/ui/badge";
@@ -10,9 +12,27 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { useAppDispatch, useAppSelector } from "@/store";
 import { createAppAgentSession } from "@/store/slices/appAgentSessionsSlice";
 import { createApp } from "@/store/slices/appsSlice";
+
+const createAppSchema = z.object({
+  name: z.string().min(1, "App name is required"),
+  connectionIds: z.array(z.string()),
+  prompt: z.string().optional(),
+});
+
+type CreateAppFormData = z.infer<typeof createAppSchema>;
 
 interface CreateAppDialogProps {
   onCreatingSession: (isCreating: boolean) => void;
@@ -30,29 +50,27 @@ export function CreateAppDialog({
   const { loading } = useAppSelector((state) => state.apps);
   const { connections } = useAppSelector((state) => state.connections);
 
-  const [newAppName, setNewAppName] = useState("");
-  const [selectedConnectionIds, setSelectedConnectionIds] = useState<string[]>(
-    [],
-  );
-  const [prompt, setPrompt] = useState("");
+  const form = useForm<CreateAppFormData>({
+    resolver: zodResolver(createAppSchema),
+    defaultValues: {
+      name: "",
+      connectionIds: [],
+      prompt: "",
+    },
+  });
 
-  const handleCreateApp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newAppName.trim()) return;
-
+  const handleCreateApp = async (data: CreateAppFormData) => {
     try {
       // Create the app first
       const appResult = await dispatch(
         createApp({
-          name: newAppName.trim(),
-          connection_ids: selectedConnectionIds,
+          name: data.name.trim(),
+          connection_ids: data.connectionIds,
         }),
       ).unwrap();
 
       // Reset form
-      setNewAppName("");
-      setSelectedConnectionIds([]);
-      setPrompt("");
+      form.reset();
       onClose();
 
       // Show session creation loading state
@@ -64,8 +82,8 @@ export function CreateAppDialog({
       ).unwrap();
 
       // Navigate to the chat page, passing prompt as a query param if non-empty
-      const promptParam = prompt.trim()
-        ? `?prompt=${encodeURIComponent(prompt.trim())}`
+      const promptParam = data.prompt?.trim()
+        ? `?prompt=${encodeURIComponent(data.prompt.trim())}`
         : "";
       navigate(
         `/apps/${appResult.id}/sessions/${sessionResult.session.id}/chat${promptParam}`,
@@ -79,9 +97,7 @@ export function CreateAppDialog({
   };
 
   const handleClose = () => {
-    setNewAppName("");
-    setSelectedConnectionIds([]);
-    setPrompt("");
+    form.reset();
     onClose();
   };
 
@@ -91,54 +107,75 @@ export function CreateAppDialog({
         <DialogHeader>
           <DialogTitle>Create New App</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleCreateApp}>
-          <div className="mb-4">
-            <label className="block text-sm font-medium mb-2">App Name</label>
-            <input
-              type="text"
-              value={newAppName}
-              onChange={(e) => setNewAppName(e.target.value)}
-              placeholder="Enter app name"
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground"
-              required
-              autoFocus
+        <Form {...form}>
+          <form
+            onSubmit={form.handleSubmit(handleCreateApp)}
+            className="space-y-4"
+          >
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>App Name</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Enter app name" {...field} autoFocus />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </div>
-          <div className="mb-4">
-            <label className="block text-sm font-medium mb-2">
-              Connections
-            </label>
-            <ConnectionMultiSelect
-              connections={connections}
-              selectedConnectionIds={selectedConnectionIds}
-              onSelectionChange={setSelectedConnectionIds}
-              placeholder="Select connections..."
+            <FormField
+              control={form.control}
+              name="connectionIds"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Connections</FormLabel>
+                  <FormControl>
+                    <ConnectionMultiSelect
+                      connections={connections}
+                      selectedConnectionIds={field.value}
+                      onSelectionChange={field.onChange}
+                      placeholder="Select connections..."
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </div>
-          <div className="mb-4">
-            <label className="block text-sm font-medium mb-2">
-              What would you like to build?{" "}
-              <Badge variant="secondary">optional</Badge>
-            </label>
-            <textarea
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              placeholder="Describe what you want to build..."
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground min-h-[80px]"
+            <FormField
+              control={form.control}
+              name="prompt"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    What would you like to build?{" "}
+                    <Badge variant="secondary">optional</Badge>
+                  </FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="Describe what you want to build..."
+                      className="min-h-[80px]"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </div>
-          <div className="flex gap-2 justify-end">
-            <Button type="button" variant="outline" onClick={handleClose}>
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              disabled={!newAppName.trim() || loading || disabled}
-            >
-              {loading ? "Creating..." : "Create App"}
-            </Button>
-          </div>
-        </form>
+            <div className="flex gap-2 justify-end">
+              <Button type="button" variant="outline" onClick={handleClose}>
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={!form.watch("name")?.trim() || loading || disabled}
+              >
+                {loading ? "Creating..." : "Create App"}
+              </Button>
+            </div>
+          </form>
+        </Form>
       </DialogContent>
     </Dialog>
   );
