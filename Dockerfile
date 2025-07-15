@@ -16,18 +16,19 @@ RUN apt-get update && apt-get install -y \
 RUN pip install --upgrade pip \
     && pip install poetry
 
-# Copy dependency definitions and README
-COPY pyproject.toml poetry.lock README.md ./
-
-# Copy project source code (needed for poetry install to work)
-COPY openfoundry /app/openfoundry
+# Copy dependency definitions
+COPY pyproject.toml poetry.lock ./
 
 # Install dependencies without creating a virtualenv and without installing dev deps
 RUN poetry config virtualenvs.create false \
     && poetry install --no-interaction
 
-# Copy frontend code and build it
+# Copy project source code
+COPY openfoundry /app/openfoundry
+COPY alembic /app/alembic
 COPY frontend /app/frontend
+
+# Build frontend
 WORKDIR /app/frontend
 RUN npm ci && npm run build
 
