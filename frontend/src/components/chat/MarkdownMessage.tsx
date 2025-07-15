@@ -64,9 +64,7 @@ export const MarkdownMessage: React.FC<MarkdownMessageProps> = ({
         components={{
           // Customize heading styles
           strong: ({ children }) => (
-            <h3 className="text-md font-semibold mt-2 text-gray-900">
-              {children}
-            </h3>
+            <strong className="font-semibold text-gray-900">{children}</strong>
           ),
           h1: ({ children }) => (
             <h1 className="text-xl font-bold mb-3 text-gray-900">{children}</h1>
@@ -159,6 +157,8 @@ export const MarkdownMessage: React.FC<MarkdownMessageProps> = ({
               {children}
             </a>
           ),
+          // Customize horizontal rule styles
+          hr: () => <hr className="my-6 border-t border-gray-300" />,
         }}
       >
         {content}
