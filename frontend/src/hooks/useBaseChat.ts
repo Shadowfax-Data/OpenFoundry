@@ -44,6 +44,7 @@ interface UseBaseChatProps {
   actions: ChatActions;
   chatSelector: (state: RootState) => ChatState;
   selectCurrentWriteFileInfo: (state: RootState) => CurrentWriteFileInfo | null;
+  initialPrompt?: string;
 }
 
 export const useBaseChat = ({
@@ -54,6 +55,7 @@ export const useBaseChat = ({
   actions,
   chatSelector,
   selectCurrentWriteFileInfo,
+  initialPrompt,
 }: UseBaseChatProps) => {
   const dispatch = useDispatch();
   const { messages, isStreaming, error } = useSelector(chatSelector);
@@ -66,6 +68,7 @@ export const useBaseChat = ({
     baseEndpoint,
     welcomeMessage,
     actions,
+    initialPrompt,
   });
 
   const sendMessage = async (inputMessage: string, model?: string) => {

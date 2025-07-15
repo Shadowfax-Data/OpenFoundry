@@ -26,6 +26,7 @@ interface UseChatHistoryProps {
   baseEndpoint: string;
   welcomeMessage: string;
   actions: ChatActions;
+  initialPrompt?: string;
 }
 
 export const useChatHistory = ({
@@ -34,6 +35,7 @@ export const useChatHistory = ({
   baseEndpoint,
   welcomeMessage,
   actions,
+  initialPrompt,
 }: UseChatHistoryProps) => {
   const dispatch = useDispatch();
 
@@ -53,14 +55,30 @@ export const useChatHistory = ({
         if (signal.aborted) return;
 
         const data = await response.json();
-        dispatch(
-          actions.addMessage({
-            id: Date.now().toString(),
-            content: welcomeMessage,
-            sender: "system",
-            isStreaming: false,
-          }),
-        );
+
+        // Add welcome message if it exists
+        if (welcomeMessage) {
+          dispatch(
+            actions.addMessage({
+              id: Date.now().toString(),
+              content: welcomeMessage,
+              sender: "system",
+              isStreaming: false,
+            }),
+          );
+        }
+
+        // Add initial prompt as user message if it exists and there are no existing messages
+        if (initialPrompt && data.length === 0) {
+          dispatch(
+            actions.addMessage({
+              id: (Date.now() + 1).toString(),
+              content: initialPrompt,
+              sender: "user",
+              isStreaming: false,
+            }),
+          );
+        }
 
         data.forEach((msg: ChatMessage) => {
           dispatch(
@@ -84,7 +102,15 @@ export const useChatHistory = ({
         }
       }
     },
-    [resourceId, sessionId, dispatch, baseEndpoint, welcomeMessage, actions],
+    [
+      resourceId,
+      sessionId,
+      dispatch,
+      baseEndpoint,
+      welcomeMessage,
+      actions,
+      initialPrompt,
+    ],
   );
 
   useEffect(() => {

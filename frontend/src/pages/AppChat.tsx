@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router";
+import { useNavigate, useParams, useSearchParams } from "react-router";
 import { toast } from "sonner";
 
 import { AppBuilderPanel } from "@/components/app/AppBuilderPanel";
@@ -27,6 +27,10 @@ export function AppChat() {
   const dispatch = useAppDispatch();
   const [isSandboxReady, setIsSandboxReady] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
+  const [searchParams] = useSearchParams();
+
+  // Extract prompt from query params
+  const prompt = searchParams.get("prompt")?.trim() || "";
 
   const {
     messages,
@@ -38,6 +42,7 @@ export function AppChat() {
   } = useAppChat({
     appId: appId!,
     sessionId: sessionId!,
+    initialPrompt: prompt,
   });
 
   const session = useAppSelector(selectAppAgentSessionById(appId!, sessionId!));

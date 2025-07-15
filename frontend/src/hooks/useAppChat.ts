@@ -12,9 +12,18 @@ import { useBaseChat } from "./useBaseChat";
 interface UseAppChatProps {
   appId: string;
   sessionId: string;
+  initialPrompt?: string;
 }
 
-export const useAppChat = ({ appId, sessionId }: UseAppChatProps) => {
+export const useAppChat = ({
+  appId,
+  sessionId,
+  initialPrompt,
+}: UseAppChatProps) => {
+  const welcomeMessage = initialPrompt
+    ? "" // No welcome message if there's an initial prompt
+    : "Welcome! What would you like to do today?";
+
   const chatProps = useBaseChat({
     resourceId: appId,
     sessionId,
@@ -23,7 +32,8 @@ export const useAppChat = ({ appId, sessionId }: UseAppChatProps) => {
     actions: appChatSlice.actions as any,
     chatSelector: (state: RootState) => state.appChat,
     selectCurrentWriteFileInfo: selectCurrentAppWriteFileInfo,
-    welcomeMessage: "Welcome! What would you like to do today?",
+    welcomeMessage,
+    initialPrompt,
   });
 
   const [appPreviewUrl, setAppPreviewUrl] = useState<string>("");
