@@ -3,7 +3,6 @@ import uuid
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from openfoundry.config import SANDBOX_IMAGE, SANDBOX_PORT
 from openfoundry.logger import logger
 from openfoundry.models.agent_sessions.docker_utils import SecretPayload
 from openfoundry.models.apps import App
@@ -51,13 +50,13 @@ class AppAgentSession(AgentSessionBase):
 
     def get_docker_config(self) -> dict:
         """Get Docker configuration for app agent sessions."""
-        return {
-            "image": SANDBOX_IMAGE,
-            "ports": {
-                f"{SANDBOX_PORT}/tcp": None,  # sandbox port
+        config = super().get_docker_config()
+        config["ports"].update(
+            {
                 "8501/tcp": None,  # app port
-            },
-        }
+            }
+        )
+        return config
 
     def get_container_name(self) -> str:
         """Get the container name for app sessions."""

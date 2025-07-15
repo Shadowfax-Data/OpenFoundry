@@ -1,20 +1,13 @@
 # docker-compose.yml
 services:
-  control-plane:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: openfoundry:latest
-    network_mode: "host"
+  openfoundry:
+    image: ghcr.io/shadowfax-data/openfoundry:main
+    network_mode: host
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+      - ./storage:/app/storage
     environment:
       # pulled from .env
       DATABASE_URL: "${DATABASE_URL}"
       OPENAI_API_KEY: "${OPENAI_API_KEY}"
-
-  agent-sandbox:
-    build:
-      context: ./sandbox
-      dockerfile: Dockerfile
-    image: openfoundry-sandbox:latest
+      SANDBOX_IMAGE: "ghcr.io/shadowfax-data/openfoundry-sandbox:main"

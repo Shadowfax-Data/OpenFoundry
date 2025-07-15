@@ -118,7 +118,6 @@ class AgentSessionBase(Base):
         return {
             "image": SANDBOX_IMAGE,
             "ports": {f"{SANDBOX_PORT}/tcp": None},
-            "agent": "default_agent",
         }
 
     def get_container_name(self) -> str:
