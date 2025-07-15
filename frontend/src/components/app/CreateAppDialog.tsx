@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router";
 
 import { ConnectionMultiSelect } from "@/components/connections/ConnectionMultiSelect";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -33,6 +34,7 @@ export function CreateAppDialog({
   const [selectedConnectionIds, setSelectedConnectionIds] = useState<string[]>(
     [],
   );
+  const [prompt, setPrompt] = useState("");
 
   const handleCreateApp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,6 +52,7 @@ export function CreateAppDialog({
       // Reset form
       setNewAppName("");
       setSelectedConnectionIds([]);
+      setPrompt("");
       onClose();
 
       // Show session creation loading state
@@ -60,9 +63,12 @@ export function CreateAppDialog({
         createAppAgentSession(appResult.id),
       ).unwrap();
 
-      // Navigate to the chat page
+      // Navigate to the chat page, passing prompt as a query param if non-empty
+      const promptParam = prompt.trim()
+        ? `?prompt=${encodeURIComponent(prompt.trim())}`
+        : "";
       navigate(
-        `/apps/${appResult.id}/sessions/${sessionResult.session.id}/chat`,
+        `/apps/${appResult.id}/sessions/${sessionResult.session.id}/chat${promptParam}`,
       );
     } catch (error) {
       // Error is handled by Redux state
@@ -75,6 +81,7 @@ export function CreateAppDialog({
   const handleClose = () => {
     setNewAppName("");
     setSelectedConnectionIds([]);
+    setPrompt("");
     onClose();
   };
 
@@ -106,6 +113,18 @@ export function CreateAppDialog({
               selectedConnectionIds={selectedConnectionIds}
               onSelectionChange={setSelectedConnectionIds}
               placeholder="Select connections..."
+            />
+          </div>
+          <div className="mb-4">
+            <label className="block text-sm font-medium mb-2">
+              What would you like to build?{" "}
+              <Badge variant="secondary">optional</Badge>
+            </label>
+            <textarea
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              placeholder="Describe what you want to build..."
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground min-h-[80px]"
             />
           </div>
           <div className="flex gap-2 justify-end">
