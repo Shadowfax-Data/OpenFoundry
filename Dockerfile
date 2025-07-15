@@ -1,38 +1,39 @@
-# Use Python 3.12 slim base image
+# Stage 1: Frontend builder
+FROM node:20-slim AS frontend-builder
+WORKDIR /app/frontend
+COPY frontend/package*.json ./
+RUN npm ci
+COPY frontend ./
+RUN npm run build
+
+# Stage 2: Backend and final image
 FROM python:3.12-slim
-
-# Set working directory
 WORKDIR /app
-
-# Install Node.js for frontend build
-RUN apt-get update && apt-get install -y \
-    curl \
-    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
-    && apt-get install -y nodejs \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
 
 # Upgrade pip and install Poetry
 RUN pip install --upgrade pip \
-    && pip install poetry
+    && pip install poetry \
+    && rm -rf ~/.cache/pip
 
-# Copy dependency definitions and README
-COPY pyproject.toml poetry.lock README.md ./
-
-# Copy project source code (needed for poetry install to work)
-COPY openfoundry /app/openfoundry
+# Copy dependency definitions
+COPY pyproject.toml poetry.lock ./
 
 # Install dependencies without creating a virtualenv and without installing dev deps
 RUN poetry config virtualenvs.create false \
-    && poetry install --no-interaction
+    && poetry install --no-interaction --without dev \
+    && rm -rf /root/.cache/pypoetry
 
-# Copy frontend code and build it
-COPY frontend /app/frontend
-WORKDIR /app/frontend
-RUN npm ci && npm run build
+# Copy project source code
+COPY openfoundry /app/openfoundry
+COPY alembic /app/alembic
+COPY alembic.ini /app/alembic.ini
 
-# Go back to app directory
-WORKDIR /app
+# Copy built frontend from builder
+COPY --from=frontend-builder /app/frontend/dist /app/frontend/dist
+
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
 
 # Expose FastAPI default port
 EXPOSE 8000

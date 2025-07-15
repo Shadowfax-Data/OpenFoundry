@@ -274,3 +274,4 @@ temp/
 .cache_ggshield
 
 storage/
+*.pem

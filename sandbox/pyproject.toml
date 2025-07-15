@@ -9,7 +9,6 @@ name = "openfoundry-sandbox"
 version = "0.1.0"
 description = "OpenFoundry sandbox environment"
 authors = ["OpenFoundry AI"]
-license = "MIT"
 package-mode = false
 classifiers = [
     "Programming Language :: Python :: 3",
