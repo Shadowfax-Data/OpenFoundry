@@ -50,6 +50,14 @@ seaborn = "^0.13.2"
 plotly = "^6.2.0"
 altair = {extras = ["all"], version = "^5.5.0"}
 python-multipart = "^0.0.20"
+
+# Jupyter dependencies for notebook support
+jupyter-client = "^8.6.0"
+jupyter-core = "^5.5.0"
+ipython = "^8.18.1"
+ipykernel = "^6.26.0"
+
+# Database dependencies
 snowflake-connector-python = "^3.16.0"
 pyarrow = "^18.1.0"
 cryptography = "^45.0.5"

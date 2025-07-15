@@ -22,6 +22,8 @@ from openfoundry_sandbox.connection_manager import connection_manager
 from openfoundry_sandbox.connections_api import router as connections_api_router
 from openfoundry_sandbox.files_api import router as files_api_router
 from openfoundry_sandbox.find_api import router as find_api_router
+from openfoundry_sandbox.notebook_api import cleanup_notebook, initialize_notebook
+from openfoundry_sandbox.notebook_api import router as notebook_api_router
 from openfoundry_sandbox.pcb_api import RunRequest, run_process_core
 from openfoundry_sandbox.pcb_api import router as pcb_api_router
 from openfoundry_sandbox.secrets_api import SecretPayload, store_secret
@@ -147,7 +149,20 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.error(f"Failed to initialize from environment data: {e}")
 
+    # Initialize notebook kernel
+    try:
+        await initialize_notebook()
+    except Exception as e:
+        logger.error(f"Failed to initialize notebook kernel: {e}")
+
     yield
+
+    # Cleanup notebook kernel on shutdown
+    try:
+        await cleanup_notebook()
+        logger.info("Cleaned up notebook kernel during shutdown")
+    except Exception as e:
+        logger.error(f"Error cleaning up notebook kernel during shutdown: {e}")
 
     # Cleanup connections on shutdown
     try:
@@ -164,6 +179,7 @@ app.include_router(find_api_router)
 app.include_router(files_api_router)
 app.include_router(secrets_api_router)
 app.include_router(connections_api_router)
+app.include_router(notebook_api_router)
 
 
 @app.get("/health")
@@ -344,8 +360,8 @@ def run_shell(request: RunShellRequest):
     except subprocess.TimeoutExpired as e:
         logger.warning(f"Shell command timed out after {request.timeout_seconds}s")
         return RunShellResponse(
-            stdout=e.stdout or "",
-            stderr=e.stderr or "",
+            stdout=e.stdout.decode("utf-8") if e.stdout else "",
+            stderr=e.stderr.decode("utf-8") if e.stderr else "",
             timeout=True,
             return_code=None,
         )
@@ -537,6 +553,8 @@ async def _perform_initialization(request: InitializeRequest):
             identifier=request.streamlit_run_config.identifier,
             command_str=request.streamlit_run_config.command_str,
             cwd=request.streamlit_run_config.cwd,
+            env=None,
+            stdin_commands=None,
         )
 
         try:
