@@ -17,6 +17,7 @@ from openfoundry.routers.connections import (
     databricks_connection_api_router,
     snowflake_connection_api_router,
 )
+from openfoundry.routers.notebook import router as notebook_router
 from openfoundry.static import SPAStaticFiles
 
 
@@ -31,7 +32,16 @@ def initialize_storage():
 async def lifespan(app: FastAPI):
     """Lifespan context manager for FastAPI app."""
     initialize_storage()
+
+    # Initialize the Jupyter kernel
+    from notebook_runner import initialize_kernel, shutdown_kernel
+
+    await initialize_kernel()
+
     yield
+
+    # Shutdown the kernel on app shutdown
+    await shutdown_kernel()
 
 
 app = FastAPI(lifespan=lifespan)
@@ -43,6 +53,7 @@ app.include_router(app_router, tags=["apps"])
 app.include_router(connection_api_router, tags=["connections"])
 app.include_router(databricks_connection_api_router, tags=["connections"])
 app.include_router(snowflake_connection_api_router, tags=["connections"])
+app.include_router(notebook_router, tags=["notebook"])
 
 app.add_middleware(
     SQLAlchemySessionMiddleware,
