@@ -1,14 +1,14 @@
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
-from notebook_runner import get_kernel_manager
+from openfoundry_sandbox.notebook_runner import get_kernel_manager
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/notebook")
+router = APIRouter(prefix="/notebook", tags=["notebook"])
 
 
 # Pydantic models for request/response
@@ -16,7 +16,7 @@ class ExecuteCellRequest(BaseModel):
     """Request model for executing a notebook cell."""
 
     code: str = Field(..., description="Python code to execute")
-    cell_id: Optional[str] = Field(None, description="Optional cell ID for tracking")
+    cell_id: str | None = Field(None, description="Optional cell ID for tracking")
 
 
 class ExecuteCellResponse(BaseModel):
@@ -24,12 +24,12 @@ class ExecuteCellResponse(BaseModel):
 
     cell_id: str
     code: str
-    execution_count: Optional[int]
-    outputs: List[Dict[str, Any]]
+    execution_count: int | None
+    outputs: list[dict[str, Any]]
     status: str
-    error: Optional[str]
+    error: str | None
     started_at: str
-    completed_at: Optional[str]
+    completed_at: str | None
 
 
 class KernelStatusResponse(BaseModel):
@@ -38,7 +38,7 @@ class KernelStatusResponse(BaseModel):
     is_ready: bool
     is_starting: bool
     execution_count: int
-    kernel_id: Optional[str]
+    kernel_id: str | None
 
 
 @router.post("/execute", response_model=ExecuteCellResponse)
@@ -104,7 +104,7 @@ async def get_execution_result(cell_id: str):
         raise HTTPException(status_code=500, detail=f"Failed to get result: {str(e)}")
 
 
-@router.get("/results", response_model=List[ExecuteCellResponse])
+@router.get("/results", response_model=list[ExecuteCellResponse])
 async def list_execution_results():
     """Get all execution results from the current session."""
     try:

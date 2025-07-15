@@ -25,8 +25,6 @@ cryptography = "^45.0.5"
 snowflake-connector-python = "^3.16.0"
 pyarrow = "^18.1.0"
 databricks-sql-connector = {extras = ["pyarrow"], version = "^4.0.5"}
-jupyter-client = "^8.6.0"
-ipykernel = "^6.28.0"
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.8.0"

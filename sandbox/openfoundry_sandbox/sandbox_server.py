@@ -22,6 +22,8 @@ from openfoundry_sandbox.connection_manager import connection_manager
 from openfoundry_sandbox.connections_api import router as connections_api_router
 from openfoundry_sandbox.files_api import router as files_api_router
 from openfoundry_sandbox.find_api import router as find_api_router
+from openfoundry_sandbox.notebook_api import router as notebook_api_router
+from openfoundry_sandbox.notebook_runner import initialize_kernel, shutdown_kernel
 from openfoundry_sandbox.pcb_api import RunRequest, run_process_core
 from openfoundry_sandbox.pcb_api import router as pcb_api_router
 from openfoundry_sandbox.secrets_api import SecretPayload, store_secret
@@ -147,7 +149,11 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.error(f"Failed to initialize from environment data: {e}")
 
+    # Initialize the Jupyter kernel
+    await initialize_kernel()
     yield
+    # Shutdown the kernel on app shutdown
+    await shutdown_kernel()
 
     # Cleanup connections on shutdown
     try:
@@ -164,6 +170,7 @@ app.include_router(find_api_router)
 app.include_router(files_api_router)
 app.include_router(secrets_api_router)
 app.include_router(connections_api_router)
+app.include_router(notebook_api_router)
 
 
 @app.get("/health")
