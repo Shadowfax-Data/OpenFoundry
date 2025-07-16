@@ -60,70 +60,67 @@ class JupyterKernelManager:
         self.kernel_id: str | None = None
         self.is_starting = False
         self.is_ready = False
-        self._lock = asyncio.Lock()
 
     async def start_kernel(self):
         """Start the Jupyter kernel asynchronously."""
-        async with self._lock:
-            if self.is_starting or self.is_ready:
-                return self.is_ready
+        if self.is_starting or self.is_ready:
+            return self.is_ready
 
-            self.is_starting = True
-            try:
-                logger.info("Starting Jupyter Python kernel...")
+        self.is_starting = True
+        try:
+            logger.info("Starting Jupyter Python kernel...")
 
-                self.client = NotebookClient(self.nb, kernel_name="python3")
+            self.client = NotebookClient(self.nb, kernel_name="python3")
 
-                assert self.client is not None, "Kernel client is not initialized"
+            assert self.client is not None, "Kernel client is not initialized"
 
-                # Create kernel manager first
-                self.client.create_kernel_manager()
+            # Create kernel manager first
+            self.client.create_kernel_manager()
 
-                # Now start the kernel
-                await self.client.async_start_new_kernel()
+            # Now start the kernel
+            await self.client.async_start_new_kernel()
 
-                # Create and start kernel client
-                await self.client.async_start_new_kernel_client()
+            # Create and start kernel client
+            await self.client.async_start_new_kernel_client()
 
-                self.kernel_id = str(uuid.uuid4())
-                self.execution_count = 0
-                self.is_ready = True
+            self.kernel_id = str(uuid.uuid4())
+            self.execution_count = 0
+            self.is_ready = True
 
-                logger.info("Jupyter kernel started successfully")
-                return True
+            logger.info("Jupyter kernel started successfully")
+            return True
 
-            except Exception as e:
-                logger.error(f"Failed to start kernel: {e}")
-                self.client = None
-                self.is_ready = False
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail=f"Failed to start kernel: {str(e)}",
-                )
-            finally:
-                self.is_starting = False
+        except Exception as e:
+            logger.error(f"Failed to start kernel: {e}")
+            self.client = None
+            self.is_ready = False
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to start kernel: {str(e)}",
+            )
+        finally:
+            self.is_starting = False
 
     async def restart_kernel(self):
         """Restart the kernel, clearing all state."""
-        async with self._lock:
-            logger.info("Restarting kernel...")
+        logger.info("Restarting kernel...")
 
-            # Stop existing kernel
-            if self.client is not None and self.client.km is not None:
-                try:
-                    await asyncio.to_thread(self.client.km.shutdown_kernel, now=True)
-                except Exception as e:
-                    logger.warning(f"Error stopping kernel: {e}")
+        # Stop existing kernel
+        if self.client is not None and self.client.km is not None:
+            try:
+                await asyncio.to_thread(self.client.km.shutdown_kernel, now=True)
+            except Exception as e:
+                logger.warning(f"Error stopping kernel: {e}")
 
-            # Clear state
-            self.client = None
-            self.nb = new_notebook()
-            self.execution_count = 0
-            self.kernel_id = None
-            self.is_ready = False
+        # Clear state
+        self.client = None
+        self.nb = new_notebook()
+        self.execution_count = 0
+        self.kernel_id = None
+        self.is_ready = False
 
-            # Start new kernel
-            await self.start_kernel()
+        # Start new kernel
+        await self.start_kernel()
 
     def is_kernel_ready(self) -> bool:
         """Check if the kernel is ready for execution."""
