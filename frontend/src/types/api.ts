@@ -110,3 +110,32 @@ export interface DatabricksConnectionModel {
   schema?: string;
   type: string;
 }
+
+export interface ClickhouseConnectionCreate {
+  name: string;
+  host: string;
+  port: number;
+  username: string;
+  password: string;
+  database: string;
+}
+
+export interface ClickhouseConnectionUpdate {
+  name?: string;
+  host?: string;
+  port?: number;
+  username?: string;
+  password?: string;
+  database?: string;
+}
+
+export interface ClickhouseConnectionModel {
+  id: string;
+  name: string;
+  host: string;
+  port: number;
+  username: string;
+  password: string;
+  database: string;
+  type: string;
+}

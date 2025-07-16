@@ -1,4 +1,8 @@
-import { SiDatabricks, SiSnowflake } from "@icons-pack/react-simple-icons";
+import {
+  SiClickhouse,
+  SiDatabricks,
+  SiSnowflake,
+} from "@icons-pack/react-simple-icons";
 import { useNavigate } from "react-router";
 
 import {
@@ -52,6 +56,20 @@ export function NewConnectionDialog({ children }: NewConnectionDialogProps) {
                 <span className="font-semibold">Databricks</span>
                 <p className="text-sm text-muted-foreground">
                   Connect to a Databricks SQL warehouse.
+                </p>
+              </div>
+            </div>
+          </div>
+          <div
+            className="p-4 border rounded-md cursor-pointer hover:bg-muted"
+            onClick={() => navigate("/connections/clickhouse/new")}
+          >
+            <div className="flex items-center gap-3">
+              <SiClickhouse className="text-yellow-400" />
+              <div>
+                <span className="font-semibold">ClickHouse</span>
+                <p className="text-sm text-muted-foreground">
+                  Connect to a ClickHouse data warehouse.
                 </p>
               </div>
             </div>
