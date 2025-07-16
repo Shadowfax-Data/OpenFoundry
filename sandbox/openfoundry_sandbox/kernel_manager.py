@@ -1,7 +1,7 @@
 import asyncio
 import logging
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 
 from fastapi import HTTPException, status
@@ -148,7 +148,7 @@ class JupyterKernelManager:
                     detail="Kernel is not ready for execution",
                 )
 
-        started_at = datetime.utcnow().isoformat()
+        started_at = datetime.now(timezone.utc).isoformat()
 
         try:
             assert self.client is not None, "Kernel client is not initialized"
@@ -245,7 +245,7 @@ class JupyterKernelManager:
                 self.execution_count += 1
                 execution_count = self.execution_count
 
-            completed_at = datetime.utcnow().isoformat()
+            completed_at = datetime.now(timezone.utc).isoformat()
 
             # Create response
             response = ExecuteCodeResponse(
@@ -265,7 +265,7 @@ class JupyterKernelManager:
             return response
 
         except Exception as e:
-            completed_at = datetime.utcnow().isoformat()
+            completed_at = datetime.now(timezone.utc).isoformat()
             logger.error(f"Error executing code: {e}")
 
             response = ExecuteCodeResponse(
