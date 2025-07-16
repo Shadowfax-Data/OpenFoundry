@@ -7,6 +7,7 @@ import { ClickhouseConnectionPage } from "@/pages/ClickhouseConnectionPage";
 import { Connections } from "@/pages/Connections";
 import { DatabricksConnectionPage } from "@/pages/DatabricksConnectionPage";
 import { Home } from "@/pages/Home";
+import { PostgresConnectionPage } from "@/pages/PostgresConnectionPage";
 import { SnowflakeConnectionPage } from "@/pages/SnowflakeConnectionPage";
 
 export const router = createBrowserRouter([
@@ -57,6 +58,14 @@ export const router = createBrowserRouter([
       {
         path: "connections/clickhouse/:connectionId",
         element: <ClickhouseConnectionPage />,
+      },
+      {
+        path: "connections/postgres/new",
+        element: <PostgresConnectionPage />,
+      },
+      {
+        path: "connections/postgres/:connectionId",
+        element: <PostgresConnectionPage />,
       },
     ],
   },

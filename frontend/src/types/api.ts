@@ -139,3 +139,35 @@ export interface ClickhouseConnectionModel {
   database: string;
   type: string;
 }
+
+export interface PostgresConnectionModel {
+  id: string;
+  name: string;
+  host: string;
+  port: number;
+  user: string;
+  password: string;
+  database: string;
+  schema: string;
+  type: string;
+}
+
+export interface PostgresConnectionCreate {
+  name: string;
+  host: string;
+  port: number;
+  user: string;
+  password: string;
+  database: string;
+  schema: string;
+}
+
+export interface PostgresConnectionUpdate {
+  name?: string;
+  host?: string;
+  port?: number;
+  user?: string;
+  password?: string;
+  database?: string;
+  schema?: string;
+}
