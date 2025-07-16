@@ -300,25 +300,18 @@ class JupyterKernelManager:
 
 async def initialize_kernel(kernel_manager: JupyterKernelManager):
     """Initialize the Jupyter kernel on startup."""
-    try:
-        logger.info("Initializing Jupyter kernel...")
-        await kernel_manager.start_kernel()
-        logger.info("Jupyter kernel initialized successfully")
-    except Exception as e:
-        logger.error(f"Failed to initialize Jupyter kernel: {e}")
-        # Don't raise - let the server start and kernel can be started later
+    logger.info("Initializing Jupyter kernel...")
+    await kernel_manager.start_kernel()
+    logger.info("Jupyter kernel initialized successfully")
 
 
 async def cleanup_kernel(kernel_manager: JupyterKernelManager):
     """Cleanup Jupyter kernel resources on shutdown."""
-    try:
-        logger.info("Cleaning up Jupyter kernel...")
-        if (
-            kernel_manager.client is not None
-            and hasattr(kernel_manager.client, "km")
-            and kernel_manager.client.km is not None
-        ):
-            await asyncio.to_thread(kernel_manager.client.km.shutdown_kernel, now=True)
-        logger.info("Jupyter kernel cleaned up successfully")
-    except Exception as e:
-        logger.error(f"Error cleaning up Jupyter kernel: {e}")
+    logger.info("Cleaning up Jupyter kernel...")
+    if (
+        kernel_manager.client is not None
+        and hasattr(kernel_manager.client, "km")
+        and kernel_manager.client.km is not None
+    ):
+        await asyncio.to_thread(kernel_manager.client.km.shutdown_kernel, now=True)
+    logger.info("Jupyter kernel cleaned up successfully")
