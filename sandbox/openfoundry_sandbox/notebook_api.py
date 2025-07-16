@@ -22,7 +22,7 @@ class ExecuteCodeRequest(BaseModel):
     """Request model for executing code in the Jupyter kernel."""
 
     code: str = Field(..., description="Python code to execute")
-    cell_id: str | None = Field(None, description="Optional custom cell ID")
+    cell_id: str = Field(..., description="Unique identifier for this cell execution")
 
 
 class KernelStatusResponse(BaseModel):
@@ -55,7 +55,9 @@ kernel_manager = JupyterKernelManager()
 @router.post("/execute", response_model=ExecuteCodeResponse)
 async def execute_code(request: ExecuteCodeRequest):
     """Execute Python code in the kernel."""
-    logger.info(f"Executing code: {request.code[:100]}...")
+    logger.info(
+        f"Executing code with cell_id '{request.cell_id}': {request.code[:100]}..."
+    )
     return await kernel_manager.execute_code(request.code, request.cell_id)
 
 

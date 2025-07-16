@@ -137,9 +137,7 @@ class JupyterKernelManager:
         """Check if the kernel is currently starting."""
         return self.is_starting
 
-    async def execute_code(
-        self, code: str, cell_id: str | None = None
-    ) -> ExecuteCodeResponse:
+    async def execute_code(self, code: str, cell_id: str) -> ExecuteCodeResponse:
         """Execute code in the kernel and return the results using nbclient."""
         if not self.is_kernel_ready():
             if not self.is_kernel_starting():
@@ -149,9 +147,6 @@ class JupyterKernelManager:
                     status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                     detail="Kernel is not ready for execution",
                 )
-
-        if cell_id is None:
-            cell_id = str(uuid.uuid4())
 
         started_at = datetime.utcnow().isoformat()
 
