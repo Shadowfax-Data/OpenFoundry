@@ -109,11 +109,7 @@ class JupyterKernelManager:
             logger.info("Restarting kernel...")
 
             # Stop existing kernel
-            if (
-                self.client is not None
-                and hasattr(self.client, "km")
-                and self.client.km is not None
-            ):
+            if self.client is not None and self.client.km is not None:
                 try:
                     await asyncio.to_thread(self.client.km.shutdown_kernel, now=True)
                 except Exception as e:
@@ -308,10 +304,6 @@ async def initialize_kernel(kernel_manager: JupyterKernelManager):
 async def cleanup_kernel(kernel_manager: JupyterKernelManager):
     """Cleanup Jupyter kernel resources on shutdown."""
     logger.info("Cleaning up Jupyter kernel...")
-    if (
-        kernel_manager.client is not None
-        and hasattr(kernel_manager.client, "km")
-        and kernel_manager.client.km is not None
-    ):
+    if kernel_manager.client is not None and kernel_manager.client.km is not None:
         await asyncio.to_thread(kernel_manager.client.km.shutdown_kernel, now=True)
     logger.info("Jupyter kernel cleaned up successfully")
