@@ -5,6 +5,9 @@ import os
 from pathlib import Path
 
 from openfoundry_sandbox.config import CONNECTIONS_DIR
+from openfoundry_sandbox.connections.clickhouse_connection import (
+    ClickhouseConnection,
+)
 from openfoundry_sandbox.connections.connection import Connection
 from openfoundry_sandbox.connections.databricks_connection import (
     DatabricksConnection,
@@ -26,6 +29,7 @@ class ConnectionManager:
     _connection_types: dict[str, type[Connection]] = {
         "snowflake": SnowflakeConnection,
         "databricks": DatabricksConnection,
+        "clickhouse": ClickhouseConnection,
         # Add more connection types here as they are implemented
     }
 
@@ -141,6 +145,8 @@ class ConnectionManager:
                 return "snowflake"
             elif key.startswith("DATABRICKS_"):
                 return "databricks"
+            elif key.startswith("CLICKHOUSE_"):
+                return "clickhouse"
 
         raise ValueError(f"Could not determine connection type for {connection_name}")
 
