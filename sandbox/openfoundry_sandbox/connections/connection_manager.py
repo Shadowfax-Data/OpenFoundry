@@ -5,11 +5,11 @@ import os
 from pathlib import Path
 
 from openfoundry_sandbox.config import CONNECTIONS_DIR
-from openfoundry_sandbox.models.connections.connection import Connection
-from openfoundry_sandbox.models.connections.databricks_connection import (
+from openfoundry_sandbox.connections.connection import Connection
+from openfoundry_sandbox.connections.databricks_connection import (
     DatabricksConnection,
 )
-from openfoundry_sandbox.models.connections.snowflake_connection import (
+from openfoundry_sandbox.connections.snowflake_connection import (
     SnowflakeConnection,
 )
 

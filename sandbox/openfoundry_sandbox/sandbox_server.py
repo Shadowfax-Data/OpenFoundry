@@ -18,7 +18,7 @@ from playwright.sync_api import sync_playwright
 from pydantic import BaseModel, Field
 
 from openfoundry_sandbox.config import WORKSPACE_DIR
-from openfoundry_sandbox.connection_manager import connection_manager
+from openfoundry_sandbox.connections.connection_manager import connection_manager
 from openfoundry_sandbox.connections_api import router as connections_api_router
 from openfoundry_sandbox.files_api import router as files_api_router
 from openfoundry_sandbox.find_api import router as find_api_router
