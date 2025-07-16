@@ -1,3 +1,4 @@
+from .clickhouse_connection import ClickhouseConnection
 from .connection import Connection, ConnectionBase
 from .databricks_connection import DatabricksConnection
 from .postgres_connection import PostgresConnection
@@ -7,6 +8,7 @@ ALL_CONNECTION_CLASSES: list[type[ConnectionBase]] = [
     SnowflakeConnection,
     DatabricksConnection,
     PostgresConnection,
+    ClickhouseConnection,
 ]
 
 __all__ = [
@@ -14,5 +16,6 @@ __all__ = [
     "SnowflakeConnection",
     "DatabricksConnection",
     "PostgresConnection",
+    "ClickhouseConnection",
     "ALL_CONNECTION_CLASSES",
 ]
