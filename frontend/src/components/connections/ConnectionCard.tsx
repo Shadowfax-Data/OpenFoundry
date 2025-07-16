@@ -1,4 +1,8 @@
-import { SiDatabricks, SiSnowflake } from "@icons-pack/react-simple-icons";
+import {
+  SiClickhouse,
+  SiDatabricks,
+  SiSnowflake,
+} from "@icons-pack/react-simple-icons";
 import { Database, FilePenLine, MoreVertical, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -28,6 +32,8 @@ export function ConnectionCard({
         return <SiSnowflake className="h-6 w-6" />;
       case "databricks":
         return <SiDatabricks className="h-6 w-6" />;
+      case "clickhouse":
+        return <SiClickhouse className="h-6 w-6" />;
       default:
         return <Database className="h-6 w-6" />;
     }

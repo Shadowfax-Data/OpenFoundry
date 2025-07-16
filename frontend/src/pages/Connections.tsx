@@ -88,6 +88,9 @@ export function Connections() {
       case "databricks":
         navigate(`/connections/databricks/${connectionId}`);
         break;
+      case "clickhouse":
+        navigate(`/connections/clickhouse/${connectionId}`);
+        break;
       default:
         alert(
           `Editing for connection type '${connection.type}' is not supported yet.`,
