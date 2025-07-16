@@ -56,6 +56,8 @@ jupyter-client = "^8.6.0"
 jupyter-core = "^5.5.0"
 ipython = "^8.18.1"
 ipykernel = "^6.26.0"
+nbclient = "^0.10.0"
+nbformat = "^5.9.2"
 
 # Database dependencies
 snowflake-connector-python = "^3.16.0"

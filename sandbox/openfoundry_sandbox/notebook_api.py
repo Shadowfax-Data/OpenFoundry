@@ -5,8 +5,8 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, HTTPException, Path, status
-from jupyter_client.kernelspec import KernelSpecManager
-from jupyter_client.manager import KernelManager
+from nbclient import NotebookClient
+from nbformat.v4 import new_code_cell, new_notebook
 from pydantic import BaseModel, Field
 
 logger = logging.getLogger(__name__)
@@ -85,76 +85,58 @@ class HealthResponse(BaseModel):
 
 
 class NotebookKernelManager:
-    """Manages a persistent Jupyter kernel for code execution."""
+    """Manages a persistent Jupyter kernel for code execution using nbclient."""
 
     def __init__(self):
-        self.kernel_manager: Optional[KernelManager] = None
-        self.kernel_client = None
+        self.client: Optional[NotebookClient] = None
+        self.nb = new_notebook()
         self.execution_count = 0
         self.execution_results: Dict[str, ExecuteCodeResponse] = {}
         self.kernel_id: Optional[str] = None
-        self._starting = False
+        self.is_starting = False
+        self.is_ready = False
         self._lock = asyncio.Lock()
 
     async def start_kernel(self):
-        """Start the Jupyter kernel."""
+        """Start the Jupyter kernel asynchronously."""
         async with self._lock:
-            if self.kernel_manager is not None and self.kernel_manager.is_alive():
-                logger.info("Kernel is already running")
-                return
+            if self.is_starting or self.is_ready:
+                return self.is_ready
 
-            self._starting = True
+            self.is_starting = True
             try:
-                logger.info("Starting Jupyter kernel...")
+                logger.info("Starting Jupyter Python kernel...")
 
-                # Create kernel manager
-                self.kernel_manager = KernelManager()
+                self.client = NotebookClient(self.nb, kernel_name="python3")
 
-                assert (
-                    self.kernel_manager is not None
-                ), "Kernel manager is not initialized"
+                assert self.client is not None, "Kernel client is not initialized"
 
-                # Get the Python kernel spec
-                ksm = KernelSpecManager()
-                kernel_name = "python3"
-                if kernel_name not in ksm.get_all_specs():
-                    # Fallback to any available Python kernel
-                    available_kernels = ksm.get_all_specs()
-                    python_kernels = [
-                        k for k in available_kernels.keys() if "python" in k.lower()
-                    ]
-                    if python_kernels:
-                        kernel_name = python_kernels[0]
-                    else:
-                        raise RuntimeError("No Python kernel specification found")
+                # Create kernel manager first
+                self.client.create_kernel_manager()
 
-                self.kernel_manager.kernel_name = kernel_name
+                # Now start the kernel
+                await self.client.async_start_new_kernel()
 
-                # Start the kernel
-                await asyncio.to_thread(self.kernel_manager.start_kernel)
-
-                # Create client
-                self.kernel_client = self.kernel_manager.client()
-                await asyncio.to_thread(self.kernel_client.start_channels)
-
-                # Wait for kernel to be ready
-                await asyncio.to_thread(self.kernel_client.wait_for_ready, timeout=30)
+                # Create and start kernel client
+                await self.client.async_start_new_kernel_client()
 
                 self.kernel_id = str(uuid.uuid4())
                 self.execution_count = 0
+                self.is_ready = True
 
-                logger.info(f"Kernel started successfully with ID: {self.kernel_id}")
+                logger.info("Jupyter kernel started successfully")
+                return True
 
             except Exception as e:
                 logger.error(f"Failed to start kernel: {e}")
-                self.kernel_manager = None
-                self.kernel_client = None
+                self.client = None
+                self.is_ready = False
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     detail=f"Failed to start kernel: {str(e)}",
                 )
             finally:
-                self._starting = False
+                self.is_starting = False
 
     async def restart_kernel(self):
         """Restart the kernel, clearing all state."""
@@ -162,44 +144,42 @@ class NotebookKernelManager:
             logger.info("Restarting kernel...")
 
             # Stop existing kernel
-            if self.kernel_manager is not None:
+            if (
+                self.client is not None
+                and hasattr(self.client, "km")
+                and self.client.km is not None
+            ):
                 try:
-                    await asyncio.to_thread(
-                        self.kernel_manager.shutdown_kernel, now=True
-                    )
+                    await asyncio.to_thread(self.client.km.shutdown_kernel, now=True)
                 except Exception as e:
                     logger.warning(f"Error stopping kernel: {e}")
 
             # Clear state
-            self.kernel_manager = None
-            self.kernel_client = None
+            self.client = None
+            self.nb = new_notebook()
             self.execution_count = 0
             self.kernel_id = None
+            self.is_ready = False
 
             # Start new kernel
             await self.start_kernel()
 
-    def is_ready(self) -> bool:
+    def is_kernel_ready(self) -> bool:
         """Check if the kernel is ready for execution."""
-        return (
-            self.kernel_manager is not None
-            and self.kernel_client is not None
-            and self.kernel_manager.is_alive()
-            and not self._starting
-        )
+        return self.is_ready and self.client is not None and not self.is_starting
 
-    def is_starting(self) -> bool:
+    def is_kernel_starting(self) -> bool:
         """Check if the kernel is currently starting."""
-        return self._starting
+        return self.is_starting
 
     async def execute_code(
         self, code: str, cell_id: Optional[str] = None
     ) -> ExecuteCodeResponse:
-        """Execute code in the kernel and return the results."""
-        if not self.is_ready():
-            if not self.is_starting():
+        """Execute code in the kernel and return the results using nbclient."""
+        if not self.is_kernel_ready():
+            if not self.is_kernel_starting():
                 await self.start_kernel()
-            if not self.is_ready():
+            if not self.is_kernel_ready():
                 raise HTTPException(
                     status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                     detail="Kernel is not ready for execution",
@@ -211,110 +191,99 @@ class NotebookKernelManager:
         started_at = datetime.utcnow().isoformat()
 
         try:
-            assert self.kernel_client is not None, "Kernel client is not initialized"
-            # Execute the code
-            msg_id = await asyncio.to_thread(self.kernel_client.execute, code)
+            assert self.client is not None, "Kernel client is not initialized"
 
-            # Collect outputs
+            # Create a new code cell
+            cell = new_code_cell(source=code)
+
+            # Add cell to notebook temporarily for execution
+            temp_nb = new_notebook()
+            temp_nb.cells = [cell]
+
+            # Create a temporary client for this execution
+            temp_client = NotebookClient(temp_nb, kernel_name="python3")
+
+            # Use the existing kernel from our main client
+            temp_client.km = self.client.km
+            temp_client.kc = self.client.kc
+
+            # Execute the cell
+            await temp_client.async_execute_cell(
+                cell, cell_index=0, execution_count=self.execution_count + 1
+            )
+
+            # Parse outputs from the executed cell
             outputs = []
             execution_count = None
             status_result = "completed"
             error_msg = None
 
-            while True:
-                try:
-                    # Get message with timeout
-                    msg = await asyncio.to_thread(
-                        self.kernel_client.get_iopub_msg, timeout=30
+            for output in cell.outputs:
+                if output.output_type == "stream":
+                    outputs.append(
+                        OutputModel(
+                            output_type="stream",
+                            name=output.name,
+                            text=output.text,
+                            data=None,
+                            metadata=None,
+                            execution_count=None,
+                            ename=None,
+                            evalue=None,
+                            traceback=None,
+                        )
                     )
-
-                    if msg["parent_header"].get("msg_id") != msg_id:
-                        continue
-
-                    msg_type = msg["header"]["msg_type"]
-                    content = msg["content"]
-
-                    if msg_type == "status":
-                        if content["execution_state"] == "idle":
-                            break
-
-                    elif msg_type == "execute_input":
-                        execution_count = content["execution_count"]
-
-                    elif msg_type == "stream":
-                        outputs.append(
-                            OutputModel(
-                                output_type="stream",
-                                name=content["name"],
-                                text=content["text"],
-                                data=None,
-                                metadata=None,
-                                execution_count=None,
-                                ename=None,
-                                evalue=None,
-                                traceback=None,
-                            )
+                elif output.output_type == "execute_result":
+                    outputs.append(
+                        OutputModel(
+                            output_type="execute_result",
+                            data=output.data,
+                            metadata=getattr(output, "metadata", {}),
+                            execution_count=output.execution_count,
+                            name=None,
+                            text=None,
+                            ename=None,
+                            evalue=None,
+                            traceback=None,
                         )
-
-                    elif msg_type == "execute_result":
-                        outputs.append(
-                            OutputModel(
-                                output_type="execute_result",
-                                data=content["data"],
-                                metadata=content.get("metadata", {}),
-                                execution_count=content["execution_count"],
-                                name=None,
-                                text=None,
-                                ename=None,
-                                evalue=None,
-                                traceback=None,
-                            )
+                    )
+                    execution_count = output.execution_count
+                elif output.output_type == "display_data":
+                    outputs.append(
+                        OutputModel(
+                            output_type="display_data",
+                            data=output.data,
+                            metadata=getattr(output, "metadata", {}),
+                            name=None,
+                            text=None,
+                            execution_count=None,
+                            ename=None,
+                            evalue=None,
+                            traceback=None,
                         )
-
-                    elif msg_type == "display_data":
-                        outputs.append(
-                            OutputModel(
-                                output_type="display_data",
-                                data=content["data"],
-                                metadata=content.get("metadata", {}),
-                                name=None,
-                                text=None,
-                                execution_count=None,
-                                ename=None,
-                                evalue=None,
-                                traceback=None,
-                            )
+                    )
+                elif output.output_type == "error":
+                    outputs.append(
+                        OutputModel(
+                            output_type="error",
+                            ename=output.ename,
+                            evalue=output.evalue,
+                            traceback=output.traceback,
+                            name=None,
+                            text=None,
+                            data=None,
+                            metadata=None,
+                            execution_count=None,
                         )
-
-                    elif msg_type == "error":
-                        outputs.append(
-                            OutputModel(
-                                output_type="error",
-                                ename=content["ename"],
-                                evalue=content["evalue"],
-                                traceback=content["traceback"],
-                                name=None,
-                                text=None,
-                                data=None,
-                                metadata=None,
-                                execution_count=None,
-                            )
-                        )
-                        status_result = (
-                            "completed"  # Errors don't fail execution, they're captured
-                        )
-                        error_msg = f"{content['ename']}: {content['evalue']}"
-
-                except asyncio.TimeoutError:
-                    logger.warning("Timeout waiting for kernel message")
-                    break
-                except Exception as e:
-                    logger.error(f"Error reading kernel message: {e}")
-                    break
+                    )
+                    error_msg = f"{output.ename}: {output.evalue}"
 
             # Update execution count
             if execution_count is not None:
                 self.execution_count = execution_count
+            else:
+                self.execution_count += 1
+                execution_count = self.execution_count
 
             completed_at = datetime.utcnow().isoformat()
 
@@ -322,7 +291,7 @@ class NotebookKernelManager:
             response = ExecuteCodeResponse(
                 cell_id=cell_id,
                 code=code,
-                execution_count=execution_count or self.execution_count,
+                execution_count=execution_count,
                 outputs=outputs,
                 status=status_result,
                 error=error_msg,
@@ -384,8 +353,8 @@ async def execute_code(request: ExecuteCodeRequest):
 async def get_kernel_status():
     """Get the current status of the kernel."""
     return KernelStatusResponse(
-        is_ready=kernel_manager.is_ready(),
-        is_starting=kernel_manager.is_starting(),
+        is_ready=kernel_manager.is_kernel_ready(),
+        is_starting=kernel_manager.is_kernel_starting(),
         execution_count=kernel_manager.execution_count,
         kernel_id=kernel_manager.kernel_id or "none",
     )
@@ -428,7 +397,9 @@ async def start_kernel():
 @router.get("/health", response_model=HealthResponse)
 async def health_check():
     """Check the health status of the notebook functionality."""
-    return HealthResponse(status="healthy", kernel_available=kernel_manager.is_ready())
+    return HealthResponse(
+        status="healthy", kernel_available=kernel_manager.is_kernel_ready()
+    )
 
 
 @router.delete("/clear-results")
@@ -456,10 +427,12 @@ async def cleanup_notebook():
     """Cleanup notebook resources on shutdown."""
     try:
         logger.info("Cleaning up notebook kernel...")
-        if kernel_manager.kernel_manager is not None:
-            await asyncio.to_thread(
-                kernel_manager.kernel_manager.shutdown_kernel, now=True
-            )
+        if (
+            kernel_manager.client is not None
+            and hasattr(kernel_manager.client, "km")
+            and kernel_manager.client.km is not None
+        ):
+            await asyncio.to_thread(kernel_manager.client.km.shutdown_kernel, now=True)
         logger.info("Notebook kernel cleaned up successfully")
     except Exception as e:
         logger.error(f"Error cleaning up notebook kernel: {e}")
