@@ -1,4 +1,3 @@
-from typing import Optional
 from uuid import UUID
 
 import uuid6
@@ -23,13 +22,13 @@ class PostgresConnectionCreate(BaseModel):
 
 
 class PostgresConnectionUpdate(BaseModel):
-    name: Optional[str] = None
-    host: Optional[str] = None
-    port: Optional[int] = None
-    user: Optional[str] = None
-    password: Optional[str] = None
-    database: Optional[str] = None
-    schema_: Optional[str] = Field(None, alias="schema")
+    name: str | None = None
+    host: str | None = None
+    port: int | None = None
+    user: str | None = None
+    password: str | None = None
+    database: str | None = None
+    schema_: str | None = Field(None, alias="schema")
 
 
 class PostgresConnectionModel(BaseModel):
