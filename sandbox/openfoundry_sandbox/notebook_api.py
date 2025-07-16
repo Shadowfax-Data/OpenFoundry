@@ -2,7 +2,7 @@ import asyncio
 import logging
 import uuid
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from fastapi import APIRouter, HTTPException, Path, status
 from nbclient import NotebookClient
@@ -21,7 +21,7 @@ class ExecuteCodeRequest(BaseModel):
     """Request model for executing code in the Jupyter kernel."""
 
     code: str = Field(..., description="Python code to execute")
-    cell_id: Optional[str] = Field(None, description="Optional custom cell ID")
+    cell_id: str | None = Field(None, description="Optional custom cell ID")
 
 
 class OutputModel(BaseModel):
@@ -30,18 +30,18 @@ class OutputModel(BaseModel):
     output_type: str = Field(
         ..., description="Type of output (stream, execute_result, display_data, error)"
     )
-    name: Optional[str] = Field(None, description="Stream name for stream outputs")
-    text: Optional[str] = Field(None, description="Text content for stream outputs")
-    data: Optional[Dict[str, Any]] = Field(
+    name: str | None = Field(None, description="Stream name for stream outputs")
+    text: str | None = Field(None, description="Text content for stream outputs")
+    data: dict[str, Any] | None = Field(
         None, description="Data content for display outputs"
     )
-    metadata: Optional[Dict[str, Any]] = Field(None, description="Metadata for outputs")
-    execution_count: Optional[int] = Field(
+    metadata: dict[str, Any] | None = Field(None, description="Metadata for outputs")
+    execution_count: int | None = Field(
         None, description="Execution count for execute_result"
     )
-    ename: Optional[str] = Field(None, description="Exception name for error outputs")
-    evalue: Optional[str] = Field(None, description="Exception value for error outputs")
-    traceback: Optional[List[str]] = Field(
+    ename: str | None = Field(None, description="Exception name for error outputs")
+    evalue: str | None = Field(None, description="Exception value for error outputs")
+    traceback: list[str] | None = Field(
         None, description="Exception traceback for error outputs"
     )
 
@@ -52,11 +52,11 @@ class ExecuteCodeResponse(BaseModel):
     cell_id: str = Field(..., description="Unique identifier for this execution")
     code: str = Field(..., description="The executed code")
     execution_count: int = Field(..., description="Execution count from the kernel")
-    outputs: List[OutputModel] = Field(
+    outputs: list[OutputModel] = Field(
         default_factory=list, description="List of outputs from execution"
     )
     status: str = Field(..., description="Execution status (completed, error)")
-    error: Optional[str] = Field(None, description="Error message if execution failed")
+    error: str | None = Field(None, description="Error message if execution failed")
     started_at: str = Field(..., description="ISO timestamp when execution started")
     completed_at: str = Field(..., description="ISO timestamp when execution completed")
 
@@ -88,11 +88,11 @@ class NotebookKernelManager:
     """Manages a persistent Jupyter kernel for code execution using nbclient."""
 
     def __init__(self):
-        self.client: Optional[NotebookClient] = None
+        self.client: NotebookClient | None = None
         self.nb = new_notebook()
         self.execution_count = 0
-        self.execution_results: Dict[str, ExecuteCodeResponse] = {}
-        self.kernel_id: Optional[str] = None
+        self.execution_results: dict[str, ExecuteCodeResponse] = {}
+        self.kernel_id: str | None = None
         self.is_starting = False
         self.is_ready = False
         self._lock = asyncio.Lock()
@@ -173,7 +173,7 @@ class NotebookKernelManager:
         return self.is_starting
 
     async def execute_code(
-        self, code: str, cell_id: Optional[str] = None
+        self, code: str, cell_id: str | None = None
     ) -> ExecuteCodeResponse:
         """Execute code in the kernel and return the results using nbclient."""
         if not self.is_kernel_ready():
@@ -322,11 +322,11 @@ class NotebookKernelManager:
             self.execution_results[cell_id] = response
             return response
 
-    def get_result(self, cell_id: str) -> Optional[ExecuteCodeResponse]:
+    def get_result(self, cell_id: str) -> ExecuteCodeResponse | None:
         """Get the result of a specific cell execution."""
         return self.execution_results.get(cell_id)
 
-    def get_all_results(self) -> List[ExecuteCodeResponse]:
+    def get_all_results(self) -> list[ExecuteCodeResponse]:
         """Get all execution results."""
         return list(self.execution_results.values())
 
@@ -374,7 +374,7 @@ async def get_execution_result(
     return result
 
 
-@router.get("/results", response_model=List[ExecuteCodeResponse])
+@router.get("/results", response_model=list[ExecuteCodeResponse])
 async def get_all_results():
     """Get all execution results from the current session."""
     return kernel_manager.get_all_results()
