@@ -7,7 +7,7 @@ from fastapi import APIRouter, Body, HTTPException, Query, status
 from pydantic import BaseModel, Field
 
 from openfoundry_sandbox.config import CONNECTIONS_DIR, SECRETS_BASE
-from openfoundry_sandbox.connection_manager import connection_manager
+from openfoundry_sandbox.connections.connection_manager import connection_manager
 
 router = APIRouter(prefix="/secrets", tags=["secrets"])
 

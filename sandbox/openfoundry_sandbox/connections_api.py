@@ -1,8 +1,8 @@
 from fastapi import APIRouter
 from pydantic import BaseModel
 
-from openfoundry_sandbox.connection_manager import connection_manager
-from openfoundry_sandbox.models.connections.connection import Connection
+from openfoundry_sandbox.connections.connection import Connection
+from openfoundry_sandbox.connections.connection_manager import connection_manager
 
 router = APIRouter(prefix="/connections", tags=["connections"])
 
