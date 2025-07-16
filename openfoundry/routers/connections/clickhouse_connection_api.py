@@ -1,4 +1,3 @@
-from typing import Optional
 from uuid import UUID
 
 import uuid6
@@ -22,12 +21,12 @@ class ClickhouseConnectionCreate(BaseModel):
 
 
 class ClickhouseConnectionUpdate(BaseModel):
-    name: Optional[str] = None
-    host: Optional[str] = None
-    port: Optional[int] = None
-    username: Optional[str] = None
-    password: Optional[str] = None
-    database: Optional[str] = None
+    name: str | None = None
+    host: str | None = None
+    port: int | None = None
+    username: str | None = None
+    password: str | None = None
+    database: str | None = None
 
 
 class ClickhouseConnectionModel(BaseModel):

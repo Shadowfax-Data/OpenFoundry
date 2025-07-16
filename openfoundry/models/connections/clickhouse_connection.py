@@ -1,3 +1,5 @@
+from contextlib import closing
+
 from clickhouse_connect import common, dbapi
 from sqlalchemy.orm import (
     Mapped,
@@ -37,17 +39,15 @@ class ClickhouseConnection(ConnectionBase):
         # Set ClickHouse connection settings for better compatibility
         common.set_setting("autogenerate_session_id", False)
 
-        conn = dbapi.connect(
-            host=self.host,
-            port=self.port,
-            username=self.username,
-            password=self.password,
-            database=self.database,
-            secure=True,
-        )
-        try:
-            cursor = conn.cursor()
-            cursor.execute("SELECT 1")
-            cursor.close()
-        finally:
-            conn.close()
+        with closing(
+            dbapi.connect(
+                host=self.host,
+                port=self.port,
+                username=self.username,
+                password=self.password,
+                database=self.database,
+                secure=True,
+            )
+        ) as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("SELECT 1")
