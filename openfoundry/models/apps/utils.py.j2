@@ -13,7 +13,6 @@ def _get_connection_type(creds: dict[str, str]) -> str | None:
         "SNOWFLAKE_": "snowflake",
         "DATABRICKS_": "databricks",
         "CLICKHOUSE_": "clickhouse",
-        "POSTGRES_": "postgres",
     }
     for key in creds:
         for prefix, conn_type in type_mapping.items():
@@ -179,48 +178,4 @@ def get_clickhouse_conn(connection_name: str):
 
     except Exception as e:
         st.error(f"Failed to connect to ClickHouse connection '{connection_name}': {e}")
-        return None
-
-import psycopg2
-
-def list_postgres_connections():
-    """Returns a list of available PostgreSQL connection names."""
-    connection_secrets = load_connection_secrets()
-    return [key.name for key, creds in connection_secrets.items() if key.type == "postgres"]
-
-def get_postgres_conn(connection_name: str):
-    """
-    Establishes a connection to PostgreSQL.
-
-    Args:
-        connection_name: The name of the specific connection to use.
-
-    Returns:
-        PostgreSQL connection object or None if connection fails.
-    """
-    connection_secrets = load_connection_secrets()
-
-    # Find the specific PostgreSQL connection directly
-    postgres_key = ConnectionKey(name=connection_name, type="postgres")
-
-    if postgres_key not in connection_secrets:
-        available_connections = [key.name for key, creds in connection_secrets.items() if key.type == "postgres"]
-        st.error(f"PostgreSQL connection '{connection_name}' not found. Available connections: {available_connections}")
-        return None
-
-    POSTGRES_CREDS = connection_secrets[postgres_key]
-
-    try:
-        conn_params = {
-            "host": POSTGRES_CREDS.get("POSTGRES_HOST"),
-            "port": int(POSTGRES_CREDS.get("POSTGRES_PORT", 5432)),
-            "dbname": POSTGRES_CREDS.get("POSTGRES_DATABASE"),
-            "user": POSTGRES_CREDS.get("POSTGRES_USER"),
-            "password": POSTGRES_CREDS.get("POSTGRES_PASSWORD"),
-        }
-
-        return psycopg2.connect(**conn_params)
-
-    except Exception as e:
-        st.error(f"Failed to connect to PostgreSQL connection '{connection_name}': {e}")
         return None
