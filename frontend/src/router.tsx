@@ -10,6 +10,7 @@ import { DatabricksConnectionPage } from "@/pages/DatabricksConnectionPage";
 import { Home } from "@/pages/Home";
 import { PostgresConnectionPage } from "@/pages/PostgresConnectionPage";
 import { SnowflakeConnectionPage } from "@/pages/SnowflakeConnectionPage";
+import NotebooksPage from "@/pages/NotebooksPage";
 
 export const router = createBrowserRouter([
   {
@@ -31,6 +32,14 @@ export const router = createBrowserRouter([
       {
         path: "apps/:appId/sessions/:sessionId/chat",
         element: <AppChat />,
+      },
+      {
+        path: "notebooks",
+        element: <NotebooksPage />,
+      },
+      {
+        path: "notebooks/new",
+        element: <NotebooksPage autoOpenCreateDialog={true} />,
       },
       {
         path: "connections",
