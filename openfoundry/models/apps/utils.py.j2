@@ -219,10 +219,6 @@ def get_postgres_conn(connection_name: str):
             "password": POSTGRES_CREDS.get("POSTGRES_PASSWORD"),
         }
 
-        # Add optional SSL mode if provided
-        if POSTGRES_CREDS.get("POSTGRES_SSLMODE"):
-            conn_params["sslmode"] = POSTGRES_CREDS.get("POSTGRES_SSLMODE")
-
         return psycopg2.connect(**conn_params)
 
     except Exception as e:
