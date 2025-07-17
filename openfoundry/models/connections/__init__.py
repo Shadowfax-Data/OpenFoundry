@@ -1,3 +1,4 @@
+from .bigquery_connection import BigQueryConnection
 from .clickhouse_connection import ClickhouseConnection
 from .connection import Connection, ConnectionBase
 from .databricks_connection import DatabricksConnection
@@ -9,6 +10,7 @@ ALL_CONNECTION_CLASSES: list[type[ConnectionBase]] = [
     DatabricksConnection,
     PostgresConnection,
     ClickhouseConnection,
+    BigQueryConnection,
 ]
 
 __all__ = [
@@ -17,5 +19,6 @@ __all__ = [
     "DatabricksConnection",
     "PostgresConnection",
     "ClickhouseConnection",
+    "BigQueryConnection",
     "ALL_CONNECTION_CLASSES",
 ]

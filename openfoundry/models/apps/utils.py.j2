@@ -224,3 +224,42 @@ def get_postgres_conn(connection_name: str):
     except Exception as e:
         st.error(f"Failed to connect to PostgreSQL connection '{connection_name}': {e}")
         return None
+
+import json
+from google.cloud import bigquery
+from google.cloud import dbapi
+
+def list_bigquery_connections():
+    """Returns a list of available BigQuery connection names."""
+    connection_secrets = load_connection_secrets()
+    return [key.name for key, creds in connection_secrets.items() if key.type == "bigquery"]
+
+def get_bigquery_conn(connection_name: str):
+    """
+    Establishes a connection to BigQuery.
+
+    Args:
+        connection_name: The name of the specific connection to use.
+
+    Returns:
+        BigQuery connection object or None if connection fails.
+    """
+    connection_secrets = load_connection_secrets()
+
+    # Find the specific BigQuery connection directly
+    bigquery_key = ConnectionKey(name=connection_name, type="bigquery")
+
+    if bigquery_key not in connection_secrets:
+        available_connections = [key.name for key, creds in connection_secrets.items() if key.type == "bigquery"]
+        st.error(f"BigQuery connection '{connection_name}' not found. Available connections: {available_connections}")
+        return None
+
+    BIGQUERY_CREDS = connection_secrets[bigquery_key]
+
+    try:
+        service_account_info = json.loads(BIGQUERY_CREDS.get("BIGQUERY_SERVICE_ACCOUNT_KEY"))
+        client = bigquery.Client.from_service_account_info(service_account_info)
+        return dbapi.connect(client=client)
+    except Exception as e:
+        st.error(f"Failed to connect to BigQuery connection '{connection_name}': {e}")
+        return None
