@@ -2,6 +2,7 @@ import {
   SiClickhouse,
   SiDatabricks,
   SiGooglecloud,
+  SiPostgresql,
   SiSnowflake,
 } from "@icons-pack/react-simple-icons";
 import { Database, FilePenLine, MoreVertical, Trash2 } from "lucide-react";
@@ -37,6 +38,8 @@ export function ConnectionCard({
         return <SiClickhouse className="h-6 w-6" />;
       case "bigquery":
         return <SiGooglecloud className="h-6 w-6" />;
+      case "postgres":
+        return <SiPostgresql className="h-6 w-6" />;
       default:
         return <Database className="h-6 w-6" />;
     }

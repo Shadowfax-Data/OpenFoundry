@@ -94,6 +94,9 @@ export function Connections() {
       case "bigquery":
         navigate(`/connections/bigquery/${connectionId}`);
         break;
+      case "postgres":
+        navigate(`/connections/postgres/${connectionId}`);
+        break;
       default:
         alert(
           `Editing for connection type '${connection.type}' is not supported yet.`,

@@ -30,7 +30,6 @@ const bigQueryConnectionSchema = z.object({
   name: z.string().min(1, "Name is required"),
   service_account_key: z.string().min(1, "Service account key is required"),
   project_id: z.string().min(1, "Project ID is required"),
-  dataset_id: z.string().optional(), // Make optional
 });
 
 export function BigQueryConnectionForm({
@@ -59,7 +58,6 @@ export function BigQueryConnectionForm({
       name: "",
       service_account_key: "",
       project_id: "",
-      dataset_id: "",
     },
   });
 
@@ -70,7 +68,6 @@ export function BigQueryConnectionForm({
         name: connectionData.name,
         service_account_key: "********",
         project_id: connectionData.project_id,
-        dataset_id: connectionData.dataset_id || "", // Handle optional field
       });
     }
   }, [isEditMode, connectionData, form]);

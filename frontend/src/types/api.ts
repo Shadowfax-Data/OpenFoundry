@@ -144,14 +144,12 @@ export interface BigQueryConnectionCreate {
   name: string;
   service_account_key: string;
   project_id: string;
-  dataset_id?: string; // Make optional
 }
 
 export interface BigQueryConnectionUpdate {
   name?: string;
   service_account_key?: string;
   project_id?: string;
-  dataset_id?: string;
 }
 
 export interface BigQueryConnectionModel {
@@ -159,6 +157,36 @@ export interface BigQueryConnectionModel {
   name: string;
   service_account_key: string;
   project_id: string;
-  dataset_id?: string; // Make optional
   type: string;
+}
+export interface PostgresConnectionModel {
+  id: string;
+  name: string;
+  host: string;
+  port: number;
+  user: string;
+  password: string;
+  database: string;
+  schema: string;
+  type: string;
+}
+
+export interface PostgresConnectionCreate {
+  name: string;
+  host: string;
+  port: number;
+  user: string;
+  password: string;
+  database: string;
+  schema: string;
+}
+
+export interface PostgresConnectionUpdate {
+  name?: string;
+  host?: string;
+  port?: number;
+  user?: string;
+  password?: string;
+  database?: string;
+  schema?: string;
 }
