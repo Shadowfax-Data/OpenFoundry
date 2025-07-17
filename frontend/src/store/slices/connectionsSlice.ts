@@ -3,6 +3,8 @@ import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { generateColorFromText } from "@/lib/utils";
 import { ConnectionsState } from "@/store/types";
 import {
+  ClickhouseConnectionCreate,
+  ClickhouseConnectionUpdate,
   Connection,
   ConnectionFromAPI,
   DatabricksConnectionCreate,
@@ -170,6 +172,71 @@ export const updateDatabricksConnection = createAsyncThunk(
   },
 );
 
+// Async thunk for creating a new clickhouse connection
+export const createClickhouseConnection = createAsyncThunk(
+  "connections/createClickhouseConnection",
+  async (connectionData: ClickhouseConnectionCreate, { rejectWithValue }) => {
+    try {
+      const response = await fetch("/api/connections/clickhouse", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(connectionData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || "Failed to create connection");
+      }
+
+      const apiConnection: ConnectionFromAPI = await response.json();
+      return transformConnectionFromAPI(apiConnection);
+    } catch (error) {
+      return rejectWithValue(
+        error instanceof Error ? error.message : "Failed to create connection",
+      );
+    }
+  },
+);
+
+// Async thunk for updating a clickhouse connection
+export const updateClickhouseConnection = createAsyncThunk(
+  "connections/updateClickhouseConnection",
+  async (
+    {
+      connectionId,
+      connectionData,
+    }: { connectionId: string; connectionData: ClickhouseConnectionUpdate },
+    { rejectWithValue },
+  ) => {
+    try {
+      const response = await fetch(
+        `/api/connections/clickhouse/${connectionId}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(connectionData),
+        },
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || "Failed to update connection");
+      }
+
+      const apiConnection: ConnectionFromAPI = await response.json();
+      return transformConnectionFromAPI(apiConnection);
+    } catch (error) {
+      return rejectWithValue(
+        error instanceof Error ? error.message : "Failed to update connection",
+      );
+    }
+  },
+);
+
 // Async thunk for deleting a connection
 export const deleteConnection = createAsyncThunk(
   "connections/deleteConnection",
@@ -306,6 +373,39 @@ const connectionsSlice = createSlice({
         }
       })
       .addCase(updateDatabricksConnection.rejected, (state, action) => {
+        state.loading = false;
+        state.error =
+          (action.payload as string) || "Failed to update connection";
+      })
+      // Create clickhouse connection
+      .addCase(createClickhouseConnection.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(createClickhouseConnection.fulfilled, (state, action) => {
+        state.loading = false;
+        state.connections.unshift(action.payload);
+      })
+      .addCase(createClickhouseConnection.rejected, (state, action) => {
+        state.loading = false;
+        state.error =
+          (action.payload as string) || "Failed to create connection";
+      })
+      // Update clickhouse connection
+      .addCase(updateClickhouseConnection.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateClickhouseConnection.fulfilled, (state, action) => {
+        state.loading = false;
+        const index = state.connections.findIndex(
+          (c) => c.id === action.payload.id,
+        );
+        if (index !== -1) {
+          state.connections[index] = action.payload;
+        }
+      })
+      .addCase(updateClickhouseConnection.rejected, (state, action) => {
         state.loading = false;
         state.error =
           (action.payload as string) || "Failed to update connection";

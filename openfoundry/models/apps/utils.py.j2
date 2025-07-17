@@ -12,6 +12,7 @@ def _get_connection_type(creds: dict[str, str]) -> str | None:
     type_mapping = {
         "SNOWFLAKE_": "snowflake",
         "DATABRICKS_": "databricks",
+        "CLICKHOUSE_": "clickhouse",
     }
     for key in creds:
         for prefix, conn_type in type_mapping.items():
@@ -128,4 +129,53 @@ def get_databricks_conn(connection_name: str):
 
     except Exception as e:
         st.error(f"Failed to connect to Databricks connection '{connection_name}': {e}")
+        return None
+
+from clickhouse_connect import dbapi
+import clickhouse_connect.common as clickhouse_common
+
+def list_clickhouse_connections():
+    """Returns a list of available ClickHouse connection names."""
+    connection_secrets = load_connection_secrets()
+    return [key.name for key, creds in connection_secrets.items() if key.type == "clickhouse"]
+
+def get_clickhouse_conn(connection_name: str):
+    """
+    Establishes a connection to ClickHouse.
+
+    Args:
+        connection_name: The name of the specific connection to use.
+
+    Returns:
+        ClickHouse connection object or None if connection fails.
+    """
+    connection_secrets = load_connection_secrets()
+
+    # Find the specific ClickHouse connection directly
+    clickhouse_key = ConnectionKey(name=connection_name, type="clickhouse")
+
+    if clickhouse_key not in connection_secrets:
+        available_connections = [key.name for key, creds in connection_secrets.items() if key.type == "clickhouse"]
+        st.error(f"ClickHouse connection '{connection_name}' not found. Available connections: {available_connections}")
+        return None
+
+    CLICKHOUSE_CREDS = connection_secrets[clickhouse_key]
+
+    try:
+        # Set ClickHouse connection settings for better compatibility
+        clickhouse_common.set_setting('autogenerate_session_id', False)
+
+        conn_params = {
+            "host": CLICKHOUSE_CREDS.get("CLICKHOUSE_HOST"),
+            "port": int(CLICKHOUSE_CREDS.get("CLICKHOUSE_PORT", 8443)),
+            "username": CLICKHOUSE_CREDS.get("CLICKHOUSE_USERNAME"),
+            "password": CLICKHOUSE_CREDS.get("CLICKHOUSE_PASSWORD"),
+            "database": CLICKHOUSE_CREDS.get("CLICKHOUSE_DATABASE"),
+            "secure": True,
+        }
+
+        return dbapi.connect(**conn_params)
+
+    except Exception as e:
+        st.error(f"Failed to connect to ClickHouse connection '{connection_name}': {e}")
         return None

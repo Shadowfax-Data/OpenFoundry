@@ -19,6 +19,8 @@ from openfoundry.database import Base
 class ConnectionType(enum.Enum):
     SNOWFLAKE = "snowflake"
     DATABRICKS = "databricks"
+    POSTGRES = "postgres"
+    CLICKHOUSE = "clickhouse"
 
 
 class Connection(Base):

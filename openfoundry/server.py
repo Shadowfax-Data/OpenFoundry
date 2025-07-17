@@ -13,8 +13,10 @@ from openfoundry.routers.agent_sessions import (
 )
 from openfoundry.routers.app_api import router as app_router
 from openfoundry.routers.connections import (
+    clickhouse_connection_api_router,
     connection_api_router,
     databricks_connection_api_router,
+    postgres_connection_api_router,
     snowflake_connection_api_router,
 )
 from openfoundry.static import SPAStaticFiles
@@ -41,8 +43,10 @@ app.include_router(app_agent_session_router, tags=["apps", "agent-sessions"])
 app.include_router(app_agent_router, tags=["apps", "agent-sessions"])
 app.include_router(app_router, tags=["apps"])
 app.include_router(connection_api_router, tags=["connections"])
+app.include_router(clickhouse_connection_api_router, tags=["connections"])
 app.include_router(databricks_connection_api_router, tags=["connections"])
 app.include_router(snowflake_connection_api_router, tags=["connections"])
+app.include_router(postgres_connection_api_router, tags=["connections"])
 
 app.add_middleware(
     SQLAlchemySessionMiddleware,

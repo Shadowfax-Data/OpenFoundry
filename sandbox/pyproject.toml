@@ -64,6 +64,7 @@ snowflake-connector-python = "^3.16.0"
 pyarrow = "^18.1.0"
 cryptography = "^45.0.5"
 databricks-sql-connector = "^4.0.5"
+clickhouse-connect = "^0.8.18"
 
 [tool.poetry.group.dev.dependencies]
 pytest = ">=7.0.0"
