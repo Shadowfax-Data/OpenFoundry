@@ -1,7 +1,7 @@
 import {
   SiClickhouse,
   SiDatabricks,
-  SiGooglecloud,
+  SiGooglebigquery,
   SiPostgresql,
   SiSnowflake,
 } from "@icons-pack/react-simple-icons";
@@ -37,7 +37,7 @@ export function ConnectionCard({
       case "clickhouse":
         return <SiClickhouse className="h-6 w-6" />;
       case "bigquery":
-        return <SiGooglecloud className="h-6 w-6" />;
+        return <SiGooglebigquery className="h-6 w-6" />;
       case "postgres":
         return <SiPostgresql className="h-6 w-6" />;
       default:

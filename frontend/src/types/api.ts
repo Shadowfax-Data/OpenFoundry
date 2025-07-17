@@ -144,12 +144,14 @@ export interface BigQueryConnectionCreate {
   name: string;
   service_account_key: string;
   project_id: string;
+  dataset_id: string;
 }
 
 export interface BigQueryConnectionUpdate {
   name?: string;
   service_account_key?: string;
   project_id?: string;
+  dataset_id?: string;
 }
 
 export interface BigQueryConnectionModel {
@@ -157,6 +159,7 @@ export interface BigQueryConnectionModel {
   name: string;
   service_account_key: string;
   project_id: string;
+  dataset_id: string;
   type: string;
 }
 export interface PostgresConnectionModel {

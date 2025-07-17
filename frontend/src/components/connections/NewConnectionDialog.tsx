@@ -1,7 +1,7 @@
 import {
   SiClickhouse,
   SiDatabricks,
-  SiGooglecloud,
+  SiGooglebigquery,
   SiPostgresql,
   SiSnowflake,
 } from "@icons-pack/react-simple-icons";
@@ -53,7 +53,7 @@ export function NewConnectionDialog({ children }: NewConnectionDialogProps) {
             onClick={() => navigate("/connections/bigquery/new")}
           >
             <div className="flex items-center gap-3">
-              <SiGooglecloud className="text-[#4c8bf5]" />
+              <SiGooglebigquery className="text-[#4c8bf5]" />
               <div>
                 <span className="font-semibold">BigQuery</span>
                 <p className="text-sm text-muted-foreground">

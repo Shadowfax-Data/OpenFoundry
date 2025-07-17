@@ -63,6 +63,20 @@ export default function BigQueryConnectionGuide() {
               located.
             </span>
           </li>
+          <li className="flex items-start gap-3">
+            <Badge
+              variant="outline"
+              className="w-7 h-7 flex items-center justify-center rounded-full mr-1 mt-0.5 font-semibold"
+            >
+              4
+            </Badge>
+            <span>
+              <span className="font-medium text-primary">Enter Dataset ID</span>
+              <br />
+              Enter the BigQuery Dataset ID that you want to connect to. This
+              should match the dataset where your BigQuery tables are located.
+            </span>
+          </li>
         </ol>
         <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
           <h4 className="font-semibold text-blue-800 mb-2">

@@ -1,4 +1,4 @@
-import { SiGooglecloud } from "@icons-pack/react-simple-icons";
+import { SiGooglebigquery } from "@icons-pack/react-simple-icons";
 import { useParams } from "react-router";
 
 import { BigQueryConnectionForm } from "@/components/connections/BigQueryConnectionForm";
@@ -11,7 +11,9 @@ export function BigQueryConnectionPage() {
 
   return (
     <ConnectionPageLayout
-      icon={<SiGooglecloud className="h-12 w-12 text-blue-500 flex-shrink-0" />}
+      icon={
+        <SiGooglebigquery className="h-12 w-12 text-blue-500 flex-shrink-0" />
+      }
       title={
         isEditMode ? "Edit BigQuery Connection" : "New BigQuery Connection"
       }
