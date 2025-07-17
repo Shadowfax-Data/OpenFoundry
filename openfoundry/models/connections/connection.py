@@ -21,7 +21,6 @@ class ConnectionType(enum.Enum):
     DATABRICKS = "databricks"
     POSTGRES = "postgres"
     CLICKHOUSE = "clickhouse"
-    BIGQUERY = "bigquery"
 
 
 class Connection(Base):
