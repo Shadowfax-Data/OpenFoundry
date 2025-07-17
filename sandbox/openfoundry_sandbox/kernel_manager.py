@@ -73,16 +73,6 @@ class JupyterKernelManager:
         self.is_ready = False
         self._lock = asyncio.Lock()
 
-    def _get_cell_or_none(self, cell_id: str) -> NotebookNode | None:
-        """
-        Find a cell by its ID in the notebook.
-        Returns the cell if found, None otherwise.
-        """
-        for cell in self.nb.cells:
-            if cell.id == cell_id:
-                return cell
-        return None
-
     def _get_or_create_cell(
         self, code: str, cell_id: str | None = None
     ) -> NotebookNode:
@@ -105,12 +95,11 @@ class JupyterKernelManager:
             return cell
 
         # Check if cell with provided ID already exists
-        cell_result = self._get_cell_or_none(cell_id)
-        if cell_result is not None:
-            # Cell already exists, update and return existing cell
-            cell = cell_result
-            cell.source = code
-            return cell
+        for cell in self.nb.cells:
+            if cell.id == cell_id:
+                # Cell already exists, update and return existing cell
+                cell.source = code
+                return cell
 
         raise CellIdNotFoundError(cell_id)
 
