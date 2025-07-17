@@ -12,6 +12,7 @@ from openfoundry_sandbox.connections.connection import Connection
 from openfoundry_sandbox.connections.databricks_connection import (
     DatabricksConnection,
 )
+from openfoundry_sandbox.connections.postgres_connection import PostgresConnection
 from openfoundry_sandbox.connections.snowflake_connection import (
     SnowflakeConnection,
 )
@@ -30,7 +31,7 @@ class ConnectionManager:
         "snowflake": SnowflakeConnection,
         "databricks": DatabricksConnection,
         "clickhouse": ClickhouseConnection,
-        # Add more connection types here as they are implemented
+        "postgres": PostgresConnection,
     }
 
     def __new__(cls) -> "ConnectionManager":
@@ -147,7 +148,8 @@ class ConnectionManager:
                 return "databricks"
             elif key.startswith("CLICKHOUSE_"):
                 return "clickhouse"
-
+            elif key.startswith("POSTGRES_"):
+                return "postgres"
         raise ValueError(f"Could not determine connection type for {connection_name}")
 
     def cleanup_connections(self) -> None:

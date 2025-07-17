@@ -102,6 +102,7 @@ The `/workspace/utils.py` file provides helper functions for establishing connec
         *   For **Snowflake**, for instance, you will use `utils.get_snowflake_conn(connection_name)` to establish a connection.
         *   For **Databricks**, for instance, you will use `utils.get_databricks_conn(connection_name)` to establish a connection.
         *   For **ClickHouse**, for instance, you will use `utils.get_clickhouse_conn(connection_name)` to establish a connection.
+        *   For **PostgreSQL**, for instance, you will use `utils.get_postgres_conn(connection_name)` to establish a connection.
 
 2.  **Connection Selection Strategy:**
     * If multiple connections are available and the user hasn't specified which one to use, **you MUST ask the user to clarify which connection they want to use**.
