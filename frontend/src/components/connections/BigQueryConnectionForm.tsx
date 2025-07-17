@@ -102,7 +102,7 @@ export function BigQueryConnectionForm({
           form.setValue("service_account_key", content);
           setUploadedFileName(file.name);
         } catch (error) {
-          alert("Failed to parse JSON file:" + error);
+          alert("Failed to parse JSON file: " + error);
         }
       };
       reader.readAsText(file);
@@ -130,6 +130,7 @@ export function BigQueryConnectionForm({
 
   const handleDragLeave = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
+    e.stopPropagation();
     setIsDragOver(false);
   }, []);
 
