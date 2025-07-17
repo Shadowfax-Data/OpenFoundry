@@ -4,7 +4,6 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any
 
-from fastapi import HTTPException, status
 from nbclient import NotebookClient
 from nbformat import NotebookNode
 from nbformat.v4 import new_code_cell, new_notebook
@@ -39,6 +38,13 @@ class CellIdNotFoundError(Exception):
     def __init__(self, cell_id: str):
         super().__init__(f"Cell with ID '{cell_id}' does not exist in the notebook.")
         self.cell_id = cell_id
+
+
+class KernelNotReadyError(Exception):
+    """Exception raised when the kernel is not ready for execution."""
+
+    def __init__(self, message: str = "Kernel is not ready for execution"):
+        super().__init__(message)
 
 
 class JupyterKernelManager:
@@ -145,6 +151,89 @@ class JupyterKernelManager:
         # Start new kernel
         await self._start_kernel()
 
+    async def _execute_single_cell(self, cell: NotebookNode) -> ExecuteCodeResponse:
+        """
+        Execute a single cell and return the execution response.
+
+        Args:
+            cell: The notebook cell to execute
+
+        Returns:
+            ExecuteCodeResponse with execution results
+        """
+        started_at = datetime.now(timezone.utc).isoformat()
+
+        try:
+            assert self.client is not None, "Kernel client is not initialized"
+
+            # Execute the cell using the notebook client
+            await self.client.async_execute_cell(cell, cell_index=0)
+
+            # Parse outputs from the executed cell
+            outputs = list(cell.outputs)  # NotebookNode is already dict-compatible
+            status_result = "completed"
+            error_msg = None
+
+            # Extract error message if any error outputs exist
+            error_messages = [
+                f"{output.get('ename', 'Error')}: {output.get('evalue', 'Unknown error')}"
+                for output in outputs
+                if output.get("output_type") == "error"
+            ]
+            error_msg = "; ".join(error_messages) if error_messages else None
+
+            completed_at = datetime.now(timezone.utc).isoformat()
+
+            # Create response
+            response = ExecuteCodeResponse(
+                cell_id=cell.id,
+                code=cell.source,
+                execution_count=cell.execution_count or 0,
+                outputs=outputs,
+                status=status_result,
+                error=error_msg,
+                started_at=started_at,
+                completed_at=completed_at,
+            )
+
+            return response
+
+        except CellIdNotFoundError:
+            # Re-raise CellIdNotFoundError so it can be handled by the API endpoint
+            raise
+        except Exception as e:
+            completed_at = datetime.now(timezone.utc).isoformat()
+            logger.error(f"Error executing cell (ID: {cell.id}): {e}")
+
+            error_response = ExecuteCodeResponse(
+                cell_id=cell.id,
+                code=cell.source,
+                execution_count=getattr(cell, "execution_count", 0) or 0,
+                outputs=[],
+                status="error",
+                error=str(e),
+                started_at=started_at,
+                completed_at=completed_at,
+            )
+
+            return error_response
+
+    async def _ensure_kernel_ready(self):
+        """
+        Ensure the kernel is ready for execution.
+
+        If the kernel is not ready, attempts to start it.
+        Raises KernelNotReadyError if the kernel cannot be made ready.
+
+        Raises:
+            KernelNotReadyError: If kernel is not ready for execution after startup attempt
+        """
+        if not self._is_kernel_ready():
+            if not self.is_starting:
+                await self._start_kernel()
+            if not self._is_kernel_ready():
+                raise KernelNotReadyError("Kernel is not ready for execution")
+
     async def rerun_notebook(self) -> list[ExecuteCodeResponse]:
         """Re-run all cells in the notebook in order and return their execution results."""
         async with self._lock:
@@ -152,14 +241,7 @@ class JupyterKernelManager:
 
     async def _rerun_notebook(self) -> list[ExecuteCodeResponse]:
         """Internal implementation of rerun_notebook with lock protection."""
-        if not self._is_kernel_ready():
-            if not self.is_starting:
-                await self._start_kernel()
-            if not self._is_kernel_ready():
-                raise HTTPException(
-                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                    detail="Kernel is not ready for execution",
-                )
+        await self._ensure_kernel_ready()
 
         logger.info(f"Re-running all {len(self.nb.cells)} cells in notebook")
 
@@ -171,61 +253,9 @@ class JupyterKernelManager:
 
             logger.info(f"Re-running cell {i+1}/{len(self.nb.cells)} (ID: {cell.id})")
 
-            started_at = datetime.now(timezone.utc).isoformat()
-
-            try:
-                assert self.client is not None, "Kernel client is not initialized"
-
-                # Clear previous outputs before re-execution
-                cell.outputs = []
-
-                # Execute the cell using the notebook client
-                await self.client.async_execute_cell(cell, cell_index=i)
-
-                # Parse outputs from the executed cell
-                outputs = []
-                status_result = "completed"
-                error_msg = None
-
-                for output in cell.outputs:
-                    output_dict = output.to_dict()
-                    outputs.append(output_dict)
-                    # Extract error message if this is an error output
-                    if output_dict.get("output_type") == "error":
-                        error_msg = f"{output_dict.get('ename', 'Error')}: {output_dict.get('evalue', 'Unknown error')}"
-
-                completed_at = datetime.now(timezone.utc).isoformat()
-
-                # Create response for this cell
-                response = ExecuteCodeResponse(
-                    cell_id=cell.id,
-                    code=cell.source,
-                    execution_count=cell.execution_count or 0,
-                    outputs=outputs,
-                    status=status_result,
-                    error=error_msg,
-                    started_at=started_at,
-                    completed_at=completed_at,
-                )
-
-                results.append(response)
-
-            except Exception as e:
-                completed_at = datetime.now(timezone.utc).isoformat()
-                logger.error(f"Error executing cell {i+1} (ID: {cell.id}): {e}")
-
-                error_response = ExecuteCodeResponse(
-                    cell_id=cell.id,
-                    code=cell.source,
-                    execution_count=getattr(cell, "execution_count", 0) or 0,
-                    outputs=[],
-                    status="error",
-                    error=str(e),
-                    started_at=started_at,
-                    completed_at=completed_at,
-                )
-
-                results.append(error_response)
+            # Execute the cell using the common method
+            response = await self._execute_single_cell(cell)
+            results.append(response)
 
         logger.info(f"Completed re-running {len(results)} cells")
         return results
@@ -235,82 +265,11 @@ class JupyterKernelManager:
     ) -> ExecuteCodeResponse:
         """Execute code in the kernel and return the results using nbclient."""
         async with self._lock:
-            return await self._execute_code(code, cell_id)
+            await self._ensure_kernel_ready()
 
-    async def _execute_code(
-        self, code: str, cell_id: str | None = None
-    ) -> ExecuteCodeResponse:
-        """Internal implementation of execute_code with lock protection."""
-        if not self._is_kernel_ready():
-            if not self.is_starting:
-                await self._start_kernel()
-            if not self._is_kernel_ready():
-                raise HTTPException(
-                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                    detail="Kernel is not ready for execution",
-                )
-
-        started_at = datetime.now(timezone.utc).isoformat()
-
-        try:
-            assert self.client is not None, "Kernel client is not initialized"
-
-            # Get or create the cell for execution
             cell = self._get_or_create_cell(code, cell_id)
-            final_cell_id = cell.id
 
-            # Execute the cell using the notebook client
-            await self.client.async_execute_cell(cell, cell_index=0)
-
-            # Parse outputs from the executed cell
-            outputs = []
-            status_result = "completed"
-            error_msg = None
-
-            for output in cell.outputs:
-                output_dict = output.to_dict()
-                outputs.append(output_dict)
-                # Extract error message if this is an error output
-                if output_dict.get("output_type") == "error":
-                    error_msg = f"{output_dict.get('ename', 'Error')}: {output_dict.get('evalue', 'Unknown error')}"
-
-            completed_at = datetime.now(timezone.utc).isoformat()
-
-            # Create response
-            response = ExecuteCodeResponse(
-                cell_id=final_cell_id,
-                code=code,
-                execution_count=cell.execution_count,
-                outputs=outputs,
-                status=status_result,
-                error=error_msg,
-                started_at=started_at,
-                completed_at=completed_at,
-            )
-
-            return response
-
-        except CellIdNotFoundError:
-            logger.error(f"Cell with ID '{cell_id}' does not exist in the notebook.")
-
-            # HTTP exception will be raised by the api endpoint
-            raise
-        except Exception as e:
-            completed_at = datetime.now(timezone.utc).isoformat()
-            logger.error(f"Error executing code: {e}")
-
-            response = ExecuteCodeResponse(
-                cell_id=final_cell_id,
-                code=code,
-                execution_count=cell.execution_count,  # Fallback for error cases
-                outputs=[],
-                status="error",
-                error=str(e),
-                started_at=started_at,
-                completed_at=completed_at,
-            )
-
-            return response
+            return await self._execute_single_cell(cell)
 
     def is_kernel_ready(self) -> bool:
         """Check if the kernel is ready for execution."""
