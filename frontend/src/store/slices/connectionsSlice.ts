@@ -9,6 +9,8 @@ import {
   ConnectionFromAPI,
   DatabricksConnectionCreate,
   DatabricksConnectionUpdate,
+  PostgresConnectionCreate,
+  PostgresConnectionUpdate,
   SnowflakeConnectionCreate,
   SnowflakeConnectionUpdate,
 } from "@/types/api";
@@ -237,6 +239,71 @@ export const updateClickhouseConnection = createAsyncThunk(
   },
 );
 
+// Async thunk for creating a new postgres connection
+export const createPostgresConnection = createAsyncThunk(
+  "connections/createPostgresConnection",
+  async (connectionData: PostgresConnectionCreate, { rejectWithValue }) => {
+    try {
+      const response = await fetch("/api/connections/postgres", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(connectionData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || "Failed to create connection");
+      }
+
+      const apiConnection: ConnectionFromAPI = await response.json();
+      return transformConnectionFromAPI(apiConnection);
+    } catch (error) {
+      return rejectWithValue(
+        error instanceof Error ? error.message : "Failed to create connection",
+      );
+    }
+  },
+);
+
+// Async thunk for updating a postgres connection
+export const updatePostgresConnection = createAsyncThunk(
+  "connections/updatePostgresConnection",
+  async (
+    {
+      connectionId,
+      connectionData,
+    }: { connectionId: string; connectionData: PostgresConnectionUpdate },
+    { rejectWithValue },
+  ) => {
+    try {
+      const response = await fetch(
+        `/api/connections/postgres/${connectionId}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(connectionData),
+        },
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || "Failed to update connection");
+      }
+
+      const apiConnection: ConnectionFromAPI = await response.json();
+      return transformConnectionFromAPI(apiConnection);
+    } catch (error) {
+      return rejectWithValue(
+        error instanceof Error ? error.message : "Failed to update connection",
+      );
+    }
+  },
+);
+
 // Async thunk for deleting a connection
 export const deleteConnection = createAsyncThunk(
   "connections/deleteConnection",
@@ -406,6 +473,39 @@ const connectionsSlice = createSlice({
         }
       })
       .addCase(updateClickhouseConnection.rejected, (state, action) => {
+        state.loading = false;
+        state.error =
+          (action.payload as string) || "Failed to update connection";
+      })
+      // Create postgres connection
+      .addCase(createPostgresConnection.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(createPostgresConnection.fulfilled, (state, action) => {
+        state.loading = false;
+        state.connections.unshift(action.payload);
+      })
+      .addCase(createPostgresConnection.rejected, (state, action) => {
+        state.loading = false;
+        state.error =
+          (action.payload as string) || "Failed to create connection";
+      })
+      // Update postgres connection
+      .addCase(updatePostgresConnection.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updatePostgresConnection.fulfilled, (state, action) => {
+        state.loading = false;
+        const index = state.connections.findIndex(
+          (c) => c.id === action.payload.id,
+        );
+        if (index !== -1) {
+          state.connections[index] = action.payload;
+        }
+      })
+      .addCase(updatePostgresConnection.rejected, (state, action) => {
         state.loading = false;
         state.error =
           (action.payload as string) || "Failed to update connection";

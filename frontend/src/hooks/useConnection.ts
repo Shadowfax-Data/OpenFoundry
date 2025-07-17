@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import {
   ClickhouseConnectionModel,
   DatabricksConnectionModel,
+  PostgresConnectionModel,
   SnowflakeConnectionModel,
 } from "@/types/api";
 
@@ -125,6 +126,50 @@ export function useClickhouseConnection(
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       const data: ClickhouseConnectionModel = await response.json();
+      setConnection(data);
+    } catch (error) {
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Failed to fetch connection details",
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, [connectionId]);
+
+  useEffect(() => {
+    fetchConnection();
+  }, [fetchConnection]);
+
+  return {
+    connection,
+    loading,
+    error,
+    refetch: fetchConnection,
+  };
+}
+
+export function usePostgresConnection(
+  connectionId?: string,
+): UseConnectionReturn<PostgresConnectionModel> {
+  const [connection, setConnection] = useState<PostgresConnectionModel | null>(
+    null,
+  );
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchConnection = useCallback(async () => {
+    if (!connectionId) return;
+
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch(`/api/connections/postgres/${connectionId}`);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data: PostgresConnectionModel = await response.json();
       setConnection(data);
     } catch (error) {
       setError(
