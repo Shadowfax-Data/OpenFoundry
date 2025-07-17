@@ -139,3 +139,26 @@ export interface ClickhouseConnectionModel {
   database: string;
   type: string;
 }
+
+export interface BigQueryConnectionCreate {
+  name: string;
+  service_account_key: string;
+  project_id: string;
+  dataset_id?: string; // Make optional
+}
+
+export interface BigQueryConnectionUpdate {
+  name?: string;
+  service_account_key?: string;
+  project_id?: string;
+  dataset_id?: string;
+}
+
+export interface BigQueryConnectionModel {
+  id: string;
+  name: string;
+  service_account_key: string;
+  project_id: string;
+  dataset_id?: string; // Make optional
+  type: string;
+}

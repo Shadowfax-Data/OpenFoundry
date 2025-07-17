@@ -3,6 +3,8 @@ import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { generateColorFromText } from "@/lib/utils";
 import { ConnectionsState } from "@/store/types";
 import {
+  BigQueryConnectionCreate,
+  BigQueryConnectionUpdate,
   ClickhouseConnectionCreate,
   ClickhouseConnectionUpdate,
   Connection,
@@ -213,6 +215,71 @@ export const updateClickhouseConnection = createAsyncThunk(
     try {
       const response = await fetch(
         `/api/connections/clickhouse/${connectionId}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(connectionData),
+        },
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || "Failed to update connection");
+      }
+
+      const apiConnection: ConnectionFromAPI = await response.json();
+      return transformConnectionFromAPI(apiConnection);
+    } catch (error) {
+      return rejectWithValue(
+        error instanceof Error ? error.message : "Failed to update connection",
+      );
+    }
+  },
+);
+
+// Async thunk for creating a new bigquery connection
+export const createBigQueryConnection = createAsyncThunk(
+  "connections/createBigQueryConnection",
+  async (connectionData: BigQueryConnectionCreate, { rejectWithValue }) => {
+    try {
+      const response = await fetch("/api/connections/bigquery", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(connectionData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || "Failed to create connection");
+      }
+
+      const apiConnection: ConnectionFromAPI = await response.json();
+      return transformConnectionFromAPI(apiConnection);
+    } catch (error) {
+      return rejectWithValue(
+        error instanceof Error ? error.message : "Failed to create connection",
+      );
+    }
+  },
+);
+
+// Async thunk for updating a bigquery connection
+export const updateBigQueryConnection = createAsyncThunk(
+  "connections/updateBigQueryConnection",
+  async (
+    {
+      connectionId,
+      connectionData,
+    }: { connectionId: string; connectionData: BigQueryConnectionUpdate },
+    { rejectWithValue },
+  ) => {
+    try {
+      const response = await fetch(
+        `/api/connections/bigquery/${connectionId}`,
         {
           method: "PUT",
           headers: {
