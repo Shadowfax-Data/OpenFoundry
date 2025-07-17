@@ -313,7 +313,7 @@ async def send_stdin(
         success = await pcb.send_stdin(stdin_request.data)
         if success:
             logger.info(f"Successfully sent data to stdin for identifier={identifier}")
-            return StdinResponse(identifier=identifier, success=True)
+            return StdinResponse(identifier=identifier, success=True, error=None)
         else:
             error_msg = f"Failed to send data to stdin for identifier={identifier}"
             logger.warning(error_msg)
