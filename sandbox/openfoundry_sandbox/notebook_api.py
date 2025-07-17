@@ -1,9 +1,10 @@
 import logging
 
-from fastapi import APIRouter, HTTPException, Path, status
+from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
 
 from openfoundry_sandbox.kernel_manager import (
+    CellIdNotFoundError,
     ExecuteCodeResponse,
     JupyterKernelManager,
     cleanup_kernel,
@@ -22,7 +23,9 @@ class ExecuteCodeRequest(BaseModel):
     """Request model for executing code in the Jupyter kernel."""
 
     code: str = Field(..., description="Python code to execute")
-    cell_id: str = Field(..., description="Unique identifier for this cell execution")
+    cell_id: str | None = Field(
+        None, description="Optional unique identifier for this cell execution"
+    )
 
 
 class KernelStatusResponse(BaseModel):
@@ -32,7 +35,6 @@ class KernelStatusResponse(BaseModel):
     is_starting: bool = Field(
         ..., description="Whether the kernel is currently starting"
     )
-    execution_count: int = Field(..., description="Current execution count")
     kernel_id: str = Field(..., description="Unique kernel identifier")
 
 
@@ -58,7 +60,16 @@ async def execute_code(request: ExecuteCodeRequest):
     logger.info(
         f"Executing code with cell_id '{request.cell_id}': {request.code[:100]}..."
     )
-    return await kernel_manager.execute_code(request.code, request.cell_id)
+    try:
+        return await kernel_manager.execute_code(request.code, request.cell_id)
+    except CellIdNotFoundError as e:
+        logger.error(
+            f"Cell with ID '{request.cell_id}' does not exist in the notebook."
+        )
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"{e}. Please either provide a valid cell_id to execute an existing cell or do not provide one to create and execute a new cell.",
+        )
 
 
 @router.get("/status", response_model=KernelStatusResponse)
@@ -67,29 +78,14 @@ async def get_kernel_status():
     return KernelStatusResponse(
         is_ready=kernel_manager.is_kernel_ready(),
         is_starting=kernel_manager.is_kernel_starting(),
-        execution_count=kernel_manager.execution_count,
-        kernel_id=kernel_manager.kernel_id or "none",
+        kernel_id=kernel_manager.get_kernel_id() or "none",
     )
 
 
-@router.get("/results/{cell_id}", response_model=ExecuteCodeResponse)
-async def get_execution_result(
-    cell_id: str = Path(..., description="Cell ID to retrieve"),
-):
-    """Get the result of a specific cell execution."""
-    result = kernel_manager.get_result(cell_id)
-    if result is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"No result found for cell_id: {cell_id}",
-        )
-    return result
-
-
-@router.get("/results", response_model=list[ExecuteCodeResponse])
-async def get_all_results():
-    """Get all execution results from the current session."""
-    return kernel_manager.get_all_results()
+@router.get("/notebook")
+async def get_notebook():
+    """Get the complete notebook data including all cells and their results."""
+    return await kernel_manager.get_notebook()
 
 
 @router.post("/restart")
@@ -99,26 +95,12 @@ async def restart_kernel():
     return {"message": "Kernel restarted successfully"}
 
 
-@router.post("/start")
-async def start_kernel():
-    """Manually start the kernel (usually done automatically)."""
-    await kernel_manager.start_kernel()
-    return {"message": "Kernel started successfully"}
-
-
 @router.get("/health", response_model=HealthResponse)
 async def health_check():
     """Check the health status of the notebook functionality."""
     return HealthResponse(
         status="healthy", kernel_available=kernel_manager.is_kernel_ready()
     )
-
-
-@router.delete("/clear-results")
-async def clear_results():
-    """Clear stored execution results (keeps kernel running)."""
-    kernel_manager.clear_results()
-    return {"message": "Execution results cleared"}
 
 
 # --- Lifecycle Management ---
