@@ -38,6 +38,19 @@ class KernelStatusResponse(BaseModel):
     kernel_id: str | None = Field(None, description="Unique kernel identifier")
 
 
+class RerunNotebookResponse(BaseModel):
+    """Response model for re-running all notebook cells."""
+
+    total_cells: int = Field(..., description="Total number of cells executed")
+    successful_cells: int = Field(
+        ..., description="Number of successfully executed cells"
+    )
+    failed_cells: int = Field(..., description="Number of cells that failed execution")
+    execution_results: list[ExecuteCodeResponse] = Field(
+        ..., description="Detailed execution results for each cell"
+    )
+
+
 # Global kernel manager instance
 kernel_manager = JupyterKernelManager()
 
@@ -84,6 +97,38 @@ async def restart_kernel():
     """Restart the kernel (clears all variables and state)."""
     await kernel_manager.restart_kernel()
     return {"message": "Kernel restarted successfully"}
+
+
+@router.post("/rerun", response_model=RerunNotebookResponse)
+async def rerun_notebook():
+    """Re-run all cells in the notebook in order."""
+    logger.info("Re-running all cells in notebook")
+    try:
+        execution_results = await kernel_manager.rerun_notebook()
+
+        # Calculate summary statistics
+        total_cells = len(execution_results)
+        successful_cells = sum(
+            1 for result in execution_results if result.status == "completed"
+        )
+        failed_cells = total_cells - successful_cells
+
+        logger.info(
+            f"Notebook rerun completed: {successful_cells}/{total_cells} cells successful"
+        )
+
+        return RerunNotebookResponse(
+            total_cells=total_cells,
+            successful_cells=successful_cells,
+            failed_cells=failed_cells,
+            execution_results=execution_results,
+        )
+    except Exception as e:
+        logger.error(f"Error during notebook rerun: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to rerun notebook: {str(e)}",
+        )
 
 
 # --- Lifecycle Management ---

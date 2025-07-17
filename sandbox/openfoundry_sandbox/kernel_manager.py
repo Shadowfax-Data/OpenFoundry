@@ -13,28 +13,6 @@ from pydantic import BaseModel, Field
 logger = logging.getLogger(__name__)
 
 
-class OutputModel(BaseModel):
-    """Model for a single output from code execution."""
-
-    output_type: str = Field(
-        ..., description="Type of output (stream, execute_result, display_data, error)"
-    )
-    name: str | None = Field(None, description="Stream name for stream outputs")
-    text: str | None = Field(None, description="Text content for stream outputs")
-    data: dict[str, Any] | None = Field(
-        None, description="Data content for display outputs"
-    )
-    metadata: dict[str, Any] | None = Field(None, description="Metadata for outputs")
-    execution_count: int | None = Field(
-        None, description="Execution count for execute_result"
-    )
-    ename: str | None = Field(None, description="Exception name for error outputs")
-    evalue: str | None = Field(None, description="Exception value for error outputs")
-    traceback: list[str] | None = Field(
-        None, description="Exception traceback for error outputs"
-    )
-
-
 class ExecuteCodeResponse(BaseModel):
     """Response model for code execution."""
 
@@ -44,8 +22,9 @@ class ExecuteCodeResponse(BaseModel):
         ...,
         description="Execution count for this cell execution (increments for each cell execution in the session)",
     )
-    outputs: list[OutputModel] = Field(
-        default_factory=list, description="List of outputs from execution"
+    outputs: list[dict[str, Any]] = Field(
+        default_factory=list,
+        description="List of outputs from execution (native Jupyter format)",
     )
     status: str = Field(..., description="Execution status (completed, error)")
     error: str | None = Field(None, description="Error message if execution failed")
@@ -166,6 +145,91 @@ class JupyterKernelManager:
         # Start new kernel
         await self._start_kernel()
 
+    async def rerun_notebook(self) -> list[ExecuteCodeResponse]:
+        """Re-run all cells in the notebook in order and return their execution results."""
+        async with self._lock:
+            return await self._rerun_notebook()
+
+    async def _rerun_notebook(self) -> list[ExecuteCodeResponse]:
+        """Internal implementation of rerun_notebook with lock protection."""
+        if not self._is_kernel_ready():
+            if not self.is_starting:
+                await self._start_kernel()
+            if not self._is_kernel_ready():
+                raise HTTPException(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    detail="Kernel is not ready for execution",
+                )
+
+        logger.info(f"Re-running all {len(self.nb.cells)} cells in notebook")
+
+        results = []
+
+        for i, cell in enumerate(self.nb.cells):
+            if cell.cell_type != "code":
+                continue  # Skip non-code cells
+
+            logger.info(f"Re-running cell {i+1}/{len(self.nb.cells)} (ID: {cell.id})")
+
+            started_at = datetime.now(timezone.utc).isoformat()
+
+            try:
+                assert self.client is not None, "Kernel client is not initialized"
+
+                # Clear previous outputs before re-execution
+                cell.outputs = []
+
+                # Execute the cell using the notebook client
+                await self.client.async_execute_cell(cell, cell_index=i)
+
+                # Parse outputs from the executed cell
+                outputs = []
+                status_result = "completed"
+                error_msg = None
+
+                for output in cell.outputs:
+                    output_dict = output.to_dict()
+                    outputs.append(output_dict)
+                    # Extract error message if this is an error output
+                    if output_dict.get("output_type") == "error":
+                        error_msg = f"{output_dict.get('ename', 'Error')}: {output_dict.get('evalue', 'Unknown error')}"
+
+                completed_at = datetime.now(timezone.utc).isoformat()
+
+                # Create response for this cell
+                response = ExecuteCodeResponse(
+                    cell_id=cell.id,
+                    code=cell.source,
+                    execution_count=cell.execution_count or 0,
+                    outputs=outputs,
+                    status=status_result,
+                    error=error_msg,
+                    started_at=started_at,
+                    completed_at=completed_at,
+                )
+
+                results.append(response)
+
+            except Exception as e:
+                completed_at = datetime.now(timezone.utc).isoformat()
+                logger.error(f"Error executing cell {i+1} (ID: {cell.id}): {e}")
+
+                error_response = ExecuteCodeResponse(
+                    cell_id=cell.id,
+                    code=cell.source,
+                    execution_count=getattr(cell, "execution_count", 0) or 0,
+                    outputs=[],
+                    status="error",
+                    error=str(e),
+                    started_at=started_at,
+                    completed_at=completed_at,
+                )
+
+                results.append(error_response)
+
+        logger.info(f"Completed re-running {len(results)} cells")
+        return results
+
     async def execute_code(
         self, code: str, cell_id: str | None = None
     ) -> ExecuteCodeResponse:
@@ -204,63 +268,11 @@ class JupyterKernelManager:
             error_msg = None
 
             for output in cell.outputs:
-                if output.output_type == "stream":
-                    outputs.append(
-                        OutputModel(
-                            output_type="stream",
-                            name=output.name,
-                            text=output.text,
-                            data=None,
-                            metadata=None,
-                            execution_count=None,
-                            ename=None,
-                            evalue=None,
-                            traceback=None,
-                        )
-                    )
-                elif output.output_type == "execute_result":
-                    outputs.append(
-                        OutputModel(
-                            output_type="execute_result",
-                            data=output.data,
-                            metadata=getattr(output, "metadata", {}),
-                            execution_count=output.execution_count,
-                            name=None,
-                            text=None,
-                            ename=None,
-                            evalue=None,
-                            traceback=None,
-                        )
-                    )
-                elif output.output_type == "display_data":
-                    outputs.append(
-                        OutputModel(
-                            output_type="display_data",
-                            data=output.data,
-                            metadata=getattr(output, "metadata", {}),
-                            name=None,
-                            text=None,
-                            execution_count=None,
-                            ename=None,
-                            evalue=None,
-                            traceback=None,
-                        )
-                    )
-                elif output.output_type == "error":
-                    outputs.append(
-                        OutputModel(
-                            output_type="error",
-                            ename=output.ename,
-                            evalue=output.evalue,
-                            traceback=output.traceback,
-                            name=None,
-                            text=None,
-                            data=None,
-                            metadata=None,
-                            execution_count=None,
-                        )
-                    )
-                    error_msg = f"{output.ename}: {output.evalue}"
+                output_dict = output.to_dict()
+                outputs.append(output_dict)
+                # Extract error message if this is an error output
+                if output_dict.get("output_type") == "error":
+                    error_msg = f"{output_dict.get('ename', 'Error')}: {output_dict.get('evalue', 'Unknown error')}"
 
             completed_at = datetime.now(timezone.utc).isoformat()
 
