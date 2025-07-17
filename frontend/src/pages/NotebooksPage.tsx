@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { CreateNotebookDialog } from "@/components/notebooks/CreateNotebookDialog";
 import NotebookList from "@/components/notebooks/NotebookList";
 import { Button } from "@/components/ui/button";
+import { Notebook } from "@/types";
 
 interface NotebooksPageProps {
   autoOpenCreateDialog?: boolean;
@@ -11,12 +12,26 @@ const NotebooksPage = ({
   autoOpenCreateDialog = false,
 }: NotebooksPageProps) => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [notebooks, setNotebooks] = useState<Notebook[]>([]);
 
   useEffect(() => {
     if (autoOpenCreateDialog) {
       setIsCreateDialogOpen(true);
     }
   }, [autoOpenCreateDialog]);
+
+  useEffect(() => {
+    // TODO: Replace with actual API call
+    const fetchNotebooks = async () => {
+      const mockNotebooks: Notebook[] = [
+        { id: "1", name: "My first notebook" },
+        { id: "2", name: "Another notebook" },
+      ];
+      setNotebooks(mockNotebooks);
+    };
+
+    fetchNotebooks();
+  }, []);
 
   return (
     <div className="p-8">
@@ -31,7 +46,7 @@ const NotebooksPage = ({
           + New Notebook
         </Button>
       </div>
-      <NotebookList />
+      <NotebookList notebooks={notebooks} />
       {isCreateDialogOpen && (
         <CreateNotebookDialog onClose={() => setIsCreateDialogOpen(false)} />
       )}

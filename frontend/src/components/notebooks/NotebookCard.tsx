@@ -7,12 +7,17 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Notebook } from "@/types";
 
-const NotebookCard = () => {
+interface NotebookCardProps {
+  notebook: Notebook;
+}
+
+const NotebookCard = ({ notebook }: NotebookCardProps) => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Data Exploration Notebook</CardTitle>
+        <CardTitle>{notebook.name}</CardTitle>
         <CardDescription>5 min ago</CardDescription>
       </CardHeader>
       <CardContent>

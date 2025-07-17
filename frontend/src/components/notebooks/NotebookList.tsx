@@ -1,11 +1,16 @@
 import NotebookCard from "./NotebookCard";
+import { Notebook } from "@/types";
 
-const NotebookList = () => {
+interface NotebookListProps {
+  notebooks: Notebook[];
+}
+
+const NotebookList = ({notebooks}: NotebookListProps) => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      <NotebookCard />
-      <NotebookCard />
-      <NotebookCard />
+      {notebooks.map((notebook) => (
+        <NotebookCard key={notebook.id} notebook={notebook} />
+      ))}
     </div>
   );
 };
