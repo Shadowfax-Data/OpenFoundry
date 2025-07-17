@@ -35,16 +35,7 @@ class KernelStatusResponse(BaseModel):
     is_starting: bool = Field(
         ..., description="Whether the kernel is currently starting"
     )
-    kernel_id: str = Field(..., description="Unique kernel identifier")
-
-
-class HealthResponse(BaseModel):
-    """Response model for health check."""
-
-    status: str = Field(..., description="Health status")
-    kernel_available: bool = Field(
-        ..., description="Whether kernel functionality is available"
-    )
+    kernel_id: str | None = Field(None, description="Unique kernel identifier")
 
 
 # Global kernel manager instance
@@ -78,7 +69,7 @@ async def get_kernel_status():
     return KernelStatusResponse(
         is_ready=kernel_manager.is_kernel_ready(),
         is_starting=kernel_manager.is_kernel_starting(),
-        kernel_id=kernel_manager.get_kernel_id() or "none",
+        kernel_id=kernel_manager.get_kernel_id(),
     )
 
 
@@ -93,14 +84,6 @@ async def restart_kernel():
     """Restart the kernel (clears all variables and state)."""
     await kernel_manager.restart_kernel()
     return {"message": "Kernel restarted successfully"}
-
-
-@router.get("/health", response_model=HealthResponse)
-async def health_check():
-    """Check the health status of the notebook functionality."""
-    return HealthResponse(
-        status="healthy", kernel_available=kernel_manager.is_kernel_ready()
-    )
 
 
 # --- Lifecycle Management ---
