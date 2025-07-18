@@ -14,6 +14,18 @@ from pydantic import BaseModel, Field
 logger = logging.getLogger(__name__)
 
 
+def get_notebook_path() -> str | None:
+    """Get the notebook file path from environment variable."""
+    initialization_data_str = os.environ.get("INITIALIZATION_DATA")
+    if not initialization_data_str:
+        return None
+
+    import json
+
+    initialization_data = json.loads(initialization_data_str)
+    return initialization_data.get("notebook_path")
+
+
 class ExecuteCodeResponse(BaseModel):
     """Response model for code execution."""
 
@@ -54,20 +66,7 @@ class JupyterKernelManager:
 
     def _load_or_create_notebook(self) -> NotebookNode:
         """Load existing notebook from file or create a new one if not found."""
-        # Check for notebook_path in environment variable from initialization data
-        initialization_data_str = os.environ.get("INITIALIZATION_DATA")
-        notebook_path = None
-
-        if initialization_data_str:
-            try:
-                import json
-
-                initialization_data = json.loads(initialization_data_str)
-                notebook_path = initialization_data.get("notebook_path")
-            except (json.JSONDecodeError, TypeError):
-                logger.warning(
-                    "Failed to parse INITIALIZATION_DATA environment variable"
-                )
+        notebook_path = get_notebook_path()
 
         # Try to load existing notebook file
         if notebook_path and Path(notebook_path).exists():

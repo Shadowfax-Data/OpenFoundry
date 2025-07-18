@@ -1,12 +1,15 @@
 import logging
+from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, status
+from nbformat import write
 from pydantic import BaseModel, Field
 
 from openfoundry_sandbox.kernel_manager import (
     ExecuteCodeResponse,
     JupyterKernelManager,
     cleanup_kernel,
+    get_notebook_path,
     initialize_kernel,
 )
 
@@ -85,6 +88,35 @@ async def restart_kernel():
     """Restart the kernel (clears all variables and state)."""
     await kernel_manager.restart_kernel()
     return {"message": "Kernel restarted successfully"}
+
+
+@router.post("/save")
+async def save_notebook():
+    """Save the current notebook to the configured file path."""
+    logger.info("Saving notebook to file")
+
+    # Get the notebook path from environment variable
+    notebook_path = get_notebook_path()
+    if not notebook_path:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Notebook path not found in environment configuration",
+        )
+
+    # Get the current notebook from kernel manager
+    notebook = await kernel_manager.get_notebook()
+
+    # Ensure parent directory exists
+    parent_dir = Path(notebook_path).parent
+    parent_dir.mkdir(parents=True, exist_ok=True)
+
+    # Save the notebook to file
+    with open(notebook_path, "w") as f:
+        write(notebook, f)
+
+    logger.info(f"Successfully saved notebook to {notebook_path}")
+
+    return {"message": "Notebook saved successfully"}
 
 
 @router.post("/rerun", response_model=RerunNotebookResponse)

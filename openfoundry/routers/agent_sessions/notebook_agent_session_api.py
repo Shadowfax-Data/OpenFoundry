@@ -598,6 +598,28 @@ async def rerun_notebook(
 
 
 @router.post(
+    "/notebooks/{notebook_id}/sessions/{session_id}/save",
+)
+async def save_notebook(
+    notebook_id: uuid.UUID,
+    session_id: uuid.UUID,
+    request: Request,
+    run_context: NotebookAgentRunContext = Depends(get_notebook_agent_run_context),
+):
+    """Save the notebook to file."""
+    async with run_context.get_sandbox_client() as client:
+        try:
+            response = await client.post("/api/notebook/save")
+        except httpx.RequestError as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to save notebook: {e}",
+            )
+        response.raise_for_status()
+        return response.json()
+
+
+@router.post(
     "/notebooks/{notebook_id}/sessions/{session_id}/connections",
 )
 async def update_notebook_connections(

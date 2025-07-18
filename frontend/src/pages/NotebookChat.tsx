@@ -204,7 +204,30 @@ export function NotebookChat() {
               onRestartKernel={notebookOps.restartKernel}
               onRerunNotebook={notebookOps.rerunNotebook}
               onSaveWorkspace={async () => {
-                console.log('Save workspace functionality can be added here');
+                if (!notebookId || !sessionId) return;
+
+                try {
+                  const response = await fetch(
+                    `/api/notebooks/${notebookId}/sessions/${sessionId}/save`,
+                    {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                      },
+                    }
+                  );
+
+                  if (response.ok) {
+                    const result = await response.json();
+                    toast.success(result.message || 'Notebook saved successfully');
+                  } else {
+                    const error = await response.text();
+                    toast.error(`Failed to save notebook: ${error}`);
+                  }
+                } catch (error) {
+                  console.error('Error saving notebook:', error);
+                  toast.error('Failed to save notebook');
+                }
               }}
             />
           )}
