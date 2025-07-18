@@ -1,0 +1,135 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# Welcome to your Jupyter Notebook\n",
+    "\n",
+    "This notebook provides a powerful environment for data analysis and exploration."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import numpy as np\n",
+    "import pandas as pd\n",
+    "import matplotlib.pyplot as plt\n",
+    "import seaborn as sns\n",
+    "import utils\n",
+    "\n",
+    "print(\"Welcome to your notebook!\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Data Connections\n",
+    "\n",
+    "You can connect to your configured data sources using the utils module."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# List available connections\n",
+    "snowflake_connections = utils.list_snowflake_connections()\n",
+    "databricks_connections = utils.list_databricks_connections()\n",
+    "clickhouse_connections = utils.list_clickhouse_connections()\n",
+    "\n",
+    "print(f\"Available Snowflake connections: {snowflake_connections}\")\n",
+    "print(f\"Available Databricks connections: {databricks_connections}\")\n",
+    "print(f\"Available ClickHouse connections: {clickhouse_connections}\")"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Example: Connect to Snowflake (if available)\n",
+    "if snowflake_connections:\n",
+    "    first_connection = snowflake_connections[0]\n",
+    "    try:\n",
+    "        snowflake_conn = utils.get_snowflake_conn(connection_name=first_connection)\n",
+    "        if snowflake_conn:\n",
+    "            with snowflake_conn.cursor() as cur:\n",
+    "                cur.execute(\"SELECT 1 as test_column\")\n",
+    "                result = cur.fetchone()\n",
+    "                print(f\"Snowflake connection successful: {result}\")\n",
+    "    except Exception as e:\n",
+    "        print(f\"Connection error: {e}\")\n",
+    "else:\n",
+    "    print(\"No Snowflake connections available\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Sample Data Analysis\n",
+    "\n",
+    "Let's create some sample data and visualizations."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Create sample data\n",
+    "np.random.seed(42)\n",
+    "data = {\n",
+    "    'x': np.random.randn(100),\n",
+    "    'y': np.random.randn(100),\n",
+    "    'category': np.random.choice(['A', 'B', 'C'], 100)\n",
+    "}\n",
+    "df = pd.DataFrame(data)\n",
+    "df.head()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Create a simple visualization\n",
+    "plt.figure(figsize=(10, 6))\n",
+    "sns.scatterplot(data=df, x='x', y='y', hue='category')\n",
+    "plt.title('Sample Scatter Plot')\n",
+    "plt.show()"
+   ]
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.12.0"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 4
+}

@@ -6,10 +6,12 @@ from openfoundry.models.agent_sessions import (
     AgentSessionStatus,
     AgentSessionType,
     AppAgentSession,
+    NotebookAgentSession,
 )
 from openfoundry.models.apps import App
 from openfoundry.models.connections import Connection, SnowflakeConnection
 from openfoundry.models.conversation_item import ConversationItem
+from openfoundry.models.notebooks import Notebook, NotebookConnection
 
 __all__ = [
     "Base",
@@ -19,6 +21,9 @@ __all__ = [
     "AgentSessionStatus",
     "AgentSessionType",
     "AppAgentSession",
+    "NotebookAgentSession",
+    "Notebook",
+    "NotebookConnection",
     "ConversationItem",
     "Connection",
     "SnowflakeConnection",

@@ -1,17 +1,17 @@
 from agents import Agent, ModelSettings
 
-from openfoundry.agents.bash_tools import (
+from openfoundry.local_agents.bash_tools import (
     list_processes,
     tail_process_logs,
 )
-from openfoundry.agents.common_tools import (
+from openfoundry.local_agents.common_tools import (
     execute_sql,
     list_connections,
     list_files,
     read_file,
     write_file,
 )
-from openfoundry.agents.utils.template_loader import load_prompt_template
+from openfoundry.local_agents.utils.template_loader import load_prompt_template
 
 STREAMLIT_APP_CODING_AGENT_NAME = "streamlit_app_coding_agent"
 

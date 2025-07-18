@@ -1,5 +1,2 @@
-export interface Notebook {
-  id: string;
-  name: string;
-  //TODO: Add other notebook properties here
-} 
+// Re-export comprehensive notebook types from api.ts
+export type { CreateNotebookRequest,Notebook, NotebookAgentSessionFromAPI, NotebookFromAPI } from "./api";

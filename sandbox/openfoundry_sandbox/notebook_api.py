@@ -4,7 +4,6 @@ from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
 
 from openfoundry_sandbox.kernel_manager import (
-    CellIdNotFoundError,
     ExecuteCodeResponse,
     JupyterKernelManager,
     cleanup_kernel,
@@ -23,9 +22,7 @@ class ExecuteCodeRequest(BaseModel):
     """Request model for executing code in the Jupyter kernel."""
 
     code: str = Field(..., description="Python code to execute")
-    cell_id: str | None = Field(
-        None, description="Optional unique identifier for this cell execution"
-    )
+    cell_id: str = Field(..., description="Unique identifier for this cell execution")
 
 
 class KernelStatusResponse(BaseModel):
@@ -64,16 +61,7 @@ async def execute_code(request: ExecuteCodeRequest):
     logger.info(
         f"Executing code with cell_id '{request.cell_id}': {request.code[:100]}..."
     )
-    try:
-        return await kernel_manager.execute_code(request.code, request.cell_id)
-    except CellIdNotFoundError as e:
-        logger.error(
-            f"Cell with ID '{request.cell_id}' does not exist in the notebook."
-        )
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"{e}. Please either provide a valid cell_id to execute an existing cell or do not provide one to create and execute a new cell.",
-        )
+    return await kernel_manager.execute_code(request.code, request.cell_id)
 
 
 @router.get("/status", response_model=KernelStatusResponse)

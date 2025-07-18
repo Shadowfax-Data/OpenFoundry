@@ -32,14 +32,6 @@ class ExecuteCodeResponse(BaseModel):
 
 
 # Custom exceptions
-class CellIdNotFoundError(Exception):
-    """Exception raised when a cell with the specified ID does not exist in the notebook."""
-
-    def __init__(self, cell_id: str):
-        super().__init__(f"Cell with ID '{cell_id}' does not exist in the notebook.")
-        self.cell_id = cell_id
-
-
 class KernelNotReadyError(Exception):
     """Exception raised when the kernel is not ready for execution."""
 
@@ -58,35 +50,30 @@ class JupyterKernelManager:
         self.is_ready = False
         self._lock = asyncio.Lock()
 
-    def _get_or_create_cell(
-        self, code: str, cell_id: str | None = None
-    ) -> NotebookNode:
+    def _get_or_create_cell(self, code: str, cell_id: str) -> NotebookNode:
         """
         Get or create a cell for execution.
 
         Args:
             code: The code to be executed
-            cell_id: Optional cell ID. If provided and exists, reuses that cell.
-                    If provided but doesn't exist, creates new cell with that ID.
-                    If None, creates new cell with auto-generated ID.
+            cell_id: Cell ID. If it matches an existing cell, updates that cell's code.
+                    If it doesn't match, creates a new cell with this ID.
 
         Returns:
             The cell node
         """
-        # If no cell_id provided, create new cell with auto-generated ID
-        if cell_id is None:
-            cell = new_code_cell(source=code)
-            self.nb.cells.append(cell)
-            return cell
-
         # Check if cell with provided ID already exists
         for cell in self.nb.cells:
             if cell.id == cell_id:
-                # Cell already exists, update and return existing cell
+                # Cell already exists, update its code and return
                 cell.source = code
                 return cell
 
-        raise CellIdNotFoundError(cell_id)
+        # Cell doesn't exist, create new cell with the provided ID
+        cell = new_code_cell(source=code)
+        cell.id = cell_id  # Set the specific ID
+        self.nb.cells.append(cell)
+        return cell
 
     async def start_kernel(self):
         """Start the Jupyter kernel asynchronously."""
@@ -198,9 +185,6 @@ class JupyterKernelManager:
 
             return response
 
-        except CellIdNotFoundError:
-            # Re-raise CellIdNotFoundError so it can be handled by the API endpoint
-            raise
         except Exception as e:
             completed_at = datetime.now(timezone.utc).isoformat()
             logger.error(f"Error executing cell (ID: {cell.id}): {e}")
@@ -260,9 +244,7 @@ class JupyterKernelManager:
         logger.info(f"Completed re-running {len(results)} cells")
         return results
 
-    async def execute_code(
-        self, code: str, cell_id: str | None = None
-    ) -> ExecuteCodeResponse:
+    async def execute_code(self, code: str, cell_id: str) -> ExecuteCodeResponse:
         """Execute code in the kernel and return the results using nbclient."""
         async with self._lock:
             await self._ensure_kernel_ready()
