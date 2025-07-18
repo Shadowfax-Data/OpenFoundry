@@ -4,7 +4,7 @@ import os
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, NamedTuple
 
 from nbclient import NotebookClient
 from nbformat import NotebookNode, read
@@ -12,6 +12,13 @@ from nbformat.v4 import new_code_cell, new_notebook
 from pydantic import BaseModel, Field
 
 logger = logging.getLogger(__name__)
+
+
+class CellWithIndex(NamedTuple):
+    """Container for a notebook cell and its index in the notebook."""
+
+    cell: NotebookNode
+    index: int
 
 
 def get_notebook_path() -> str | None:
@@ -94,7 +101,7 @@ class JupyterKernelManager:
         # Fall back to creating new notebook
         return new_notebook()
 
-    def _get_or_create_cell(self, code: str, cell_id: str) -> NotebookNode:
+    def _get_or_create_cell(self, code: str, cell_id: str) -> CellWithIndex:
         """
         Get or create a cell for execution.
 
@@ -104,20 +111,21 @@ class JupyterKernelManager:
                     If it doesn't match, creates a new cell with this ID.
 
         Returns:
-            The cell node
+            CellWithIndex containing the cell node and its index in the notebook
         """
         # Check if cell with provided ID already exists
-        for cell in self.nb.cells:
+        for i, cell in enumerate(self.nb.cells):
             if cell.id == cell_id:
                 # Cell already exists, update its code and return
                 cell.source = code
-                return cell
+                return CellWithIndex(cell=cell, index=i)
 
         # Cell doesn't exist, create new cell with the provided ID
         cell = new_code_cell(source=code)
         cell.id = cell_id  # Set the specific ID
         self.nb.cells.append(cell)
-        return cell
+        # Return the cell with its index (it's now the last cell)
+        return CellWithIndex(cell=cell, index=len(self.nb.cells) - 1)
 
     async def start_kernel(self):
         """Start the Jupyter kernel asynchronously."""
@@ -184,12 +192,15 @@ class JupyterKernelManager:
         # Start new kernel
         await self._start_kernel()
 
-    async def _execute_single_cell(self, cell: NotebookNode) -> ExecuteCodeResponse:
+    async def _execute_single_cell(
+        self, cell: NotebookNode, cell_index: int
+    ) -> ExecuteCodeResponse:
         """
         Execute a single cell and return the execution response.
 
         Args:
             cell: The notebook cell to execute
+            cell_index: The index of the cell in the notebook
 
         Returns:
             ExecuteCodeResponse with execution results
@@ -200,7 +211,7 @@ class JupyterKernelManager:
             assert self.client is not None, "Kernel client is not initialized"
 
             # Execute the cell using the notebook client
-            await self.client.async_execute_cell(cell, cell_index=0)
+            await self.client.async_execute_cell(cell, cell_index=cell_index)
 
             # Parse outputs from the executed cell
             outputs = list(cell.outputs)  # NotebookNode is already dict-compatible
@@ -284,7 +295,7 @@ class JupyterKernelManager:
             logger.info(f"Re-running cell {i+1}/{len(self.nb.cells)} (ID: {cell.id})")
 
             # Execute the cell using the common method
-            response = await self._execute_single_cell(cell)
+            response = await self._execute_single_cell(cell, i)
             results.append(response)
 
         logger.info(f"Completed re-running {len(results)} cells")
@@ -295,9 +306,11 @@ class JupyterKernelManager:
         async with self._lock:
             await self._ensure_kernel_ready()
 
-            cell = self._get_or_create_cell(code, cell_id)
+            cell_with_index = self._get_or_create_cell(code, cell_id)
 
-            return await self._execute_single_cell(cell)
+            return await self._execute_single_cell(
+                cell_with_index.cell, cell_with_index.index
+            )
 
     def is_kernel_ready(self) -> bool:
         """Check if the kernel is ready for execution."""

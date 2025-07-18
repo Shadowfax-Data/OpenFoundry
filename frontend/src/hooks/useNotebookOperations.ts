@@ -76,7 +76,7 @@ export const useNotebookOperations = ({
 
       const data = await response.json();
 
-      console.log("data", data);
+      console.log("data from getNotebook", data);
 
       // Ensure all cells have frontend_cell_ids
       if (data && data.cells) {
@@ -118,7 +118,7 @@ export const useNotebookOperations = ({
       // Always refresh notebook data after execution to get updated cell outputs
       await getNotebook();
 
-      console.log("result", result);
+      console.log("result from executeCode", result);
       return result;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Failed to execute code";
@@ -261,6 +261,7 @@ export const useNotebookOperations = ({
       };
 
       const result = await executeCode(executeRequest);
+      console.log("result from executeCellWithStatus", result);
       return result;
     } finally {
       setExecutingCells(prev => {

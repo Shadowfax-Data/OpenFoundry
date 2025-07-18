@@ -474,15 +474,13 @@ async def get_notebook_data(
 ):
     """Get the complete notebook data including all cells and their results."""
     async with run_context.get_sandbox_client() as client:
-        try:
-            response = await client.get("/api/notebook/notebook")
-        except httpx.RequestError as e:
-            raise HTTPException(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail=f"Failed to get notebook: {e}",
-            )
+        response = await client.get("/api/notebook/notebook")
         response.raise_for_status()
-        return response.json()
+        json_response = response.json()
+        print(
+            "json_response from notebook in agent_session_api_endpoint", json_response
+        )
+        return json_response
 
 
 @router.post(
@@ -497,15 +495,13 @@ async def execute_notebook_code(
 ):
     """Execute code in a notebook cell."""
     async with run_context.get_sandbox_client() as client:
-        try:
-            response = await client.post("/api/notebook/execute", json=execute_request)
-        except httpx.RequestError as e:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Failed to execute code: {e}",
-            )
-        response.raise_for_status()
-        return response.json()
+        response = await client.post("/api/notebook/execute", json=execute_request)
+        json_response = response.json()
+        print(
+            "json_response from execute_notebook_code in agent_session_api_endpoint",
+            json_response,
+        )
+        return json_response
 
 
 @router.get(
