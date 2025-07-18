@@ -76,6 +76,8 @@ export const useNotebookOperations = ({
 
       const data = await response.json();
 
+      console.log("data", data);
+
       // Ensure all cells have frontend_cell_ids
       if (data && data.cells) {
         data.cells = data.cells.map((cell: any) => ({
@@ -115,6 +117,8 @@ export const useNotebookOperations = ({
       const result = await response.json();
       // Always refresh notebook data after execution to get updated cell outputs
       await getNotebook();
+
+      console.log("result", result);
       return result;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Failed to execute code";
