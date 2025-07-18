@@ -141,6 +141,20 @@ async def initialize_from_env():
     await _perform_initialization(request)
 
 
+def _is_notebook_session() -> bool:
+    """Check if this is a notebook session by parsing INITIALIZATION_DATA."""
+    initialization_data_str = os.environ.get("INITIALIZATION_DATA")
+    if not initialization_data_str:
+        return False
+
+    try:
+        initialization_data = json.loads(initialization_data_str)
+        return initialization_data.get("notebook_session", False)
+    except (json.JSONDecodeError, TypeError):
+        logger.warning("Failed to parse INITIALIZATION_DATA environment variable")
+        return False
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Initialize from environment variables first
@@ -149,20 +163,22 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.error(f"Failed to initialize from environment data: {e}")
 
-    # Initialize notebook kernel
-    try:
-        await initialize_notebook()
-    except Exception as e:
-        logger.error(f"Failed to initialize notebook kernel: {e}")
+    # Initialize notebook kernel only if this is a notebook session
+    if _is_notebook_session():
+        try:
+            await initialize_notebook()
+        except Exception as e:
+            logger.error(f"Failed to initialize notebook kernel: {e}")
 
     yield
 
-    # Cleanup notebook kernel on shutdown
-    try:
-        await cleanup_notebook()
-        logger.info("Cleaned up notebook kernel during shutdown")
-    except Exception as e:
-        logger.error(f"Error cleaning up notebook kernel during shutdown: {e}")
+    # Cleanup notebook kernel on shutdown only if this is a notebook session
+    if _is_notebook_session():
+        try:
+            await cleanup_notebook()
+            logger.info("Cleaned up notebook kernel during shutdown")
+        except Exception as e:
+            logger.error(f"Error cleaning up notebook kernel during shutdown: {e}")
 
     # Cleanup connections on shutdown
     try:

@@ -1,11 +1,13 @@
 import asyncio
 import logging
+import os
 import uuid
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any
 
 from nbclient import NotebookClient
-from nbformat import NotebookNode
+from nbformat import NotebookNode, read
 from nbformat.v4 import new_code_cell, new_notebook
 from pydantic import BaseModel, Field
 
@@ -44,11 +46,54 @@ class JupyterKernelManager:
 
     def __init__(self):
         self.client: NotebookClient | None = None
-        self.nb = new_notebook()
+        self.nb = self._load_or_create_notebook()
         self.kernel_id: str | None = None
         self.is_starting = False
         self.is_ready = False
         self._lock = asyncio.Lock()
+
+    def _load_or_create_notebook(self) -> NotebookNode:
+        """Load existing notebook from file or create a new one if not found."""
+        # Check for notebook_path in environment variable from initialization data
+        initialization_data_str = os.environ.get("INITIALIZATION_DATA")
+        notebook_path = None
+
+        if initialization_data_str:
+            try:
+                import json
+
+                initialization_data = json.loads(initialization_data_str)
+                notebook_path = initialization_data.get("notebook_path")
+            except (json.JSONDecodeError, TypeError):
+                logger.warning(
+                    "Failed to parse INITIALIZATION_DATA environment variable"
+                )
+
+        # Try to load existing notebook file
+        if notebook_path and Path(notebook_path).exists():
+            try:
+                logger.info(f"Loading existing notebook from: {notebook_path}")
+                with open(notebook_path, "r") as f:
+                    notebook = read(f, as_version=4)
+                logger.info(
+                    f"Successfully loaded notebook with {len(notebook.cells)} cells"
+                )
+                return notebook
+            except Exception as e:
+                logger.error(f"Failed to load notebook from {notebook_path}: {e}")
+                logger.info("Falling back to creating new notebook")
+        else:
+            if notebook_path:
+                logger.info(
+                    f"Notebook file not found at {notebook_path}, creating new notebook"
+                )
+            else:
+                logger.info(
+                    "No notebook_path found in environment, creating new notebook"
+                )
+
+        # Fall back to creating new notebook
+        return new_notebook()
 
     def _get_or_create_cell(self, code: str, cell_id: str) -> NotebookNode:
         """
@@ -131,7 +176,9 @@ class JupyterKernelManager:
 
         # Clear state
         self.client = None
-        self.nb = new_notebook()
+        self.nb = (
+            self._load_or_create_notebook()
+        )  # Load notebook again instead of creating new
         self.kernel_id = None
         self.is_ready = False
 
