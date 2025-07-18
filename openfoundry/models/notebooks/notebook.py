@@ -56,18 +56,6 @@ class Notebook(Base):
         os.makedirs(notebook_dir, exist_ok=True)
 
         current_dir = Path(__file__).parent
-
-        # Render and write utils.py (reuse the same template as apps)
-        utils_template_path = os.path.join(current_dir, "..", "apps", "utils.py.j2")
-        with open(utils_template_path, "r") as f:
-            utils_template_str = f.read()
-
-        utils_template = jinja2.Template(utils_template_str)
-        rendered_utils_content = utils_template.render()
-        utils_file = os.path.join(notebook_dir, "utils.py")
-        with open(utils_file, "w") as f:
-            f.write(rendered_utils_content)
-
         # Render and write notebook.ipynb
         notebook_template_path = os.path.join(current_dir, "notebook.ipynb.j2")
         with open(notebook_template_path, "r") as f:
