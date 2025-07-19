@@ -237,17 +237,30 @@ export const useNotebookOperations = ({
     });
   }, [notebookData]);
 
-  const deleteCell = useCallback((index: number) => {
-    if (!notebookData) return;
+  const deleteCell = useCallback(async (index: number) => {
+    if (!notebookData || index < 0 || index >= notebookData.cells.length) return;
 
-    const newCells = [...notebookData.cells];
-    newCells.splice(index, 1);
+    const cellToDelete = notebookData.cells[index];
+    const cellId = cellToDelete.id;
 
-    setNotebookData({
-      ...notebookData,
-      cells: newCells,
-    });
-  }, [notebookData]);
+    try {
+      setError(null);
+      const response = await fetch(`${baseUrl}/cells/${cellId}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to delete cell: ${response.statusText}`);
+      }
+
+      // After successful deletion, refresh the notebook data to get the updated state
+      await getNotebook();
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to delete cell";
+      setError(errorMessage);
+      console.error("Error deleting cell:", err);
+    }
+  }, [notebookData, baseUrl, getNotebook]);
 
   const executeCellWithStatus = useCallback(async (cellId: string, code: string) => {
     setExecutingCells(prev => new Set(prev).add(cellId));

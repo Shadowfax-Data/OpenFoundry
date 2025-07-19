@@ -593,6 +593,23 @@ async def rerun_notebook(
         return response.json()
 
 
+@router.delete(
+    "/notebooks/{notebook_id}/sessions/{session_id}/cells/{cell_id}",
+)
+async def delete_notebook_cell(
+    notebook_id: uuid.UUID,
+    session_id: uuid.UUID,
+    cell_id: str,
+    request: Request,
+    run_context: NotebookAgentRunContext = Depends(get_notebook_agent_run_context),
+):
+    """Delete a cell from the notebook."""
+    async with run_context.get_sandbox_client() as client:
+        response = await client.delete(f"/api/notebook/cells/{cell_id}")
+        response.raise_for_status()
+        return response.json()
+
+
 @router.post(
     "/notebooks/{notebook_id}/sessions/{session_id}/save",
 )

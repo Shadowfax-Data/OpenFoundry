@@ -334,6 +334,25 @@ class JupyterKernelManager:
             # Return the actual notebook with all cells and their outputs
             return self.nb
 
+    def delete_cell(self, cell_id: str) -> bool:
+        """
+        Delete a cell from the notebook by its ID.
+
+        Args:
+            cell_id: The ID of the cell to delete
+
+        Returns:
+            bool: True if cell was found and deleted, False if cell ID not found
+        """
+        for i, cell in enumerate(self.nb.cells):
+            if cell.id == cell_id:
+                del self.nb.cells[i]
+                logger.info(f"Deleted cell with ID: {cell_id}")
+                return True
+
+        logger.warning(f"Cell with ID {cell_id} not found for deletion")
+        return False
+
 
 # Lifecycle Management Functions
 

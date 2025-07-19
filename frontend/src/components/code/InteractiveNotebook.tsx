@@ -14,7 +14,7 @@ interface InteractiveNotebookProps {
   onExecuteCell: (cellId: string, code: string) => Promise<any>;
   onUpdateCell: (index: number, cell: NotebookCellInput) => void;
   onAddCell: (index: number, cellType: "code" | "markdown") => void;
-  onDeleteCell: (index: number) => void;
+  onDeleteCell: (index: number) => Promise<void>;
   onRestartKernel: () => Promise<boolean>;
   onRerunNotebook: () => Promise<boolean>;
   onSaveWorkspace?: () => Promise<void>;

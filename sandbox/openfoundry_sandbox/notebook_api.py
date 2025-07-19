@@ -51,6 +51,20 @@ class RerunNotebookResponse(BaseModel):
     )
 
 
+class DeleteCellRequest(BaseModel):
+    """Request model for deleting a cell."""
+
+    cell_id: str = Field(..., description="Unique identifier of the cell to delete")
+
+
+class DeleteCellResponse(BaseModel):
+    """Response model for cell deletion."""
+
+    success: bool = Field(..., description="Whether the deletion was successful")
+    message: str = Field(..., description="Deletion result message")
+    cell_id: str = Field(..., description="ID of the cell that was deleted")
+
+
 # Global kernel manager instance
 kernel_manager = JupyterKernelManager()
 
@@ -149,6 +163,23 @@ async def rerun_notebook():
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to rerun notebook: {str(e)}",
         )
+
+
+@router.delete("/cells/{cell_id}", response_model=DeleteCellResponse)
+async def delete_cell(cell_id: str):
+    """Delete a cell from the notebook by its ID."""
+    logger.info(f"Deleting cell with ID: {cell_id}")
+
+    success = kernel_manager.delete_cell(cell_id)
+
+    if success:
+        message = f"Cell with ID '{cell_id}' deleted successfully"
+        logger.info(message)
+        return DeleteCellResponse(success=True, message=message, cell_id=cell_id)
+    else:
+        message = f"Cell with ID '{cell_id}' not found"
+        logger.warning(message)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message)
 
 
 # --- Lifecycle Management ---

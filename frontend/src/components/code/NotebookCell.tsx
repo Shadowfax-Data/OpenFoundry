@@ -18,7 +18,7 @@ interface NotebookCellProps {
   onExecute: (cellId: string, code: string) => Promise<void>;
   onUpdateCell: (index: number, cell: NotebookCellInput) => void;
   onAddCell: (index: number, cellType: "code" | "markdown") => void;
-  onDeleteCell: (index: number) => void;
+  onDeleteCell: (index: number) => Promise<void>;
   isExecuting?: boolean;
 }
 
@@ -62,6 +62,7 @@ export function NotebookCellComponent({
   const [cellContent, setCellContent] = useState(
     Array.isArray(cell.source) ? cell.source.join("") : cell.source
   );
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleCellTypeChange = (newType: "code" | "markdown") => {
     const updatedCell = { ...cell, cell_type: newType };
@@ -77,6 +78,17 @@ export function NotebookCellComponent({
   const handleExecute = async () => {
     if (cell.cell_type === "code") {
       await onExecute(cell.id, cellContent);
+    }
+  };
+
+  const handleDelete = async () => {
+    setIsDeleting(true);
+    try {
+      await onDeleteCell(index);
+    } catch (error) {
+      console.error("Failed to delete cell:", error);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -265,7 +277,8 @@ export function NotebookCellComponent({
             variant="ghost"
             size="sm"
             className="h-7 w-7 p-0 text-red-600 hover:text-red-700"
-            onClick={() => onDeleteCell(index)}
+            onClick={handleDelete}
+            disabled={isDeleting}
             title="Delete cell"
           >
             <Trash2 className="h-3 w-3" />
