@@ -1,24 +1,9 @@
 import { Plus, RotateCcw, Save } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { NotebookCellInput } from "@/hooks/useNotebookOperations";
+import { KernelStatus,NotebookCellInput, NotebookData } from "@/hooks/useNotebookOperations";
 
 import { NotebookCellComponent } from "./NotebookCell";
-
-interface NotebookData {
-  cells: NotebookCellInput[];
-  metadata: any;
-  nbformat: number;
-  nbformat_minor: number;
-}
-
-interface KernelStatus {
-  is_ready: boolean;
-  is_starting: boolean;
-  kernel_id: string | null;
-  sandbox_healthy: boolean;
-  overall_ready: boolean;
-}
 
 interface InteractiveNotebookProps {
   notebookData: NotebookData | null;

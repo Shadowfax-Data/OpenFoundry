@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 
-interface NotebookCell {
+export interface NotebookCell {
   id: string;
   cell_type: "code" | "markdown";
   source: string[];
@@ -9,7 +9,7 @@ interface NotebookCell {
 }
 
 // Type for UI components that can handle both string and string[] sources
-interface NotebookCellInput {
+export interface NotebookCellInput {
   id: string;
   cell_type: "code" | "markdown";
   source: string[] | string;
@@ -17,14 +17,14 @@ interface NotebookCellInput {
   execution_count?: number | null;
 }
 
-interface NotebookData {
+export interface NotebookData {
   cells: NotebookCell[];
   metadata: any;
   nbformat: number;
   nbformat_minor: number;
 }
 
-interface KernelStatus {
+export interface KernelStatus {
   is_ready: boolean;
   is_starting: boolean;
   kernel_id: string | null;
@@ -76,7 +76,6 @@ export const useNotebookOperations = ({
 
       const data = await response.json();
 
-      console.log("data from getNotebook", data);
 
       // Ensure all cells have frontend_cell_ids
       if (data && data.cells) {
@@ -118,7 +117,6 @@ export const useNotebookOperations = ({
       // Always refresh notebook data after execution to get updated cell outputs
       await getNotebook();
 
-      console.log("result from executeCode", result);
       return result;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Failed to execute code";
@@ -261,7 +259,6 @@ export const useNotebookOperations = ({
       };
 
       const result = await executeCode(executeRequest);
-      console.log("result from executeCellWithStatus", result);
       return result;
     } finally {
       setExecutingCells(prev => {
@@ -314,6 +311,3 @@ export const useNotebookOperations = ({
     deleteCell,
   };
 };
-
-// Export types for use in UI components
-export type { NotebookCellInput };

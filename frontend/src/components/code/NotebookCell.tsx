@@ -22,6 +22,34 @@ interface NotebookCellProps {
   isExecuting?: boolean;
 }
 
+// Helper function to process base64 image data
+const processImageData = (data: any, mimeType: string): string => {
+  let base64String = '';
+
+  // Handle array format (from notebook output)
+  if (Array.isArray(data)) {
+    base64String = data.join('');
+  } else {
+    base64String = String(data);
+  }
+
+  // Remove all whitespace
+  base64String = base64String.replace(/\s/g, '');
+
+  // Check if data already contains a data URI prefix
+  if (base64String.startsWith('data:')) {
+    return base64String;
+  }
+
+  // Check if it already starts with the base64 part only
+  if (base64String.startsWith(`${mimeType};base64,`)) {
+    return `data:${base64String}`;
+  }
+
+  // Add the full data URI prefix
+  return `data:${mimeType};base64,${base64String}`;
+};
+
 export function NotebookCellComponent({
   cell,
   index,
@@ -74,23 +102,112 @@ export function NotebookCellComponent({
                 {output.text?.join?.("") || output.text}
               </pre>
             )}
-            {output.output_type === "execute_result" && (
-              <pre className="text-sm font-mono whitespace-pre-wrap">
-                {output.data?.["text/plain"]?.join?.("") || output.data?.["text/plain"]}
-              </pre>
+            {output.output_type === "execute_result" && output.data && (
+              <div className="space-y-2">
+                {/* Handle images */}
+                {output.data["image/png"] && (
+                  <div className="flex justify-center">
+                    <img
+                      src={processImageData(output.data["image/png"], "image/png")}
+                      alt="Plot output"
+                      className="max-w-full h-auto rounded border"
+                    />
+                  </div>
+                )}
+                {output.data["image/jpeg"] && (
+                  <div className="flex justify-center">
+                    <img
+                      src={processImageData(output.data["image/jpeg"], "image/jpeg")}
+                      alt="Plot output"
+                      className="max-w-full h-auto rounded border"
+                    />
+                  </div>
+                )}
+                {output.data["image/svg+xml"] && (
+                  <div className="flex justify-center">
+                    <div
+                      dangerouslySetInnerHTML={{
+                        __html: Array.isArray(output.data["image/svg+xml"]) ? output.data["image/svg+xml"].join('') : output.data["image/svg+xml"]
+                      }}
+                      className="max-w-full"
+                    />
+                  </div>
+                )}
+                {/* Handle HTML */}
+                {output.data["text/html"] && (
+                  <div
+                    className="text-sm notebook-output"
+                    dangerouslySetInnerHTML={{
+                      __html: Array.isArray(output.data["text/html"]) ? output.data["text/html"].join('') : output.data["text/html"]
+                    }}
+                  />
+                )}
+                {/* Handle text/plain as HTML when no other format is available */}
+                {output.data["text/plain"] && !output.data["image/png"] && !output.data["image/jpeg"] && !output.data["image/svg+xml"] && !output.data["text/html"] && (
+                  <div
+                    className="text-sm"
+                    dangerouslySetInnerHTML={{
+                      __html: Array.isArray(output.data["text/plain"]) ? output.data["text/plain"].join('') : output.data["text/plain"]
+                    }}
+                  />
+                )}
+              </div>
             )}
             {output.output_type === "error" && (
               <pre className="text-sm font-mono text-red-600 whitespace-pre-wrap">
                 {output.traceback?.join?.("\n") || output.evalue}
               </pre>
             )}
-            {output.output_type === "display_data" && output.data?.["text/html"] && (
-              <div
-                className="text-sm"
-                dangerouslySetInnerHTML={{
-                  __html: output.data["text/html"].join?.("") || output.data["text/html"]
-                }}
-              />
+            {output.output_type === "display_data" && output.data && (
+              <div className="space-y-2">
+                {/* Handle images */}
+                {output.data["image/png"] && (
+                  <div className="flex justify-center">
+                    <img
+                      src={processImageData(output.data["image/png"], "image/png")}
+                      alt="Display output"
+                      className="max-w-full h-auto rounded border"
+                    />
+                  </div>
+                )}
+                {output.data["image/jpeg"] && (
+                  <div className="flex justify-center">
+                    <img
+                      src={processImageData(output.data["image/jpeg"], "image/jpeg")}
+                      alt="Display output"
+                      className="max-w-full h-auto rounded border"
+                    />
+                  </div>
+                )}
+                {output.data["image/svg+xml"] && (
+                  <div className="flex justify-center">
+                    <div
+                      dangerouslySetInnerHTML={{
+                        __html: Array.isArray(output.data["image/svg+xml"]) ? output.data["image/svg+xml"].join('') : output.data["image/svg+xml"]
+                      }}
+                      className="max-w-full"
+                    />
+                  </div>
+                )}
+                {/* Handle HTML */}
+                {output.data["text/html"] && (
+                  <div
+                    className="text-sm notebook-output"
+                    dangerouslySetInnerHTML={{
+                      __html: Array.isArray(output.data["text/html"]) ? output.data["text/html"].join('') : output.data["text/html"]
+                    }}
+                  />
+                )}
+                {/* Handle text/plain as HTML fallback */}
+                {output.data["text/plain"] && !output.data["image/png"] && !output.data["image/jpeg"] && !output.data["image/svg+xml"] && !output.data["text/html"] && (
+                  <div
+                    className="text-sm"
+                    dangerouslySetInnerHTML={{
+                      __html: Array.isArray(output.data["text/plain"]) ? output.data["text/plain"].join('') : output.data["text/plain"]
+                    }}
+                  />
+                )}
+              </div>
             )}
           </div>
         ))}

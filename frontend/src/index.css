@@ -122,3 +122,40 @@
     cursor: pointer;
   }
 }
+
+/* Notebook DataFrame output styles */
+@layer components {
+  .notebook-output table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+    font-family: system-ui, -apple-system, sans-serif;
+    border: 1px solid #d1d5db;
+  }
+
+  .notebook-output th,
+  .notebook-output td {
+    border: 1px solid #d1d5db;
+    padding: 8px 12px;
+    text-align: right;
+  }
+
+  .notebook-output th {
+    background-color: #f9fafb;
+    font-weight: 600;
+  }
+
+  .notebook-output tbody tr:nth-child(even) {
+    background-color: #f9fafb;
+  }
+
+  .notebook-output tbody tr:hover {
+    background-color: #dbeafe;
+  }
+
+  /* Override pandas default styles */
+  .notebook-output .dataframe {
+    margin: 0;
+    font-size: 14px;
+  }
+}
