@@ -112,11 +112,12 @@ async def save_notebook():
     # Get the notebook path from environment variable
     notebook_path = get_notebook_path()
     if not notebook_path:
+        logger.info("Not saving notebook to file")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Notebook path not found in environment configuration",
         )
-
+    logger.info(f"Saving notebook to {notebook_path}")
     # Get the current notebook from kernel manager
     notebook = await kernel_manager.get_notebook()
 

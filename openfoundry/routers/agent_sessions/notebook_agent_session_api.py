@@ -621,13 +621,7 @@ async def save_notebook(
 ):
     """Save the notebook to file."""
     async with run_context.get_sandbox_client() as client:
-        try:
-            response = await client.post("/api/notebook/save")
-        except httpx.RequestError as e:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Failed to save notebook: {e}",
-            )
+        response = await client.post("/api/notebook/save")
         response.raise_for_status()
         return response.json()
 
