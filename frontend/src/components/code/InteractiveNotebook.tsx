@@ -11,10 +11,18 @@ interface InteractiveNotebookProps {
   loading: boolean;
   error: string | null;
   executingCells: Set<string>;
-  onExecuteCell: (cellId: string, code: string) => Promise<any>;
+  onExecuteCell: (cellId: string, code: string, options?: {
+    onEvent?: (event: {
+      event_type: 'started' | 'output' | 'completed' | 'error' | 'interrupted';
+      cell_id: string;
+      timestamp: string;
+      data: any;
+    }) => void;
+  }) => Promise<any>;
   onUpdateCell: (index: number, cell: NotebookCellInput) => void;
   onAddCell: (index: number, cellType: "code" | "markdown") => void;
   onDeleteCell: (index: number) => Promise<void>;
+  onStopExecution: (cellId: string) => Promise<boolean>;
   onRestartKernel: () => Promise<boolean>;
   onRerunNotebook: () => Promise<boolean>;
   onSaveWorkspace?: () => Promise<void>;
@@ -30,6 +38,7 @@ export function InteractiveNotebook({
   onUpdateCell,
   onAddCell,
   onDeleteCell,
+  onStopExecution,
   onRestartKernel,
   onRerunNotebook,
   onSaveWorkspace,
@@ -154,6 +163,7 @@ export function InteractiveNotebook({
                 onUpdateCell={onUpdateCell}
                 onAddCell={onAddCell}
                 onDeleteCell={onDeleteCell}
+                onStopExecution={onStopExecution}
                 isExecuting={executingCells.has(cell.id)}
               />
             ))}

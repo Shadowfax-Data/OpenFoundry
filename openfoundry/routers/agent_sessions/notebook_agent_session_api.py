@@ -11,6 +11,7 @@ from fastapi import (
     Request,
     status,
 )
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from sqlalchemy.orm import Session, joinedload
 
@@ -263,63 +264,6 @@ def get_notebook_agent_sessions(notebook_id: uuid.UUID, request: Request):
 
 
 @router.post(
-    "/notebooks/{notebook_id}/sessions/{session_id}/save",
-)
-def save_notebook_workspace_from_container(
-    notebook_id: uuid.UUID, session_id: uuid.UUID, request: Request
-):
-    """Save notebook workspace files from the Docker container to local storage."""
-    db: Session = request.state.db
-
-    # Get the specific agent session for the notebook
-    notebook_agent_session = (
-        db.query(NotebookAgentSession)
-        .options(
-            joinedload(NotebookAgentSession.agent_session),
-            joinedload(NotebookAgentSession.notebook),
-        )
-        .filter(
-            NotebookAgentSession.id == session_id,
-            NotebookAgentSession.notebook_id == notebook_id,
-        )
-        .first()
-    )
-
-    if not notebook_agent_session:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Session with id {session_id} not found for notebook {notebook_id}",
-        )
-
-    # Check if the session has a container
-    agent_session = notebook_agent_session.agent_session
-    if not agent_session.container_id:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Session {session_id} does not have an associated container",
-        )
-
-    # Check if the session is active
-    if agent_session.status != AgentSessionStatus.ACTIVE:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Session {session_id} is not active",
-        )
-
-    notebook = notebook_agent_session.notebook
-    # Get the notebook's workspace directory
-    workspace_path = notebook.get_workspace_directory()
-
-    # Export workspace files from container to local storage
-    export_workspace_from_container(
-        container_id=agent_session.container_id, local_workspace_dir=workspace_path
-    )
-    return {
-        "message": f"Notebook workspace files successfully saved to {workspace_path}"
-    }
-
-
-@router.post(
     "/notebooks/{notebook_id}/sessions/{session_id}/stop",
     response_model=NotebookAgentSessionModel,
 )
@@ -484,24 +428,76 @@ async def get_notebook_data(
 
 
 @router.post(
-    "/notebooks/{notebook_id}/sessions/{session_id}/execute",
+    "/notebooks/{notebook_id}/sessions/{session_id}/execute/stream",
 )
-async def execute_notebook_code(
+async def execute_notebook_code_stream(
     notebook_id: uuid.UUID,
     session_id: uuid.UUID,
     request: Request,
     execute_request: dict,
     run_context: NotebookAgentRunContext = Depends(get_notebook_agent_run_context),
 ):
-    """Execute code in a notebook cell."""
+    """Execute code in a notebook cell with streaming output."""
+
+    async def stream_execution():
+        """Stream execution events from the sandbox."""
+        try:
+            async with run_context.get_sandbox_client() as client:
+                # Start streaming request to sandbox
+                async with client.stream(
+                    "POST",
+                    "/api/notebook/execute/stream",
+                    json=execute_request,
+                    headers={"Accept": "text/event-stream"},
+                ) as response:
+                    response.raise_for_status()
+
+                    # Forward the streaming response
+                    async for chunk in response.aiter_text():
+                        if chunk.strip():
+                            yield chunk
+
+        except httpx.RequestError as e:
+            logger.error(f"Request error in streaming execution: {e}")
+            # Send error event in SSE format
+            yield f"data: {{\"event_type\": \"error\", \"cell_id\": \"{execute_request.get('cell_id', 'unknown')}\", \"timestamp\": \"\", \"data\": {{\"error\": \"Connection error: {str(e)}\"}}}}\n\n"
+        except Exception as e:
+            logger.error(f"Unexpected error in streaming execution: {e}")
+            yield f"data: {{\"event_type\": \"error\", \"cell_id\": \"{execute_request.get('cell_id', 'unknown')}\", \"timestamp\": \"\", \"data\": {{\"error\": \"Unexpected error: {str(e)}\"}}}}\n\n"
+
+    return StreamingResponse(
+        stream_execution(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
+
+
+@router.post(
+    "/notebooks/{notebook_id}/sessions/{session_id}/stop_cell_execution/{cell_id}",
+)
+async def stop_notebook_cell_execution(
+    notebook_id: uuid.UUID,
+    session_id: uuid.UUID,
+    cell_id: str,
+    request: Request,
+    run_context: NotebookAgentRunContext = Depends(get_notebook_agent_run_context),
+):
+    """Stop/interrupt a specific cell execution in the notebook."""
     async with run_context.get_sandbox_client() as client:
-        response = await client.post("/api/notebook/execute", json=execute_request)
-        json_response = response.json()
-        print(
-            "json_response from execute_notebook_code in agent_session_api_endpoint",
-            json_response,
-        )
-        return json_response
+        try:
+            stop_request = {"cell_id": cell_id}
+            response = await client.post("/api/notebook/stop", json=stop_request)
+        except httpx.RequestError as e:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail=f"Failed to stop cell execution: {e}",
+            )
+        response.raise_for_status()
+        return response.json()
 
 
 @router.get(
@@ -619,11 +615,44 @@ async def save_notebook(
     request: Request,
     run_context: NotebookAgentRunContext = Depends(get_notebook_agent_run_context),
 ):
-    """Save the notebook to file."""
+    """Save the notebook file and workspace files."""
+    db: Session = request.state.db
+
+    # Get the specific agent session for the notebook
+    notebook_agent_session = (
+        db.query(NotebookAgentSession)
+        .options(
+            joinedload(NotebookAgentSession.agent_session),
+            joinedload(NotebookAgentSession.notebook),
+        )
+        .filter(
+            NotebookAgentSession.id == session_id,
+            NotebookAgentSession.notebook_id == notebook_id,
+        )
+        .first()
+    )
+
+    if not notebook_agent_session:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Session with id {session_id} not found for notebook {notebook_id}",
+        )
+
+    agent_session = notebook_agent_session.agent_session
+    notebook = notebook_agent_session.notebook
+
+    # Step 1: Save the notebook file via sandbox API
     async with run_context.get_sandbox_client() as client:
         response = await client.post("/api/notebook/save")
         response.raise_for_status()
-        return response.json()
+
+    if agent_session.container_id and container_exists(agent_session.container_id):
+        workspace_path = notebook.get_workspace_directory()
+        export_workspace_from_container(
+            container_id=agent_session.container_id, local_workspace_dir=workspace_path
+        )
+
+    return {"message": "Notebook and workspace saved successfully"}
 
 
 @router.post(

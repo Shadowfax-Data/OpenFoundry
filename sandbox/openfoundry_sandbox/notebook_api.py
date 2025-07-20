@@ -2,11 +2,13 @@ import logging
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, status
+from fastapi.responses import StreamingResponse
 from nbformat import write
 from pydantic import BaseModel, Field
 
 from openfoundry_sandbox.kernel_manager import (
     ExecuteCodeResponse,
+    ExecutionStreamEvent,
     JupyterKernelManager,
     cleanup_kernel,
     get_notebook_path,
@@ -65,6 +67,22 @@ class DeleteCellResponse(BaseModel):
     cell_id: str = Field(..., description="ID of the cell that was deleted")
 
 
+class StopExecutionRequest(BaseModel):
+    """Request model for stopping cell execution."""
+
+    cell_id: str | None = Field(
+        None,
+        description="Optional specific cell ID to stop (if not provided, stops any currently executing cell)",
+    )
+
+
+class StopExecutionResponse(BaseModel):
+    """Response model for stopping execution."""
+
+    success: bool = Field(..., description="Whether the stop operation was successful")
+    message: str = Field(..., description="Result message")
+
+
 # Global kernel manager instance
 kernel_manager = JupyterKernelManager()
 
@@ -72,13 +90,42 @@ kernel_manager = JupyterKernelManager()
 # --- API Endpoints ---
 
 
-@router.post("/execute", response_model=ExecuteCodeResponse)
-async def execute_code(request: ExecuteCodeRequest):
-    """Execute Python code in the kernel."""
+@router.post("/execute/stream")
+async def execute_code_stream(request: ExecuteCodeRequest):
+    """Execute Python code in the kernel with streaming output."""
     logger.info(
-        f"Executing code with cell_id '{request.cell_id}': {request.code[:100]}..."
+        f"Streaming execution for cell_id '{request.cell_id}': {request.code[:100]}..."
     )
-    return await kernel_manager.execute_code(request.code, request.cell_id)
+
+    async def event_generator():
+        """Generate SSE events from the execution stream."""
+        try:
+            async for event in kernel_manager.execute_code_streaming(
+                request.code, request.cell_id
+            ):
+                # Format as Server-Sent Events
+                event_data = event.model_dump_json()
+                yield f"data: {event_data}\n\n"
+        except Exception as e:
+            logger.error(f"Error in streaming execution: {e}")
+            # Send error event
+            error_event = ExecutionStreamEvent(
+                event_type="error",
+                cell_id=request.cell_id,
+                timestamp="",
+                data={"error": str(e)},
+            )
+            yield f"data: {error_event.model_dump_json()}\n\n"
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",  # Disable nginx buffering
+        },
+    )
 
 
 @router.get("/status", response_model=KernelStatusResponse)
@@ -102,6 +149,25 @@ async def restart_kernel():
     """Restart the kernel (clears all variables and state)."""
     await kernel_manager.restart_kernel()
     return {"message": "Kernel restarted successfully"}
+
+
+@router.post("/stop", response_model=StopExecutionResponse)
+async def stop_execution(request: StopExecutionRequest):
+    """Stop/interrupt the currently executing cell."""
+    logger.info(f"Stopping execution for cell_id: {request.cell_id}")
+
+    success = await kernel_manager.interrupt_kernel(request.cell_id)
+
+    if success:
+        message = "Successfully interrupted execution"
+        if request.cell_id:
+            message += f" for cell {request.cell_id}"
+        logger.info(message)
+        return StopExecutionResponse(message=message, success=True)
+    else:
+        message = "No execution to interrupt or interrupt failed"
+        logger.warning(message)
+        return StopExecutionResponse(message=message, success=False)
 
 
 @router.post("/save")

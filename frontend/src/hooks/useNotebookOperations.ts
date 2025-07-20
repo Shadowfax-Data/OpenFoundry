@@ -39,10 +39,13 @@ interface ExecuteCodeRequest {
 
 interface ExecuteCodeResponse {
   cell_id: string;
+  code: string;
   execution_count: number;
   outputs: any[];
   status: "completed" | "error";
-  error_message?: string;
+  error?: string;
+  started_at: string;
+  completed_at: string;
 }
 
 interface UseNotebookOperationsProps {
@@ -95,16 +98,110 @@ export const useNotebookOperations = ({
     }
   }, [baseUrl]);
 
-  // Execute code in a cell
-  const executeCode = useCallback(async (
-    request: ExecuteCodeRequest
+
+
+  // Execute code with streaming output
+  const executeCodeStreaming = useCallback((
+    request: ExecuteCodeRequest,
+    onEvent?: (event: {
+      event_type: 'started' | 'output' | 'completed' | 'error';
+      cell_id: string;
+      timestamp: string;
+      data: any;
+    }) => void
+  ): Promise<ExecuteCodeResponse | null> => {
+    return new Promise((resolve, reject) => {
+      setError(null);
+
+      const eventSource = new EventSource(
+        `${baseUrl}/execute/stream`,
+        {
+          // Note: EventSource doesn't support POST by default
+          // We'll need to implement this differently
+        }
+      );
+
+      let finalResult: ExecuteCodeResponse | null = null;
+
+      eventSource.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+
+          // Call the event handler if provided
+          if (onEvent) {
+            onEvent(data);
+          }
+
+          // Handle different event types
+          switch (data.event_type) {
+            case 'started':
+              console.log(`Execution started for cell ${data.cell_id}`);
+              break;
+
+            case 'output':
+              console.log(`Output received for cell ${data.cell_id}:`, data.data.output);
+              // You could update the notebook display here in real-time
+              break;
+
+            case 'completed':
+              finalResult = {
+                cell_id: data.cell_id,
+                code: request.code,
+                execution_count: data.data.execution_count || 0,
+                outputs: data.data.outputs || [],
+                status: data.data.status,
+                error: data.data.error,
+                started_at: data.data.started_at,
+                completed_at: data.data.completed_at,
+              };
+              eventSource.close();
+              getNotebook().then(() => resolve(finalResult));
+              break;
+
+            case 'error':
+              eventSource.close();
+              const errorMessage = data.data.error || 'Execution failed';
+              setError(errorMessage);
+              reject(new Error(errorMessage));
+              break;
+          }
+        } catch (err) {
+          console.error('Error parsing event data:', err);
+          eventSource.close();
+          reject(err);
+        }
+      };
+
+      eventSource.onerror = (error) => {
+        console.error('EventSource error:', error);
+        eventSource.close();
+        setError('Connection error during execution');
+        reject(new Error('Connection error during execution'));
+      };
+
+      // Since EventSource doesn't support POST, we'll need to use fetch with streaming
+      // This is a placeholder - we'll implement the actual streaming below
+    });
+  }, [baseUrl, getNotebook]);
+
+  // Execute code with streaming using fetch (since EventSource doesn't support POST)
+  const executeCodeStreamingFetch = useCallback(async (
+    request: ExecuteCodeRequest,
+    onEvent?: (event: {
+      event_type: 'started' | 'output' | 'completed' | 'error' | 'interrupted';
+      cell_id: string;
+      timestamp: string;
+      data: any;
+    }) => void
   ): Promise<ExecuteCodeResponse | null> => {
     try {
       setError(null);
-      const response = await fetch(`${baseUrl}/execute`, {
+
+      const response = await fetch(`${baseUrl}/execute/stream`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "Accept": "text/event-stream",
         },
         body: JSON.stringify(request),
       });
@@ -113,15 +210,78 @@ export const useNotebookOperations = ({
         throw new Error(`Failed to execute code: ${response.statusText}`);
       }
 
-      const result = await response.json();
-      // Always refresh notebook data after execution to get updated cell outputs
-      await getNotebook();
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error("No response body reader available");
+      }
 
-      return result;
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let finalResult: ExecuteCodeResponse | null = null;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+
+        // Process complete lines
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || ""; // Keep incomplete line in buffer
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const eventData = JSON.parse(line.slice(6));
+
+              // Call the event handler if provided
+              if (onEvent) {
+                onEvent(eventData);
+              }
+
+              // Handle different event types
+              switch (eventData.event_type) {
+                case 'started':
+                  console.log(`Execution started for cell ${eventData.cell_id}`);
+                  break;
+
+                case 'output':
+                  console.log(`Output received for cell ${eventData.cell_id}:`, eventData.data.output);
+                  break;
+
+                case 'completed':
+                  finalResult = {
+                    cell_id: eventData.cell_id,
+                    code: request.code,
+                    execution_count: eventData.data.execution_count || 0,
+                    outputs: eventData.data.outputs || [],
+                    status: eventData.data.status,
+                    error: eventData.data.error,
+                    started_at: eventData.data.started_at,
+                    completed_at: eventData.data.completed_at,
+                  };
+                  break;
+
+                case 'error':
+                  const errorMessage = eventData.data.error || 'Execution failed';
+                  setError(errorMessage);
+                  throw new Error(errorMessage);
+              }
+            } catch (parseError) {
+              console.error('Error parsing event data:', parseError);
+            }
+          }
+        }
+      }
+
+      // Refresh notebook data after execution
+      await getNotebook();
+      return finalResult;
+
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Failed to execute code";
       setError(errorMessage);
-      console.error("Error executing code:", err);
+      console.error("Error executing code with streaming:", err);
       return null;
     }
   }, [baseUrl, getNotebook]);
@@ -262,7 +422,45 @@ export const useNotebookOperations = ({
     }
   }, [notebookData, baseUrl, getNotebook]);
 
-  const executeCellWithStatus = useCallback(async (cellId: string, code: string) => {
+  const stopExecution = useCallback(async (cellId: string): Promise<boolean> => {
+    try {
+      setError(null);
+
+      const endpoint = `${baseUrl}/stop_cell_execution/${encodeURIComponent(cellId)}`;
+
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to stop cell execution: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      return result.success;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to stop cell execution";
+      setError(errorMessage);
+      console.error("Error stopping cell execution:", err);
+      return false;
+    }
+  }, [baseUrl]);
+
+  const executeCellWithStatus = useCallback(async (
+    cellId: string,
+    code: string,
+    options?: {
+      onEvent?: (event: {
+        event_type: 'started' | 'output' | 'completed' | 'error' | 'interrupted';
+        cell_id: string;
+        timestamp: string;
+        data: any;
+      }) => void;
+    }
+  ) => {
     setExecutingCells(prev => new Set(prev).add(cellId));
 
     try {
@@ -271,7 +469,8 @@ export const useNotebookOperations = ({
         cell_id: cellId,
       };
 
-      const result = await executeCode(executeRequest);
+      // Always use streaming execution
+      const result = await executeCodeStreamingFetch(executeRequest, options?.onEvent);
       return result;
     } finally {
       setExecutingCells(prev => {
@@ -280,7 +479,7 @@ export const useNotebookOperations = ({
         return newSet;
       });
     }
-  }, [executeCode]);
+  }, [executeCodeStreamingFetch]);
 
   // Ensure we have at least one empty cell for new notebooks
   const ensureMinimumCells = useCallback(() => {
@@ -314,8 +513,10 @@ export const useNotebookOperations = ({
     error,
     executingCells,
     getNotebook,
-    executeCode,
+    executeCodeStreaming,
+    executeCodeStreamingFetch,
     executeCellWithStatus,
+    stopExecution,
     getKernelStatus,
     restartKernel,
     rerunNotebook,

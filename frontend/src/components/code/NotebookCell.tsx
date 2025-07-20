@@ -1,4 +1,4 @@
-import { Play, Plus,Trash2 } from "lucide-react";
+import { Play, Plus, Square, Trash2 } from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -15,10 +15,18 @@ import { NotebookCellInput } from "@/hooks/useNotebookOperations";
 interface NotebookCellProps {
   cell: NotebookCellInput;
   index: number;
-  onExecute: (cellId: string, code: string) => Promise<void>;
+  onExecute: (cellId: string, code: string, options?: {
+    onEvent?: (event: {
+      event_type: 'started' | 'output' | 'completed' | 'error' | 'interrupted';
+      cell_id: string;
+      timestamp: string;
+      data: any;
+    }) => void;
+  }) => Promise<void>;
   onUpdateCell: (index: number, cell: NotebookCellInput) => void;
   onAddCell: (index: number, cellType: "code" | "markdown") => void;
   onDeleteCell: (index: number) => Promise<void>;
+  onStopExecution: (cellId: string) => Promise<boolean>;
   isExecuting?: boolean;
 }
 
@@ -57,12 +65,15 @@ export function NotebookCellComponent({
   onUpdateCell,
   onAddCell,
   onDeleteCell,
+  onStopExecution,
   isExecuting = false,
 }: NotebookCellProps) {
   const [cellContent, setCellContent] = useState(
     Array.isArray(cell.source) ? cell.source.join("") : cell.source
   );
   const [isDeleting, setIsDeleting] = useState(false);
+  const [streamingOutputs, setStreamingOutputs] = useState<any[]>([]);
+  const [executionStatus, setExecutionStatus] = useState<string>("");
 
   const handleCellTypeChange = (newType: "code" | "markdown") => {
     const updatedCell = { ...cell, cell_type: newType };
@@ -77,7 +88,45 @@ export function NotebookCellComponent({
 
   const handleExecute = async () => {
     if (cell.cell_type === "code") {
-      await onExecute(cell.id, cellContent);
+      // Clear streaming outputs when starting new execution
+      setStreamingOutputs([]);
+      setExecutionStatus("");
+
+      // Execute with streaming (always enabled now)
+      await onExecute(cell.id, cellContent, {
+        onEvent: (event) => {
+          switch (event.event_type) {
+            case 'started':
+              setExecutionStatus('Executing...');
+              break;
+            case 'output':
+              setStreamingOutputs(prev => [...prev, event.data.output]);
+              break;
+            case 'completed':
+              setExecutionStatus('Completed');
+              // Clear streaming outputs since final outputs will be in cell.outputs
+              setTimeout(() => {
+                setStreamingOutputs([]);
+                setExecutionStatus("");
+              }, 1000);
+              break;
+            case 'error':
+              setExecutionStatus('Error');
+              setTimeout(() => {
+                setStreamingOutputs([]);
+                setExecutionStatus("");
+              }, 3000);
+              break;
+            case 'interrupted':
+              setExecutionStatus('Interrupted');
+              setTimeout(() => {
+                setStreamingOutputs([]);
+                setExecutionStatus("");
+              }, 2000);
+              break;
+          }
+        }
+      });
     }
   };
 
@@ -92,11 +141,69 @@ export function NotebookCellComponent({
     }
   };
 
+  const handleStop = async () => {
+    try {
+      await onStopExecution(cell.id);
+    } catch (error) {
+      console.error("Failed to stop execution:", error);
+    }
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();
       handleExecute();
     }
+  };
+
+  const renderStreamingOutput = () => {
+    if (streamingOutputs.length === 0) return null;
+
+    return (
+      <div className="mt-2 p-3 bg-blue-50 rounded border border-blue-200">
+        <div className="text-xs text-blue-600 mb-2 flex items-center gap-2">
+          <div className="animate-pulse">●</div>
+          Live Output:
+        </div>
+        {streamingOutputs.map((output, outputIndex) => (
+          <div key={outputIndex} className="mb-2 last:mb-0">
+            {output.output_type === "stream" && (
+              <pre className="text-sm font-mono whitespace-pre-wrap text-gray-800">
+                {output.text?.join?.("") || output.text}
+              </pre>
+            )}
+            {output.output_type === "execute_result" && output.data && (
+              <div className="space-y-2">
+                {/* Handle images */}
+                {output.data["image/png"] && (
+                  <div className="flex justify-center">
+                    <img
+                      src={processImageData(output.data["image/png"], "image/png")}
+                      alt="Live plot output"
+                      className="max-w-full h-auto rounded border"
+                    />
+                  </div>
+                )}
+                {/* Handle text/plain */}
+                {output.data["text/plain"] && !output.data["image/png"] && (
+                  <div className="text-sm">
+                    {Array.isArray(output.data["text/plain"])
+                      ? output.data["text/plain"].join('')
+                      : output.data["text/plain"]
+                    }
+                  </div>
+                )}
+              </div>
+            )}
+            {output.output_type === "error" && (
+              <pre className="text-sm font-mono text-red-600 whitespace-pre-wrap">
+                {output.traceback?.join?.("\n") || output.evalue}
+              </pre>
+            )}
+          </div>
+        ))}
+      </div>
+    );
   };
 
   const renderOutput = () => {
@@ -251,16 +358,29 @@ export function NotebookCellComponent({
 
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
           {cell.cell_type === "code" && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 w-7 p-0"
-              onClick={handleExecute}
-              disabled={isExecuting}
-              title="Execute cell (Ctrl+Enter)"
-            >
-              <Play className="h-3 w-3" />
-            </Button>
+            <>
+              {!isExecuting ? (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 w-7 p-0"
+                  onClick={handleExecute}
+                  title="Execute cell (Ctrl+Enter)"
+                >
+                  <Play className="h-3 w-3" />
+                </Button>
+              ) : (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 w-7 p-0 text-red-600 hover:text-red-700"
+                  onClick={handleStop}
+                  title="Stop execution"
+                >
+                  <Square className="h-3 w-3" />
+                </Button>
+              )}
+            </>
           )}
 
           <Button
@@ -303,13 +423,17 @@ export function NotebookCellComponent({
         />
       </div>
 
-      {/* Output */}
+      {/* Streaming Output */}
+      {renderStreamingOutput()}
+
+      {/* Final Output */}
       {renderOutput()}
 
       {/* Execution Status */}
-      {isExecuting && (
-        <div className="mt-2 text-sm text-muted-foreground">
-          Executing...
+      {(isExecuting || executionStatus) && (
+        <div className="mt-2 text-sm text-muted-foreground flex items-center gap-2">
+          {isExecuting && <div className="animate-spin">⟳</div>}
+          {executionStatus || "Executing..."}
         </div>
       )}
     </div>
