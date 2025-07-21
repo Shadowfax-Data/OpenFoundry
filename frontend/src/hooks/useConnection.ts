@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 import {
+  BigQueryConnectionModel,
   ClickhouseConnectionModel,
   DatabricksConnectionModel,
   PostgresConnectionModel,
@@ -170,6 +171,50 @@ export function usePostgresConnection(
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       const data: PostgresConnectionModel = await response.json();
+      setConnection(data);
+    } catch (error) {
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Failed to fetch connection details",
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, [connectionId]);
+
+  useEffect(() => {
+    fetchConnection();
+  }, [fetchConnection]);
+
+  return {
+    connection,
+    loading,
+    error,
+    refetch: fetchConnection,
+  };
+}
+
+export function useBigQueryConnection(
+  connectionId?: string,
+): UseConnectionReturn<BigQueryConnectionModel> {
+  const [connection, setConnection] = useState<BigQueryConnectionModel | null>(
+    null,
+  );
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchConnection = useCallback(async () => {
+    if (!connectionId) return;
+
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch(`/api/connections/bigquery/${connectionId}`);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data: BigQueryConnectionModel = await response.json();
       setConnection(data);
     } catch (error) {
       setError(

@@ -19,12 +19,14 @@ class BigQueryConnection(ConnectionBase):
 
     service_account_key: Mapped[str] = mapped_column(nullable=False)
     project_id: Mapped[str] = mapped_column(nullable=False)
+    dataset_id: Mapped[str] = mapped_column(nullable=False)
 
     def get_env_vars(self) -> dict[str, str]:
         """Get Big Query connection environment variables."""
         env_vars = {
             "BIGQUERY_SERVICE_ACCOUNT_KEY": self.service_account_key,
             "BIGQUERY_PROJECT_ID": self.project_id,
+            "BIGQUERY_DATASET_ID": self.dataset_id,
         }
         return env_vars
 

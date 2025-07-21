@@ -91,6 +91,9 @@ export function Connections() {
       case "clickhouse":
         navigate(`/connections/clickhouse/${connectionId}`);
         break;
+      case "bigquery":
+        navigate(`/connections/bigquery/${connectionId}`);
+        break;
       case "postgres":
         navigate(`/connections/postgres/${connectionId}`);
         break;

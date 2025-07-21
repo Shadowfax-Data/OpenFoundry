@@ -15,12 +15,14 @@ class BigQueryConnectionCreate(BaseModel):
     name: str
     service_account_key: str
     project_id: str
+    dataset_id: str
 
 
 class BigQueryConnectionUpdate(BaseModel):
     name: str | None = None
     service_account_key: str | None = None
     project_id: str | None = None
+    dataset_id: str | None = None
 
 
 class BigQueryConnectionModel(BaseModel):
@@ -28,6 +30,7 @@ class BigQueryConnectionModel(BaseModel):
     name: str
     service_account_key: str
     project_id: str
+    dataset_id: str | None = None
     type: str
 
     class Config:
@@ -80,6 +83,7 @@ def create_big_query_connection(
         name=connection_data.name,
         service_account_key=connection_data.service_account_key,
         project_id=connection_data.project_id,
+        dataset_id=connection_data.dataset_id,
     )
 
     try:
