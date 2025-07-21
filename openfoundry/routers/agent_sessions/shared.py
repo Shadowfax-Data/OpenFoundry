@@ -162,6 +162,7 @@ async def send_agent_chat_message(
     )
 
     # Create appropriate context
+    context: AgentRunContext
     if isinstance(agent_session, AppAgentSession):
         context = AppAgentRunContext(
             session_id=session_id,

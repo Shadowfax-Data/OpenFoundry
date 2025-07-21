@@ -92,7 +92,7 @@ def get_notebook_agent_run_context(
             NotebookAgentSession.id == session_id,
             NotebookAgentSession.notebook_id == notebook_id,
         )
-        .first()
+        .one_or_none()
     )
 
     if not notebook_agent_session:
@@ -420,11 +420,7 @@ async def get_notebook_data(
     async with run_context.get_sandbox_client() as client:
         response = await client.get("/api/notebook/notebook")
         response.raise_for_status()
-        json_response = response.json()
-        print(
-            "json_response from notebook in agent_session_api_endpoint", json_response
-        )
-        return json_response
+        return response.json()
 
 
 @router.post(

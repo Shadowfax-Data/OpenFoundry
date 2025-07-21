@@ -238,11 +238,9 @@ class JupyterKernelManager:
                 f"Interrupting kernel execution for cell: {current_executing_cell}"
             )
 
-            # Interrupt the kernel - this is thread-safe
             assert self.client.km is not None, "Kernel manager is not initialized"
-            await asyncio.to_thread(self.client.km.interrupt_kernel)
+            await self.client.km.async_interrupt_kernel()
 
-            # Cancel the execution task - asyncio.Task.cancel() is thread-safe
             if current_task is not None and not current_task.done():
                 current_task.cancel()
                 logger.info(
@@ -410,9 +408,6 @@ class JupyterKernelManager:
 
                 # Clear previous outputs
                 cell.outputs = []
-
-                # Set up a custom message handler to capture outputs as they come
-                original_cell_allows_errors = getattr(cell, "allow_errors", False)
 
                 # Create a task to execute the cell
                 execution_task = asyncio.create_task(
