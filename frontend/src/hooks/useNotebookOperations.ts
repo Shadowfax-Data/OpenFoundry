@@ -614,7 +614,7 @@ export const useNotebookOperations = ({
           data: StreamingEventData;
         }) => void;
       },
-    ) => {
+    ): Promise<void> => {
       setExecutingCells((prev) => new Set(prev).add(cellId));
 
       try {
@@ -624,11 +624,7 @@ export const useNotebookOperations = ({
         };
 
         // Always use streaming execution
-        const result = await executeCodeStreamingFetch(
-          executeRequest,
-          options?.onEvent,
-        );
-        return result;
+        await executeCodeStreamingFetch(executeRequest, options?.onEvent);
       } finally {
         setExecutingCells((prev) => {
           const newSet = new Set(prev);
