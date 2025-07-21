@@ -6,7 +6,7 @@ import clickhouse_connect.common as clickhouse_common
 import psycopg2
 import snowflake.connector
 import streamlit as st
-from clickhouse_connect import dbapi
+from clickhouse_connect import dbapi as clickhouse_dbapi
 from databricks import sql
 from google.cloud import bigquery
 from google.cloud.bigquery import dbapi as bigquery_dbapi
@@ -212,7 +212,7 @@ def get_clickhouse_conn(connection_name: str):
             "secure": True,
         }
 
-        return dbapi.connect(**conn_params)
+        return clickhouse_dbapi.connect(**conn_params)
 
     except Exception as e:
         st.error(f"Failed to connect to ClickHouse connection '{connection_name}': {e}")
