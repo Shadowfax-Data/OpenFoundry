@@ -67,9 +67,10 @@ export function Home() {
               variant="outline"
               size="sm"
               className="flex items-center gap-2"
+              onClick={() => navigate("/connections")}
             >
               <BarChart3 className="h-4 w-4" />
-              Set up data warehouse
+              Set up data connection
             </Button>
             <Button
               variant="outline"
