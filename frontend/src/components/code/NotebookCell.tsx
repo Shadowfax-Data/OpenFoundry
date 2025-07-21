@@ -9,13 +9,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import {
   NotebookCellInput,
   NotebookOutput,
   OutputEventData,
   StreamingEventData,
 } from "@/hooks/useNotebookOperations";
+
+import { CodeMirrorEditor } from "./CodeMirrorEditor";
 
 interface NotebookCellProps {
   cell: NotebookCellInput;
@@ -170,13 +171,6 @@ export function NotebookCellComponent({
       await onStopExecution(cell.id);
     } catch (error) {
       console.error("Failed to stop execution:", error);
-    }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
-      e.preventDefault();
-      handleExecute();
     }
   };
 
@@ -460,18 +454,17 @@ export function NotebookCellComponent({
 
       {/* Cell Content */}
       <div className="min-h-[60px]">
-        <Textarea
+        <CodeMirrorEditor
           value={cellContent}
-          onChange={(e) => handleContentChange(e.target.value)}
-          onKeyDown={handleKeyDown}
+          onChange={handleContentChange}
+          onExecute={cell.cell_type === "code" ? handleExecute : undefined}
+          language={cell.cell_type === "code" ? "python" : "markdown"}
           placeholder={
             cell.cell_type === "code"
               ? "Enter your code here..."
               : "Enter markdown text here..."
           }
-          className={`min-h-[60px] resize-none font-mono text-sm border-0 focus:ring-0 focus:border-0 p-0 ${
-            cell.cell_type === "markdown" ? "font-sans" : ""
-          }`}
+          className="border-0"
         />
       </div>
 
