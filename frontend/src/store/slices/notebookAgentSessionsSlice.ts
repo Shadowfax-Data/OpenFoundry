@@ -189,7 +189,8 @@ const notebookAgentSessionsSlice = createSlice({
       .addCase(fetchNotebookAgentSessions.rejected, (state, action) => {
         state.loading = false;
         state.error =
-          (action.payload as string) || "Failed to fetch notebook agent sessions";
+          (action.payload as string) ||
+          "Failed to fetch notebook agent sessions";
       })
       // Create notebook agent session
       .addCase(createNotebookAgentSession.pending, (state) => {
@@ -207,7 +208,8 @@ const notebookAgentSessionsSlice = createSlice({
       .addCase(createNotebookAgentSession.rejected, (state, action) => {
         state.loading = false;
         state.error =
-          (action.payload as string) || "Failed to create notebook agent session";
+          (action.payload as string) ||
+          "Failed to create notebook agent session";
       })
       // Stop notebook agent session
       .addCase(stopNotebookAgentSession.pending, (state) => {
@@ -251,7 +253,8 @@ const notebookAgentSessionsSlice = createSlice({
       .addCase(resumeNotebookAgentSession.rejected, (state, action) => {
         state.loading = false;
         state.error =
-          (action.payload as string) || "Failed to resume notebook agent session";
+          (action.payload as string) ||
+          "Failed to resume notebook agent session";
       })
       // Save notebook workspace
       .addCase(saveNotebookWorkspace.pending, (state) => {
@@ -279,7 +282,8 @@ export const selectNotebookAgentSessions = (state: {
 }) => state.notebookAgentSessions.sessions;
 
 export const selectNotebookAgentSessionsForNotebook =
-  (notebookId: string) => (state: { notebookAgentSessions: NotebookAgentSessionsState }) =>
+  (notebookId: string) =>
+  (state: { notebookAgentSessions: NotebookAgentSessionsState }) =>
     state.notebookAgentSessions.sessions[notebookId] || [];
 
 export const selectNotebookAgentSessionsLoading = (state: {

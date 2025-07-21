@@ -1,7 +1,12 @@
 import { Plus, RotateCcw, Save } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { KernelStatus,NotebookCellInput, NotebookData } from "@/hooks/useNotebookOperations";
+import {
+  KernelStatus,
+  NotebookCellInput,
+  NotebookData,
+  StreamingEventData,
+} from "@/hooks/useNotebookOperations";
 
 import { NotebookCellComponent } from "./NotebookCell";
 
@@ -11,14 +16,23 @@ interface InteractiveNotebookProps {
   loading: boolean;
   error: string | null;
   executingCells: Set<string>;
-  onExecuteCell: (cellId: string, code: string, options?: {
-    onEvent?: (event: {
-      event_type: 'started' | 'output' | 'completed' | 'error' | 'interrupted';
-      cell_id: string;
-      timestamp: string;
-      data: any;
-    }) => void;
-  }) => Promise<any>;
+  onExecuteCell: (
+    cellId: string,
+    code: string,
+    options?: {
+      onEvent?: (event: {
+        event_type:
+          | "started"
+          | "output"
+          | "completed"
+          | "error"
+          | "interrupted";
+        cell_id: string;
+        timestamp: string;
+        data: StreamingEventData;
+      }) => void;
+    },
+  ) => Promise<void>;
   onUpdateCell: (index: number, cell: NotebookCellInput) => void;
   onAddCell: (index: number, cellType: "code" | "markdown") => void;
   onDeleteCell: (index: number) => Promise<void>;
@@ -82,7 +96,8 @@ export function InteractiveNotebook({
             <h3 className="text-lg font-semibold">Jupyter Notebook</h3>
             {kernelStatus && (
               <div className="text-sm text-muted-foreground">
-                Kernel: {kernelStatus.is_ready ? (
+                Kernel:{" "}
+                {kernelStatus.is_ready ? (
                   <span className="text-green-600">Ready</span>
                 ) : kernelStatus.is_starting ? (
                   <span className="text-yellow-600">Starting...</span>
@@ -94,16 +109,6 @@ export function InteractiveNotebook({
           </div>
 
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onAddCell(0, "code")}
-              title="Add cell at top"
-            >
-              <Plus className="h-4 w-4 mr-1" />
-              Add Cell
-            </Button>
-
             <Button
               variant="outline"
               size="sm"
@@ -144,10 +149,7 @@ export function InteractiveNotebook({
         {notebookData.cells.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-muted-foreground mb-4">This notebook is empty</p>
-            <Button
-              onClick={() => onAddCell(0, "code")}
-              className="mx-auto"
-            >
+            <Button onClick={() => onAddCell(0, "code")} className="mx-auto">
               <Plus className="h-4 w-4 mr-2" />
               Add your first cell
             </Button>
@@ -161,7 +163,6 @@ export function InteractiveNotebook({
                 index={index}
                 onExecute={onExecuteCell}
                 onUpdateCell={onUpdateCell}
-                onAddCell={onAddCell}
                 onDeleteCell={onDeleteCell}
                 onStopExecution={onStopExecution}
                 isExecuting={executingCells.has(cell.id)}

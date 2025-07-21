@@ -1,4 +1,4 @@
-import { Play, Plus, Square, Trash2 } from "lucide-react";
+import { Play, Square, Trash2 } from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -10,42 +10,58 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { NotebookCellInput } from "@/hooks/useNotebookOperations";
+import {
+  NotebookCellInput,
+  NotebookOutput,
+  OutputEventData,
+  StreamingEventData,
+} from "@/hooks/useNotebookOperations";
 
 interface NotebookCellProps {
   cell: NotebookCellInput;
   index: number;
-  onExecute: (cellId: string, code: string, options?: {
-    onEvent?: (event: {
-      event_type: 'started' | 'output' | 'completed' | 'error' | 'interrupted';
-      cell_id: string;
-      timestamp: string;
-      data: any;
-    }) => void;
-  }) => Promise<void>;
+  onExecute: (
+    cellId: string,
+    code: string,
+    options?: {
+      onEvent?: (event: {
+        event_type:
+          | "started"
+          | "output"
+          | "completed"
+          | "error"
+          | "interrupted";
+        cell_id: string;
+        timestamp: string;
+        data: StreamingEventData;
+      }) => void;
+    },
+  ) => Promise<void>;
   onUpdateCell: (index: number, cell: NotebookCellInput) => void;
-  onAddCell: (index: number, cellType: "code" | "markdown") => void;
   onDeleteCell: (index: number) => Promise<void>;
   onStopExecution: (cellId: string) => Promise<boolean>;
   isExecuting?: boolean;
 }
 
 // Helper function to process base64 image data
-const processImageData = (data: any, mimeType: string): string => {
-  let base64String = '';
+const processImageData = (
+  data: string | string[],
+  mimeType: string,
+): string => {
+  let base64String = "";
 
   // Handle array format (from notebook output)
   if (Array.isArray(data)) {
-    base64String = data.join('');
+    base64String = data.join("");
   } else {
     base64String = String(data);
   }
 
   // Remove all whitespace
-  base64String = base64String.replace(/\s/g, '');
+  base64String = base64String.replace(/\s/g, "");
 
   // Check if data already contains a data URI prefix
-  if (base64String.startsWith('data:')) {
+  if (base64String.startsWith("data:")) {
     return base64String;
   }
 
@@ -63,16 +79,17 @@ export function NotebookCellComponent({
   index,
   onExecute,
   onUpdateCell,
-  onAddCell,
   onDeleteCell,
   onStopExecution,
   isExecuting = false,
 }: NotebookCellProps) {
   const [cellContent, setCellContent] = useState(
-    Array.isArray(cell.source) ? cell.source.join("") : cell.source
+    Array.isArray(cell.source) ? cell.source.join("") : cell.source,
   );
   const [isDeleting, setIsDeleting] = useState(false);
-  const [streamingOutputs, setStreamingOutputs] = useState<any[]>([]);
+  const [streamingOutputs, setStreamingOutputs] = useState<NotebookOutput[]>(
+    [],
+  );
   const [executionStatus, setExecutionStatus] = useState<string>("");
 
   const handleCellTypeChange = (newType: "code" | "markdown") => {
@@ -96,36 +113,43 @@ export function NotebookCellComponent({
       await onExecute(cell.id, cellContent, {
         onEvent: (event) => {
           switch (event.event_type) {
-            case 'started':
-              setExecutionStatus('Executing...');
+            case "started":
+              setExecutionStatus("Executing...");
               break;
-            case 'output':
-              setStreamingOutputs(prev => [...prev, event.data.output]);
+            case "output":
+              if (
+                event.data &&
+                typeof event.data === "object" &&
+                "output" in event.data
+              ) {
+                const outputData = event.data as OutputEventData;
+                setStreamingOutputs((prev) => [...prev, outputData.output]);
+              }
               break;
-            case 'completed':
-              setExecutionStatus('Completed');
+            case "completed":
+              setExecutionStatus("Completed");
               // Clear streaming outputs since final outputs will be in cell.outputs
               setTimeout(() => {
                 setStreamingOutputs([]);
                 setExecutionStatus("");
               }, 1000);
               break;
-            case 'error':
-              setExecutionStatus('Error');
+            case "error":
+              setExecutionStatus("Error");
               setTimeout(() => {
                 setStreamingOutputs([]);
                 setExecutionStatus("");
               }, 3000);
               break;
-            case 'interrupted':
-              setExecutionStatus('Interrupted');
+            case "interrupted":
+              setExecutionStatus("Interrupted");
               setTimeout(() => {
                 setStreamingOutputs([]);
                 setExecutionStatus("");
               }, 2000);
               break;
           }
-        }
+        },
       });
     }
   };
@@ -169,7 +193,9 @@ export function NotebookCellComponent({
           <div key={outputIndex} className="mb-2 last:mb-0">
             {output.output_type === "stream" && (
               <pre className="text-sm font-mono whitespace-pre-wrap text-gray-800">
-                {output.text?.join?.("") || output.text}
+                {Array.isArray(output.text)
+                  ? output.text.join("")
+                  : output.text}
               </pre>
             )}
             {output.output_type === "execute_result" && output.data && (
@@ -178,7 +204,10 @@ export function NotebookCellComponent({
                 {output.data["image/png"] && (
                   <div className="flex justify-center">
                     <img
-                      src={processImageData(output.data["image/png"], "image/png")}
+                      src={processImageData(
+                        output.data["image/png"] as string | string[],
+                        "image/png",
+                      )}
                       alt="Live plot output"
                       className="max-w-full h-auto rounded border"
                     />
@@ -188,9 +217,8 @@ export function NotebookCellComponent({
                 {output.data["text/plain"] && !output.data["image/png"] && (
                   <div className="text-sm">
                     {Array.isArray(output.data["text/plain"])
-                      ? output.data["text/plain"].join('')
-                      : output.data["text/plain"]
-                    }
+                      ? output.data["text/plain"].join("")
+                      : output.data["text/plain"]}
                   </div>
                 )}
               </div>
@@ -218,7 +246,9 @@ export function NotebookCellComponent({
           <div key={outputIndex} className="mb-2 last:mb-0">
             {output.output_type === "stream" && (
               <pre className="text-sm font-mono whitespace-pre-wrap">
-                {output.text?.join?.("") || output.text}
+                {Array.isArray(output.text)
+                  ? output.text.join("")
+                  : output.text}
               </pre>
             )}
             {output.output_type === "execute_result" && output.data && (
@@ -227,7 +257,10 @@ export function NotebookCellComponent({
                 {output.data["image/png"] && (
                   <div className="flex justify-center">
                     <img
-                      src={processImageData(output.data["image/png"], "image/png")}
+                      src={processImageData(
+                        output.data["image/png"] as string | string[],
+                        "image/png",
+                      )}
                       alt="Plot output"
                       className="max-w-full h-auto rounded border"
                     />
@@ -236,7 +269,10 @@ export function NotebookCellComponent({
                 {output.data["image/jpeg"] && (
                   <div className="flex justify-center">
                     <img
-                      src={processImageData(output.data["image/jpeg"], "image/jpeg")}
+                      src={processImageData(
+                        output.data["image/jpeg"] as string | string[],
+                        "image/jpeg",
+                      )}
                       alt="Plot output"
                       className="max-w-full h-auto rounded border"
                     />
@@ -246,7 +282,9 @@ export function NotebookCellComponent({
                   <div className="flex justify-center">
                     <div
                       dangerouslySetInnerHTML={{
-                        __html: Array.isArray(output.data["image/svg+xml"]) ? output.data["image/svg+xml"].join('') : output.data["image/svg+xml"]
+                        __html: Array.isArray(output.data["image/svg+xml"])
+                          ? output.data["image/svg+xml"].join("")
+                          : (output.data["image/svg+xml"] as string),
                       }}
                       className="max-w-full"
                     />
@@ -257,19 +295,27 @@ export function NotebookCellComponent({
                   <div
                     className="text-sm notebook-output"
                     dangerouslySetInnerHTML={{
-                      __html: Array.isArray(output.data["text/html"]) ? output.data["text/html"].join('') : output.data["text/html"]
+                      __html: Array.isArray(output.data["text/html"])
+                        ? output.data["text/html"].join("")
+                        : (output.data["text/html"] as string),
                     }}
                   />
                 )}
                 {/* Handle text/plain as HTML when no other format is available */}
-                {output.data["text/plain"] && !output.data["image/png"] && !output.data["image/jpeg"] && !output.data["image/svg+xml"] && !output.data["text/html"] && (
-                  <div
-                    className="text-sm"
-                    dangerouslySetInnerHTML={{
-                      __html: Array.isArray(output.data["text/plain"]) ? output.data["text/plain"].join('') : output.data["text/plain"]
-                    }}
-                  />
-                )}
+                {output.data["text/plain"] &&
+                  !output.data["image/png"] &&
+                  !output.data["image/jpeg"] &&
+                  !output.data["image/svg+xml"] &&
+                  !output.data["text/html"] && (
+                    <div
+                      className="text-sm"
+                      dangerouslySetInnerHTML={{
+                        __html: Array.isArray(output.data["text/plain"])
+                          ? output.data["text/plain"].join("")
+                          : (output.data["text/plain"] as string),
+                      }}
+                    />
+                  )}
               </div>
             )}
             {output.output_type === "error" && (
@@ -283,7 +329,10 @@ export function NotebookCellComponent({
                 {output.data["image/png"] && (
                   <div className="flex justify-center">
                     <img
-                      src={processImageData(output.data["image/png"], "image/png")}
+                      src={processImageData(
+                        output.data["image/png"] as string | string[],
+                        "image/png",
+                      )}
                       alt="Display output"
                       className="max-w-full h-auto rounded border"
                     />
@@ -292,7 +341,10 @@ export function NotebookCellComponent({
                 {output.data["image/jpeg"] && (
                   <div className="flex justify-center">
                     <img
-                      src={processImageData(output.data["image/jpeg"], "image/jpeg")}
+                      src={processImageData(
+                        output.data["image/jpeg"] as string | string[],
+                        "image/jpeg",
+                      )}
                       alt="Display output"
                       className="max-w-full h-auto rounded border"
                     />
@@ -302,7 +354,9 @@ export function NotebookCellComponent({
                   <div className="flex justify-center">
                     <div
                       dangerouslySetInnerHTML={{
-                        __html: Array.isArray(output.data["image/svg+xml"]) ? output.data["image/svg+xml"].join('') : output.data["image/svg+xml"]
+                        __html: Array.isArray(output.data["image/svg+xml"])
+                          ? output.data["image/svg+xml"].join("")
+                          : (output.data["image/svg+xml"] as string),
                       }}
                       className="max-w-full"
                     />
@@ -313,19 +367,27 @@ export function NotebookCellComponent({
                   <div
                     className="text-sm notebook-output"
                     dangerouslySetInnerHTML={{
-                      __html: Array.isArray(output.data["text/html"]) ? output.data["text/html"].join('') : output.data["text/html"]
+                      __html: Array.isArray(output.data["text/html"])
+                        ? output.data["text/html"].join("")
+                        : (output.data["text/html"] as string),
                     }}
                   />
                 )}
                 {/* Handle text/plain as HTML fallback */}
-                {output.data["text/plain"] && !output.data["image/png"] && !output.data["image/jpeg"] && !output.data["image/svg+xml"] && !output.data["text/html"] && (
-                  <div
-                    className="text-sm"
-                    dangerouslySetInnerHTML={{
-                      __html: Array.isArray(output.data["text/plain"]) ? output.data["text/plain"].join('') : output.data["text/plain"]
-                    }}
-                  />
-                )}
+                {output.data["text/plain"] &&
+                  !output.data["image/png"] &&
+                  !output.data["image/jpeg"] &&
+                  !output.data["image/svg+xml"] &&
+                  !output.data["text/html"] && (
+                    <div
+                      className="text-sm"
+                      dangerouslySetInnerHTML={{
+                        __html: Array.isArray(output.data["text/plain"])
+                          ? output.data["text/plain"].join("")
+                          : (output.data["text/plain"] as string),
+                      }}
+                    />
+                  )}
               </div>
             )}
           </div>
@@ -382,16 +444,6 @@ export function NotebookCellComponent({
               )}
             </>
           )}
-
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 w-7 p-0"
-            onClick={() => onAddCell(index + 1, "code")}
-            title="Add cell below"
-          >
-            <Plus className="h-3 w-3" />
-          </Button>
 
           <Button
             variant="ghost"

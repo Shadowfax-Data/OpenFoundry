@@ -33,12 +33,7 @@ export function NotebookChat() {
   // Extract prompt from query params
   const prompt = searchParams.get("prompt")?.trim() || "";
 
-  const {
-    messages,
-    isStreaming,
-    error,
-    sendMessage,
-  } = useNotebookChat({
+  const { messages, isStreaming, error, sendMessage } = useNotebookChat({
     notebookId: notebookId!,
     sessionId: sessionId!,
     initialPrompt: prompt,
@@ -51,7 +46,7 @@ export function NotebookChat() {
   });
 
   const session = useAppSelector(
-    selectNotebookAgentSessionById(notebookId!, sessionId!)
+    selectNotebookAgentSessionById(notebookId!, sessionId!),
   );
 
   // Ensure sessions are loaded for this notebookId
@@ -106,18 +101,16 @@ export function NotebookChat() {
     try {
       // Stop the current session
       await dispatch(
-        stopNotebookAgentSession({ notebookId, sessionId })
+        stopNotebookAgentSession({ notebookId, sessionId }),
       ).unwrap();
 
       // Create a new session
       const result = await dispatch(
-        createNotebookAgentSession(notebookId)
+        createNotebookAgentSession(notebookId),
       ).unwrap();
 
       // Navigate to the new session
-      navigate(
-        `/notebooks/${notebookId}/sessions/${result.session.id}/chat`
-      );
+      navigate(`/notebooks/${notebookId}/sessions/${result.session.id}/chat`);
 
       toast.success("Chat reset successfully. New session created.");
     } catch (error) {
@@ -211,23 +204,25 @@ export function NotebookChat() {
                   const response = await fetch(
                     `/api/notebooks/${notebookId}/sessions/${sessionId}/save`,
                     {
-                      method: 'POST',
+                      method: "POST",
                       headers: {
-                        'Content-Type': 'application/json',
+                        "Content-Type": "application/json",
                       },
-                    }
+                    },
                   );
 
                   if (response.ok) {
                     const result = await response.json();
-                    toast.success(result.message || 'Notebook saved successfully');
+                    toast.success(
+                      result.message || "Notebook saved successfully",
+                    );
                   } else {
                     const error = await response.text();
                     toast.error(`Failed to save notebook: ${error}`);
                   }
                 } catch (error) {
-                  console.error('Error saving notebook:', error);
-                  toast.error('Failed to save notebook');
+                  console.error("Error saving notebook:", error);
+                  toast.error("Failed to save notebook");
                 }
               }}
             />

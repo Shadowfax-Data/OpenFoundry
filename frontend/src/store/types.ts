@@ -1,4 +1,10 @@
-import { App, AppAgentSessionFromAPI, Connection, Notebook, NotebookAgentSessionFromAPI } from "@/types/api";
+import {
+  App,
+  AppAgentSessionFromAPI,
+  Connection,
+  Notebook,
+  NotebookAgentSessionFromAPI,
+} from "@/types/api";
 
 import { AppChatState } from "./slices/appChatSlice";
 import { NotebookChatState } from "./slices/notebookChatSlice";

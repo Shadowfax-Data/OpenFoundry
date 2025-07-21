@@ -1,15 +1,6 @@
 import { IconChartArcs } from "@tabler/icons-react";
-import {
-  AppWindow,
-  Book,
-  ChevronDown,
-  Database,
-  Home
-} from "lucide-react";
-import {
-  Link,
-  useLocation
-} from "react-router";
+import { AppWindow, Book, ChevronDown, Database, Home } from "lucide-react";
+import { Link, useLocation } from "react-router";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -102,7 +93,9 @@ export function AppSidebar() {
                   </SidebarMenuItem>
                   <SidebarMenuItem>
                     <SidebarMenuButton asChild>
-                      <Link to="/notebooks" className={`w-full ${
+                      <Link
+                        to="/notebooks"
+                        className={`w-full ${
                           location.pathname.startsWith("/notebooks")
                             ? "bg-sidebar-accent text-sidebar-accent-foreground"
                             : ""

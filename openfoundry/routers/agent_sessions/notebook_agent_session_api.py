@@ -484,16 +484,10 @@ async def stop_notebook_cell_execution(
 ):
     """Stop/interrupt a specific cell execution in the notebook."""
     async with run_context.get_sandbox_client() as client:
-        try:
-            stop_request = {"cell_id": cell_id}
-            response = await client.post("/api/notebook/stop", json=stop_request)
-        except httpx.RequestError as e:
-            raise HTTPException(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail=f"Failed to stop cell execution: {e}",
-            )
+        stop_request = {"cell_id": cell_id}
+        response = await client.post("/api/notebook/stop", json=stop_request)
         response.raise_for_status()
-        return response.json()
+        return {"message": "Execution stopped successfully"}
 
 
 @router.get(

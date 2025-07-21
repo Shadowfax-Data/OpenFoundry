@@ -35,23 +35,27 @@ interface NotebooksPageProps {
   autoOpenCreateDialog?: boolean;
 }
 
-export function NotebooksPage({ autoOpenCreateDialog = false }: NotebooksPageProps) {
+export function NotebooksPage({
+  autoOpenCreateDialog = false,
+}: NotebooksPageProps) {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const { notebooks, loading, error, searchQuery, statusFilter, sortBy } =
     useAppSelector((state) => state.notebooks);
-  const { sessions } = useAppSelector(
-    (state) => state.notebookAgentSessions,
-  );
+  const { sessions } = useAppSelector((state) => state.notebookAgentSessions);
 
   const [isCreatingSession, setIsCreatingSession] = useState(false);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
   // Track loading state for Edit button per notebook
-  const [editLoadingNotebookId, setEditLoadingNotebookId] = useState<string | null>(null);
+  const [editLoadingNotebookId, setEditLoadingNotebookId] = useState<
+    string | null
+  >(null);
 
   // Track loading state for Save button per notebook
-  const [saveLoadingNotebookId, setSaveLoadingNotebookId] = useState<string | null>(null);
+  const [saveLoadingNotebookId, setSaveLoadingNotebookId] = useState<
+    string | null
+  >(null);
 
   // Auto-open create dialog if prop is true
   useEffect(() => {
@@ -163,7 +167,10 @@ export function NotebooksPage({ autoOpenCreateDialog = false }: NotebooksPagePro
       if (activeSession) {
         // Active session exists, resume it to ensure it's properly started
         const result = await dispatch(
-          resumeNotebookAgentSession({ notebookId, sessionId: activeSession.id }),
+          resumeNotebookAgentSession({
+            notebookId,
+            sessionId: activeSession.id,
+          }),
         ).unwrap();
         sessionToGo = result.session;
       } else if (notebookSessions.length > 0) {
@@ -180,7 +187,9 @@ export function NotebooksPage({ autoOpenCreateDialog = false }: NotebooksPagePro
         sessionToGo = result.session;
       } else {
         // No sessions exist, create a new one
-        const result = await dispatch(createNotebookAgentSession(notebookId)).unwrap();
+        const result = await dispatch(
+          createNotebookAgentSession(notebookId),
+        ).unwrap();
         sessionToGo = result.session;
       }
 
@@ -188,7 +197,9 @@ export function NotebooksPage({ autoOpenCreateDialog = false }: NotebooksPagePro
         navigate(`/notebooks/${notebookId}/sessions/${sessionToGo.id}/chat`);
       } else {
         // Fallback: create a new session
-        const result = await dispatch(createNotebookAgentSession(notebookId)).unwrap();
+        const result = await dispatch(
+          createNotebookAgentSession(notebookId),
+        ).unwrap();
         navigate(`/notebooks/${notebookId}/sessions/${result.session.id}/chat`);
       }
     } catch (e) {

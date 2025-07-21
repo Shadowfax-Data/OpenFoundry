@@ -118,7 +118,11 @@ export function CreateNotebookDialog({
                 <FormItem>
                   <FormLabel>Notebook Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="Enter notebook name" {...field} autoFocus />
+                    <Input
+                      placeholder="Enter notebook name"
+                      {...field}
+                      autoFocus
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

@@ -239,7 +239,7 @@ class JupyterKernelManager:
             )
 
             assert self.client.km is not None, "Kernel manager is not initialized"
-            await self.client.km.async_interrupt_kernel()
+            await self.client.km.interrupt_kernel()
 
             if current_task is not None and not current_task.done():
                 current_task.cancel()

@@ -28,6 +28,6 @@ export const {
   completeToolCall,
 } = notebookChatSlice.actions;
 
-export type { CurrentWriteFileInfo, Message,ChatState as NotebookChatState };
+export type { CurrentWriteFileInfo, Message, ChatState as NotebookChatState };
 
 export default notebookChatSlice.reducer;

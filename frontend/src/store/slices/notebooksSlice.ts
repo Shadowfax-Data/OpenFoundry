@@ -2,7 +2,7 @@ import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 import { formatTimeAgo, generateColorFromText } from "@/lib/utils";
 import { NotebooksState } from "@/store/types";
-import { CreateNotebookRequest,Notebook, NotebookFromAPI } from "@/types/api";
+import { CreateNotebookRequest, Notebook, NotebookFromAPI } from "@/types/api";
 
 // Helper function to transform backend notebook to frontend notebook
 const transformNotebookFromAPI = (apiNotebook: NotebookFromAPI): Notebook => {
@@ -180,7 +180,9 @@ const notebooksSlice = createSlice({
       .addCase(deleteNotebook.fulfilled, (state, action) => {
         state.loading = false;
         // Remove the deleted notebook from the state
-        state.notebooks = state.notebooks.filter((notebook) => notebook.id !== action.payload);
+        state.notebooks = state.notebooks.filter(
+          (notebook) => notebook.id !== action.payload,
+        );
       })
       .addCase(deleteNotebook.rejected, (state, action) => {
         state.loading = false;
