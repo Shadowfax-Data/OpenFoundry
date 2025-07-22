@@ -10,12 +10,25 @@ import {
   TrendingUp,
   Users,
 } from "lucide-react";
+import { useState } from "react";
 import { useNavigate } from "react-router";
 
+import { CreateAppDialog } from "@/components/app/CreateAppDialog";
+import { SampleProjectCard } from "@/components/app/SampleProjectCard";
 import { Button } from "@/components/ui/button";
 
 export function Home() {
   const navigate = useNavigate();
+  const [createAppDialogOpen, setCreateAppDialogOpen] = useState(false);
+  const [initialPrompt, setInitialPrompt] = useState<string | undefined>(
+    undefined,
+  );
+  const [isCreatingSession, setIsCreatingSession] = useState(false);
+
+  const handleSampleProjectClick = (prompt: string) => {
+    setInitialPrompt(prompt);
+    setCreateAppDialogOpen(true);
+  };
 
   return (
     <div className="h-full flex flex-col">
@@ -115,50 +128,63 @@ export function Home() {
               decisions.
             </p>
 
-            <div className="grid grid-cols-4 gap-4">
-              <div className="rounded-lg border p-4 hover:bg-gray-50">
-                <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600 text-white">
-                  <BarChart3 className="h-5 w-5" />
-                </div>
-                <h3 className="font-medium">Sales Dashboard</h3>
-                <p className="text-sm text-muted-foreground">
-                  Track revenue and performance metrics
-                </p>
-              </div>
-
-              <div className="rounded-lg border p-4 hover:bg-gray-50">
-                <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-green-600 text-white">
-                  <Users className="h-5 w-5" />
-                </div>
-                <h3 className="font-medium">User Analytics</h3>
-                <p className="text-sm text-muted-foreground">
-                  Monitor user behavior and engagement
-                </p>
-              </div>
-
-              <div className="rounded-lg border p-4 hover:bg-gray-50">
-                <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-purple-600 text-white">
-                  <TrendingUp className="h-5 w-5" />
-                </div>
-                <h3 className="font-medium">Growth Metrics</h3>
-                <p className="text-sm text-muted-foreground">
-                  Analyze customer acquisition and retention
-                </p>
-              </div>
-
-              <div className="rounded-lg border p-4 hover:bg-gray-50">
-                <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-orange-600 text-white">
-                  <FileText className="h-5 w-5" />
-                </div>
-                <h3 className="font-medium">Reports</h3>
-                <p className="text-sm text-muted-foreground">
-                  Generate comprehensive data reports
-                </p>
-              </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <SampleProjectCard
+                icon={<BarChart3 className="h-5 w-5" />}
+                title="Sales Dashboard"
+                description="Track revenue and performance metrics"
+                onClick={() =>
+                  handleSampleProjectClick(
+                    "Build a sales dashboard to track revenue and performance metrics.",
+                  )
+                }
+                iconBgColor="bg-blue-600"
+              />
+              <SampleProjectCard
+                icon={<Users className="h-5 w-5" />}
+                title="User Analytics"
+                description="Monitor user behavior and engagement"
+                onClick={() =>
+                  handleSampleProjectClick(
+                    "Create a user analytics dashboard to monitor user behavior and engagement.",
+                  )
+                }
+                iconBgColor="bg-green-600"
+              />
+              <SampleProjectCard
+                icon={<TrendingUp className="h-5 w-5" />}
+                title="Growth Metrics"
+                description="Analyze customer acquisition and retention"
+                onClick={() =>
+                  handleSampleProjectClick(
+                    "Develop a growth metrics dashboard to analyze customer acquisition and retention.",
+                  )
+                }
+                iconBgColor="bg-purple-600"
+              />
+              <SampleProjectCard
+                icon={<FileText className="h-5 w-5" />}
+                title="Reports"
+                description="Generate comprehensive data dashboards"
+                onClick={() =>
+                  handleSampleProjectClick(
+                    "Generate comprehensive data dashboards for our key business areas.",
+                  )
+                }
+                iconBgColor="bg-orange-600"
+              />
             </div>
           </div>
         </div>
       </div>
+      {createAppDialogOpen && (
+        <CreateAppDialog
+          onCreatingSession={setIsCreatingSession}
+          onClose={() => setCreateAppDialogOpen(false)}
+          initialPrompt={initialPrompt}
+          disabled={isCreatingSession}
+        />
+      )}
     </div>
   );
 }
