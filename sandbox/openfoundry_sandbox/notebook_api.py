@@ -135,7 +135,7 @@ async def stop_execution(request: StopExecutionRequest):
     """Stop/interrupt the currently executing cell."""
     logger.info(f"Stopping execution for cell_id: {request.cell_id}")
 
-    success = await kernel_manager.interrupt_kernel(request.cell_id)
+    success = await kernel_manager.interrupt_kernel()
 
     if success:
         message = "Successfully interrupted execution"

@@ -39,25 +39,6 @@ class CellWithIndex(NamedTuple):
     index: int
 
 
-class ExecuteCodeResponse(BaseModel):
-    """Response model for code execution."""
-
-    cell_id: str = Field(..., description="Unique identifier for this execution")
-    code: str = Field(..., description="The executed code")
-    execution_count: int = Field(
-        ...,
-        description="Execution count for this cell execution (increments for each cell execution in the session)",
-    )
-    outputs: list[dict[str, Any]] = Field(
-        default_factory=list,
-        description="List of outputs from execution (native Jupyter format)",
-    )
-    status: str = Field(..., description="Execution status (completed, error)")
-    error: str | None = Field(None, description="Error message if execution failed")
-    started_at: str = Field(..., description="ISO timestamp when execution started")
-    completed_at: str = Field(..., description="ISO timestamp when execution completed")
-
-
 class ExecutionStreamEvent(BaseModel):
     """Model for streaming execution events."""
 
@@ -217,9 +198,9 @@ class JupyterKernelManager:
         except Exception as cleanup_error:
             logger.warning(f"Error during cleanup of failed start: {cleanup_error}")
 
-    async def interrupt_kernel(self, cell_id: str | None = None):
+    async def interrupt_kernel(self):
         """
-        Interrupt the kernel execution using a layered approach.
+        Interrupt the currently executing kernel using a layered approach.
 
         Layered approach:
         1. Try task cancellation (graceful)
@@ -228,93 +209,55 @@ class JupyterKernelManager:
         This method is designed to work concurrently with execute_code_streaming
         without waiting for the execution lock to avoid deadlock.
         """
-        # Check kernel status without lock - these reads are atomic
-        if (
-            self._status not in [KernelStatus.READY, KernelStatus.EXECUTING]
-            or self.client is None
-        ):
-            logger.warning(f"Cannot interrupt kernel: kernel status is {self._status}")
-            return False
-
-        # Check execution state - reading these is atomic
-        current_executing_cell = self._executing_cell_id
-        current_task = self._execution_task
-
-        if current_executing_cell is None:
+        # Quick status check - if not executing, nothing to interrupt
+        if self._status != KernelStatus.EXECUTING or self._executing_cell_id is None:
             logger.info("No cell is currently executing")
             return False
 
-        # If a specific cell_id is provided, only interrupt if it matches
-        if cell_id is not None and cell_id != current_executing_cell:
-            logger.warning(
-                f"Cannot interrupt cell {cell_id}: not currently executing (currently executing: {current_executing_cell})"
-            )
+        if self.client is None:
+            logger.warning("Cannot interrupt kernel: client not initialized")
             return False
 
-        # Set interrupting status
-        original_status = self._status
+        # Store references for interruption
+        current_task = self._execution_task
         self._status = KernelStatus.INTERRUPTING
 
         try:
-            logger.info(
-                f"Starting layered interruption for cell: {current_executing_cell}"
-            )
+            logger.info("Starting kernel interruption")
 
-            # Layer 1: Try graceful task cancellation first
+            # Layer 1: Try graceful task cancellation
             if current_task is not None and not current_task.done():
-                logger.info(
-                    f"Layer 1: Attempting graceful task cancellation for cell: {current_executing_cell}"
-                )
+                logger.info("Layer 1: Attempting graceful task cancellation")
                 current_task.cancel()
 
                 try:
-                    # Wait for the task to respond to cancellation
                     await asyncio.wait_for(current_task, timeout=INTERRUPT_TIMEOUT)
-                    # If we reach here, task completed normally (unexpected after cancel)
-                    logger.info(
-                        f"Layer 1: Task completed normally after cancellation for cell: {current_executing_cell}"
-                    )
+                    logger.info("Layer 1: Task completed/cancelled successfully")
                     self._status = KernelStatus.READY
                     return True
                 except asyncio.CancelledError:
-                    # Expected case - task was successfully cancelled
-                    logger.info(
-                        f"Layer 1: Task cancelled successfully for cell: {current_executing_cell}"
-                    )
+                    logger.info("Layer 1: Task cancelled successfully")
                     self._status = KernelStatus.READY
                     return True
                 except asyncio.TimeoutError:
-                    # Task didn't respond to cancellation within timeout
-                    # It's still marked as cancelled and will eventually raise CancelledError
                     logger.info(
-                        f"Layer 1: Task cancellation timed out after {INTERRUPT_TIMEOUT}s, proceeding to layer 2"
+                        "Layer 1: Task cancellation timed out, proceeding to layer 2"
                     )
 
             # Layer 2: Try kernel interrupt signal
-            assert self.client.km is not None, "Kernel manager is not initialized"
-            logger.info(
-                f"Layer 2: Sending interrupt signal to kernel for cell: {current_executing_cell}"
-            )
+            logger.info("Layer 2: Sending interrupt signal to kernel")
 
+            assert self.client.km is not None, "Kernel manager is not initialized"
             interrupt_task = asyncio.create_task(self.client.km.interrupt_kernel())
+
             try:
                 await asyncio.wait_for(interrupt_task, timeout=INTERRUPT_TIMEOUT)
-                logger.info(
-                    f"Layer 2: Kernel interrupt successful for cell: {current_executing_cell}"
-                )
+                logger.info("Layer 2: Kernel interrupt successful")
                 self._status = KernelStatus.READY
                 return True
             except asyncio.TimeoutError:
-                logger.warning(
-                    f"Layer 2: Kernel interrupt timed out after {INTERRUPT_TIMEOUT}s"
-                )
+                logger.warning("Layer 2: Kernel interrupt timed out")
                 interrupt_task.cancel()
-                try:
-                    # Wait for the interrupt task cancellation to complete
-                    await interrupt_task
-                except asyncio.CancelledError:
-                    logger.info("Layer 2: Interrupt task cancelled successfully")
-
                 self._status = KernelStatus.ERROR
                 return False
             except Exception as e:
@@ -323,15 +266,9 @@ class JupyterKernelManager:
                 return False
 
         except Exception as e:
-            error_msg = f"Critical error during kernel interruption: {e}"
-            logger.error(error_msg)
+            logger.error(f"Critical error during kernel interruption: {e}")
             self._status = KernelStatus.ERROR
             return False
-
-        finally:
-            # If we didn't succeed in any layer, restore original status
-            if self._status == KernelStatus.INTERRUPTING:
-                self._status = original_status
 
     async def rerun_notebook(self) -> AsyncGenerator[ExecutionStreamEvent, None]:
         """Re-run all cells in the notebook in order and stream their execution results."""
@@ -355,79 +292,61 @@ class JupyterKernelManager:
         self, code: str, cell_id: str
     ) -> AsyncGenerator[ExecutionStreamEvent, None]:
         """Execute code in the kernel and stream outputs in real-time."""
+        # Quick lock for status check and state setup
         async with self._lock:
-            await self._ensure_kernel_ready()
+            if self._status != KernelStatus.READY:
+                raise KernelNotReadyError(
+                    f"Kernel is not ready for execution. Status: {self._status}"
+                )
 
             cell_with_index = self._get_or_create_cell(code, cell_id)
             cell = cell_with_index.cell
             cell_index = cell_with_index.index
 
-            started_at = datetime.now(timezone.utc).isoformat()
-
-            # Emit start event
-            yield ExecutionStreamEvent(
-                event_type="started",
-                cell_id=cell_id,
-                timestamp=started_at,
-                data={
-                    "code": code,
-                    "execution_count": getattr(cell, "execution_count", 0) or 0,
-                },
-            )
-
             # Track the currently executing cell and update status
             self._executing_cell_id = cell_id
             self._status = KernelStatus.EXECUTING
 
+        # The rest of execution happens without the lock
+        started_at = datetime.now(timezone.utc).isoformat()
+
+        # Emit start event
+        yield ExecutionStreamEvent(
+            event_type="started",
+            cell_id=cell_id,
+            timestamp=started_at,
+            data={
+                "code": code,
+                "execution_count": getattr(cell, "execution_count", 0) or 0,
+            },
+        )
+
+        try:
+            assert self.client is not None, "Kernel client is not initialized"
+
+            # Clear previous outputs
+            cell.outputs = []
+
+            # Create a task to execute the cell
+            execution_task = asyncio.create_task(
+                self.client.async_execute_cell(cell, cell_index=cell_index)
+            )
+
+            # Store the task for potential interruption
+            self._execution_task = execution_task
+
+            # Monitor outputs while execution is running
+            last_output_count = 0
             try:
-                assert self.client is not None, "Kernel client is not initialized"
+                while not execution_task.done():
+                    await asyncio.sleep(0.1)  # Poll every 100ms
 
-                # Clear previous outputs
-                cell.outputs = []
-
-                # Create a task to execute the cell
-                execution_task = asyncio.create_task(
-                    self.client.async_execute_cell(cell, cell_index=cell_index)
-                )
-
-                # Store the task for potential interruption
-                self._execution_task = execution_task
-
-                # Monitor outputs while execution is running
-                last_output_count = 0
-                try:
-                    while not execution_task.done():
-                        await asyncio.sleep(0.1)  # Poll every 100ms
-
-                        # Check for new outputs
-                        current_outputs = list(cell.outputs)
-                        if len(current_outputs) > last_output_count:
-                            # Stream new outputs
-                            for i in range(last_output_count, len(current_outputs)):
-                                output = current_outputs[i]
-                                yield ExecutionStreamEvent(
-                                    event_type="output",
-                                    cell_id=cell_id,
-                                    timestamp=datetime.now(timezone.utc).isoformat(),
-                                    data={
-                                        "output": dict(output),
-                                        "output_index": i,
-                                    },
-                                )
-                            last_output_count = len(current_outputs)
-
-                    # Task is now done - await it to get result or raise any exception
-                    await execution_task
-
-                except asyncio.CancelledError:
-                    execution_task.cancel()
-                    raise
-                finally:
-                    # Stream any final outputs that might have been missed
-                    final_outputs = list(cell.outputs)
-                    if len(final_outputs) > last_output_count:
-                        for i in range(last_output_count, len(final_outputs)):
-                            output = final_outputs[i]
+                    # Check for new outputs
+                    current_outputs = list(cell.outputs)
+                    if len(current_outputs) > last_output_count:
+                        # Stream new outputs
+                        for i in range(last_output_count, len(current_outputs)):
+                            output = current_outputs[i]
                             yield ExecutionStreamEvent(
                                 event_type="output",
                                 cell_id=cell_id,
@@ -437,74 +356,103 @@ class JupyterKernelManager:
                                     "output_index": i,
                                 },
                             )
+                        last_output_count = len(current_outputs)
 
-                    completed_at = datetime.now(timezone.utc).isoformat()
-
-                    # Determine execution status and collect outputs
-                    outputs = list(cell.outputs)
-                    error_messages = [
-                        f"{output.get('ename', 'Error')}: {output.get('evalue', 'Unknown error')}"
-                        for output in outputs
-                        if output.get("output_type") == "error"
-                    ]
-                    error_msg = "; ".join(error_messages) if error_messages else None
-                    status = "error" if error_msg else "completed"
-
-                    # Emit completion event
-                    yield ExecutionStreamEvent(
-                        event_type="completed",
-                        cell_id=cell_id,
-                        timestamp=completed_at,
-                        data={
-                            "status": status,
-                            "error": error_msg,
-                            "execution_count": cell.execution_count or 0,
-                            "outputs": outputs,
-                            "started_at": started_at,
-                            "completed_at": completed_at,
-                        },
-                    )
+                # Task is now done - await it to get result or raise any exception
+                await execution_task
 
             except asyncio.CancelledError:
-                completed_at = datetime.now(timezone.utc).isoformat()
-                logger.info(f"Cell execution interrupted (ID: {cell_id})")
-
-                yield ExecutionStreamEvent(
-                    event_type="interrupted",
-                    cell_id=cell_id,
-                    timestamp=completed_at,
-                    data={
-                        "status": "interrupted",
-                        "error": "Execution was interrupted by user",
-                        "execution_count": getattr(cell, "execution_count", 0) or 0,
-                        "started_at": started_at,
-                        "completed_at": completed_at,
-                    },
-                )
-
-            except Exception as e:
-                completed_at = datetime.now(timezone.utc).isoformat()
-                error_msg = str(e)
-
-                logger.error(f"Error executing cell (ID: {cell_id}): {e}")
-                self._status = KernelStatus.ERROR
-
-                yield ExecutionStreamEvent(
-                    event_type="error",
-                    cell_id=cell_id,
-                    timestamp=completed_at,
-                    data={
-                        "status": "error",
-                        "error": error_msg,
-                        "execution_count": getattr(cell, "execution_count", 0) or 0,
-                        "started_at": started_at,
-                        "completed_at": completed_at,
-                    },
-                )
-
+                execution_task.cancel()
+                raise
             finally:
-                # Clear execution tracking and restore ready status
-                self._executing_cell_id = None
+                # Stream any final outputs that might have been missed
+                final_outputs = list(cell.outputs)
+                if len(final_outputs) > last_output_count:
+                    for i in range(last_output_count, len(final_outputs)):
+                        output = final_outputs[i]
+                        yield ExecutionStreamEvent(
+                            event_type="output",
+                            cell_id=cell_id,
+                            timestamp=datetime.now(timezone.utc).isoformat(),
+                            data={
+                                "output": dict(output),
+                                "output_index": i,
+                            },
+                        )
+
+                completed_at = datetime.now(timezone.utc).isoformat()
+
+                # Determine execution status and collect outputs
+                outputs = list(cell.outputs)
+                error_messages = [
+                    f"{output.get('ename', 'Error')}: {output.get('evalue', 'Unknown error')}"
+                    for output in outputs
+                    if output.get("output_type") == "error"
+                ]
+                error_msg = "; ".join(error_messages) if error_messages else None
+                status = "error" if error_msg else "completed"
+
+                # Emit completion event
+                yield ExecutionStreamEvent(
+                    event_type="completed",
+                    cell_id=cell_id,
+                    timestamp=completed_at,
+                    data={
+                        "status": status,
+                        "error": error_msg,
+                        "execution_count": cell.execution_count or 0,
+                        "outputs": outputs,
+                        "started_at": started_at,
+                        "completed_at": completed_at,
+                    },
+                )
+
+        except asyncio.CancelledError:
+            completed_at = datetime.now(timezone.utc).isoformat()
+            logger.info(f"Cell execution interrupted (ID: {cell_id})")
+
+            yield ExecutionStreamEvent(
+                event_type="interrupted",
+                cell_id=cell_id,
+                timestamp=completed_at,
+                data={
+                    "status": "interrupted",
+                    "error": "Execution was interrupted by user",
+                    "execution_count": getattr(cell, "execution_count", 0) or 0,
+                    "started_at": started_at,
+                    "completed_at": completed_at,
+                },
+            )
+
+        except Exception as e:
+            completed_at = datetime.now(timezone.utc).isoformat()
+            error_msg = str(e)
+
+            logger.error(f"Unexpected Error executing cell (ID: {cell_id}): {e}")
+
+            # Quick lock for status update on error
+            async with self._lock:
+                if self._status == KernelStatus.EXECUTING:
+                    self._status = KernelStatus.ERROR
+
+            yield ExecutionStreamEvent(
+                event_type="error",
+                cell_id=cell_id,
+                timestamp=completed_at,
+                data={
+                    "status": "error",
+                    "error": error_msg,
+                    "execution_count": getattr(cell, "execution_count", 0) or 0,
+                    "started_at": started_at,
+                    "completed_at": completed_at,
+                },
+            )
+
+        finally:
+            # Quick lock for cleanup - only clear if we're still the executing cell
+            async with self._lock:
+                if self._executing_cell_id == cell_id:
+                    self._executing_cell_id = None
                 self._execution_task = None
                 if self._status == KernelStatus.EXECUTING:
                     self._status = KernelStatus.READY
