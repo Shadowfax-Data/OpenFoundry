@@ -69,6 +69,16 @@ class StopExecutionResponse(BaseModel):
     message: str = Field(..., description="Result message")
 
 
+class RestartKernelResponse(BaseModel):
+    """Response model for kernel restart."""
+
+    success: bool = Field(..., description="Whether the restart was successful")
+    message: str = Field(..., description="Restart result message")
+    kernel_id: str | None = Field(
+        None, description="New kernel ID if restart was successful"
+    )
+
+
 # Global kernel manager instance
 kernel_manager = JupyterKernelManager()
 
@@ -149,6 +159,26 @@ async def stop_execution(request: StopExecutionRequest):
         return StopExecutionResponse(message=message, success=False)
 
 
+@router.post("/restart", response_model=RestartKernelResponse)
+async def restart_kernel():
+    """Restart the Jupyter kernel."""
+    logger.info("Restarting kernel via API")
+
+    success = await kernel_manager.restart_kernel()
+
+    if success:
+        message = "Kernel restarted successfully"
+        new_kernel_id = kernel_manager.get_kernel_id()
+        logger.info(f"{message}. New kernel ID: {new_kernel_id}")
+        return RestartKernelResponse(
+            success=True, message=message, kernel_id=new_kernel_id
+        )
+    else:
+        message = "Failed to restart kernel"
+        logger.error(message)
+        return RestartKernelResponse(success=False, message=message, kernel_id=None)
+
+
 @router.post("/save")
 async def save_notebook():
     """Save the current notebook to the configured file path."""
@@ -179,7 +209,7 @@ async def save_notebook():
     return {"message": "Notebook saved successfully"}
 
 
-@router.post("/rerun/stream")
+@router.post("/rerun")
 async def rerun_notebook_stream():
     """Re-run all cells in the notebook in order with streaming output."""
     logger.info("Re-running all cells in notebook with streaming")

@@ -198,6 +198,48 @@ class JupyterKernelManager:
         except Exception as cleanup_error:
             logger.warning(f"Error during cleanup of failed start: {cleanup_error}")
 
+    async def restart_kernel(self):
+        """
+        Restart the kernel by shutting down the current one and starting a new one.
+
+        Returns:
+            bool: True if restart was successful, False otherwise
+        """
+        async with self._lock:
+            logger.info("Restarting Jupyter kernel...")
+
+            # First, try to interrupt any running execution
+            if self._status == KernelStatus.EXECUTING:
+                logger.info("Interrupting current execution before restart")
+                # We can't call interrupt_kernel here as it would deadlock on the lock
+                # So we do a quick shutdown instead
+
+            # Shutdown existing kernel if it exists
+            if self.client is not None and self.client.km is not None:
+                logger.info("Shutting down kernel manager")
+                await asyncio.to_thread(self.client.km.shutdown_kernel, now=True)
+
+            # Reset state
+            self.client = None
+            self.kernel_id = None
+            self._executing_cell_id = None
+            self._execution_task = None
+            self._status = KernelStatus.INITIALIZING
+
+            # Start new kernel
+            try:
+                success = await self._start_kernel()
+                if success:
+                    logger.info("Kernel restarted successfully")
+                    return True
+                else:
+                    logger.error("Failed to restart kernel")
+                    return False
+            except Exception as e:
+                logger.error(f"Failed to restart kernel: {e}")
+                self._status = KernelStatus.ERROR
+                return False
+
     async def interrupt_kernel(self):
         """
         Interrupt the currently executing kernel using a layered approach.
