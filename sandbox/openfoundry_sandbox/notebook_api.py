@@ -1,18 +1,17 @@
 import logging
 from pathlib import Path
+import asyncio
 
 from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import StreamingResponse
 from nbformat import write
 from pydantic import BaseModel, Field
 
-from openfoundry_sandbox.kernel_manager import (
+from openfoundry_sandbox.cell_executor import (
+    CellExecutor,
     ExecutionStreamEvent,
-    JupyterKernelManager,
-    cleanup_kernel,
-    get_notebook_path,
-    initialize_kernel,
 )
+from openfoundry_sandbox.config import get_notebook_path
 
 logger = logging.getLogger(__name__)
 
@@ -79,8 +78,8 @@ class RestartKernelResponse(BaseModel):
     )
 
 
-# Global kernel manager instance
-kernel_manager = JupyterKernelManager()
+# Global cell executor instance
+cell_executor = CellExecutor()
 
 
 # --- API Endpoints ---
@@ -96,7 +95,7 @@ async def execute_code_stream(request: ExecuteCodeRequest):
     async def event_generator():
         """Generate SSE events from the execution stream."""
         try:
-            async for event in kernel_manager.execute_code_streaming(
+            async for event in cell_executor.execute_code_streaming(
                 request.code, request.cell_id
             ):
                 # Format as Server-Sent Events
@@ -128,16 +127,16 @@ async def execute_code_stream(request: ExecuteCodeRequest):
 async def get_kernel_status():
     """Get the current status of the kernel."""
     return KernelStatusResponse(
-        is_ready=kernel_manager.is_kernel_ready(),
-        is_starting=kernel_manager.is_kernel_starting(),
-        kernel_id=kernel_manager.get_kernel_id(),
+        is_ready=cell_executor.is_kernel_ready(),
+        is_starting=cell_executor.is_kernel_starting(),
+        kernel_id=cell_executor.get_kernel_id(),
     )
 
 
 @router.get("/notebook")
 async def get_notebook():
     """Get the complete notebook data including all cells and their results."""
-    return await kernel_manager.get_notebook()
+    return await cell_executor.get_notebook()
 
 
 @router.post("/stop", response_model=StopExecutionResponse)
@@ -145,7 +144,7 @@ async def stop_execution(request: StopExecutionRequest):
     """Stop/interrupt the currently executing cell."""
     logger.info(f"Stopping execution for cell_id: {request.cell_id}")
 
-    success = await kernel_manager.interrupt_kernel()
+    success = await cell_executor.interrupt_execution()
 
     if success:
         message = "Successfully interrupted execution"
@@ -164,11 +163,11 @@ async def restart_kernel():
     """Restart the Jupyter kernel."""
     logger.info("Restarting kernel via API")
 
-    success = await kernel_manager.restart_kernel()
+    success = await cell_executor.restart_kernel()
 
     if success:
         message = "Kernel restarted successfully"
-        new_kernel_id = kernel_manager.get_kernel_id()
+        new_kernel_id = cell_executor.get_kernel_id()
         logger.info(f"{message}. New kernel ID: {new_kernel_id}")
         return RestartKernelResponse(
             success=True, message=message, kernel_id=new_kernel_id
@@ -193,8 +192,8 @@ async def save_notebook():
             detail="Notebook path not found in environment configuration",
         )
     logger.info(f"Saving notebook to {notebook_path}")
-    # Get the current notebook from kernel manager
-    notebook = await kernel_manager.get_notebook()
+    # Get the current notebook from cell executor
+    notebook = await cell_executor.get_notebook()
 
     # Ensure parent directory exists
     parent_dir = Path(notebook_path).parent
@@ -217,7 +216,7 @@ async def rerun_notebook_stream():
     async def event_generator():
         """Generate SSE events from the rerun stream."""
         try:
-            async for event in kernel_manager.rerun_notebook():
+            async for event in cell_executor.rerun_notebook():
                 # Format as Server-Sent Events
                 event_data = event.model_dump_json()
                 yield f"data: {event_data}\n\n"
@@ -248,7 +247,7 @@ async def delete_cell(cell_id: str):
     """Delete a cell from the notebook by its ID."""
     logger.info(f"Deleting cell with ID: {cell_id}")
 
-    success = kernel_manager.delete_cell(cell_id)
+    success = cell_executor.delete_cell(cell_id)
 
     if success:
         message = f"Cell with ID '{cell_id}' deleted successfully"
@@ -265,9 +264,14 @@ async def delete_cell(cell_id: str):
 
 async def initialize_notebook():
     """Initialize the notebook kernel on startup."""
-    await initialize_kernel(kernel_manager)
+    logger.info("Initializing Jupyter kernel...")
+    await cell_executor.start_kernel()
+    logger.info("Jupyter kernel initialized successfully")
 
 
 async def cleanup_notebook():
     """Cleanup notebook resources on shutdown."""
-    await cleanup_kernel(kernel_manager)
+    logger.info("Cleaning up Jupyter kernel...")
+    if cell_executor.client is not None and cell_executor.client.km is not None:
+        await asyncio.to_thread(cell_executor.client.km.shutdown_kernel, now=True)
+    logger.info("Jupyter kernel cleaned up successfully")
