@@ -566,17 +566,42 @@ async def rerun_notebook(
     request: Request,
     run_context: NotebookAgentRunContext = Depends(get_notebook_agent_run_context),
 ):
-    """Re-run all cells in the notebook."""
-    async with run_context.get_sandbox_client() as client:
+    """Re-run all cells in the notebook with streaming output."""
+
+    async def stream_rerun():
+        """Stream rerun events from the sandbox."""
         try:
-            response = await client.post("/api/notebook/rerun")
+            async with run_context.get_sandbox_client() as client:
+                # Start streaming request to sandbox
+                async with client.stream(
+                    "POST",
+                    "/api/notebook/rerun",
+                    headers={"Accept": "text/event-stream"},
+                ) as response:
+                    response.raise_for_status()
+
+                    # Forward the streaming response
+                    async for chunk in response.aiter_text():
+                        if chunk.strip():
+                            yield chunk
+
         except httpx.RequestError as e:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Failed to rerun notebook: {e}",
-            )
-        response.raise_for_status()
-        return response.json()
+            logger.error(f"Request error in streaming rerun: {e}")
+            # Send error event in SSE format
+            yield f'data: {{"event_type": "error", "cell_id": "rerun_error", "timestamp": "", "data": {{"error": "Connection error: {str(e)}"}}}}\n\n'
+        except Exception as e:
+            logger.error(f"Unexpected error in streaming rerun: {e}")
+            yield f'data: {{"event_type": "error", "cell_id": "rerun_error", "timestamp": "", "data": {{"error": "Unexpected error: {str(e)}"}}}}\n\n'
+
+    return StreamingResponse(
+        stream_rerun(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
 
 
 @router.delete(

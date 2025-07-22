@@ -256,7 +256,7 @@ export const useNotebookOperations = ({
                   completed_at: completedData.completed_at,
                 };
                 eventSource.close();
-                getNotebook().then(() => resolve(finalResult));
+                resolve(finalResult);
                 break;
               }
 
@@ -287,7 +287,7 @@ export const useNotebookOperations = ({
         // This is a placeholder - we'll implement the actual streaming below
       });
     },
-    [baseUrl, getNotebook],
+    [baseUrl],
   );
 
   // Execute code with streaming using fetch (since EventSource doesn't support POST)
@@ -365,6 +365,8 @@ export const useNotebookOperations = ({
                       `Output received for cell ${eventData.cell_id}:`,
                       eventData.data.output,
                     );
+                    // Real-time output display is handled by the NotebookCell component
+                    // via the onEvent callback for streaming outputs
                     break;
                   }
 
@@ -380,6 +382,28 @@ export const useNotebookOperations = ({
                       started_at: completedData.started_at,
                       completed_at: completedData.completed_at,
                     };
+
+                    // Update notebook data in real-time with completed cell
+                    setNotebookData((prevData) => {
+                      if (!prevData) return prevData;
+
+                      const updatedCells = prevData.cells.map((cell) => {
+                        if (cell.id === eventData.cell_id) {
+                          return {
+                            ...cell,
+                            outputs: completedData.outputs || [],
+                            execution_count:
+                              completedData.execution_count || null,
+                          };
+                        }
+                        return cell;
+                      });
+
+                      return {
+                        ...prevData,
+                        cells: updatedCells,
+                      };
+                    });
                     break;
                   }
 
@@ -397,8 +421,7 @@ export const useNotebookOperations = ({
           }
         }
 
-        // Refresh notebook data after execution
-        await getNotebook();
+        // No need to refresh notebook data - already updated in real-time
         return finalResult;
       } catch (err) {
         const errorMessage =
@@ -408,7 +431,7 @@ export const useNotebookOperations = ({
         return null;
       }
     },
-    [baseUrl, getNotebook],
+    [baseUrl],
   );
 
   // Get kernel status
@@ -460,21 +483,91 @@ export const useNotebookOperations = ({
     }
   }, [baseUrl, getKernelStatus, getNotebook]);
 
-  // Rerun all cells
+  // Rerun all cells with streaming
   const rerunNotebook = useCallback(async (): Promise<boolean> => {
     try {
       setError(null);
       setLoading(true);
+
       const response = await fetch(`${baseUrl}/rerun`, {
         method: "POST",
+        headers: {
+          Accept: "text/event-stream",
+        },
       });
 
       if (!response.ok) {
         throw new Error(`Failed to rerun notebook: ${response.statusText}`);
       }
 
-      // Refresh notebook data after rerun
-      await getNotebook();
+      // Handle streaming response
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error("Failed to get response reader");
+      }
+
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+
+        // Process complete lines
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || ""; // Keep incomplete line in buffer
+
+        for (const line of lines) {
+          if (line.startsWith("data: ")) {
+            try {
+              const eventData = JSON.parse(line.slice(6));
+
+              // Handle error events
+              if (eventData.event_type === "error") {
+                console.error("Rerun error:", eventData.data?.error);
+                throw new Error(eventData.data?.error || "Rerun failed");
+              }
+
+              // Update notebook data in real-time for completed cells
+              if (eventData.event_type === "completed") {
+                const completedData = eventData.data as CompletedEventData;
+                setNotebookData((prevData) => {
+                  if (!prevData) return prevData;
+
+                  const updatedCells = prevData.cells.map((cell) => {
+                    if (cell.id === eventData.cell_id) {
+                      return {
+                        ...cell,
+                        outputs: completedData.outputs || [],
+                        execution_count: completedData.execution_count || null,
+                      };
+                    }
+                    return cell;
+                  });
+
+                  return {
+                    ...prevData,
+                    cells: updatedCells,
+                  };
+                });
+              }
+
+              // Log other events for debugging
+              console.log(
+                "Rerun event:",
+                eventData.event_type,
+                eventData.cell_id,
+              );
+            } catch (parseError) {
+              console.error("Error parsing rerun event data:", parseError);
+            }
+          }
+        }
+      }
+
+      // No need to refresh notebook data - already updated in real-time
       return true;
     } catch (err) {
       const errorMessage =
@@ -485,7 +578,7 @@ export const useNotebookOperations = ({
     } finally {
       setLoading(false);
     }
-  }, [baseUrl, getNotebook]);
+  }, [baseUrl]);
 
   // Cell management functions
   const addCell = useCallback(
