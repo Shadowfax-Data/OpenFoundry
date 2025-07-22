@@ -7,7 +7,6 @@ from nbformat import write
 from pydantic import BaseModel, Field
 
 from openfoundry_sandbox.kernel_manager import (
-    ExecuteCodeResponse,
     ExecutionStreamEvent,
     JupyterKernelManager,
     cleanup_kernel,
@@ -38,19 +37,6 @@ class KernelStatusResponse(BaseModel):
         ..., description="Whether the kernel is currently starting"
     )
     kernel_id: str | None = Field(None, description="Unique kernel identifier")
-
-
-class RerunNotebookResponse(BaseModel):
-    """Response model for re-running all notebook cells."""
-
-    total_cells: int = Field(..., description="Total number of cells executed")
-    successful_cells: int = Field(
-        ..., description="Number of successfully executed cells"
-    )
-    failed_cells: int = Field(..., description="Number of cells that failed execution")
-    execution_results: list[ExecuteCodeResponse] = Field(
-        ..., description="Detailed execution results for each cell"
-    )
 
 
 class DeleteCellRequest(BaseModel):
@@ -144,13 +130,6 @@ async def get_notebook():
     return await kernel_manager.get_notebook()
 
 
-@router.post("/restart")
-async def restart_kernel():
-    """Restart the kernel (clears all variables and state)."""
-    await kernel_manager.restart_kernel()
-    return {"message": "Kernel restarted successfully"}
-
-
 @router.post("/stop", response_model=StopExecutionResponse)
 async def stop_execution(request: StopExecutionRequest):
     """Stop/interrupt the currently executing cell."""
@@ -200,36 +179,38 @@ async def save_notebook():
     return {"message": "Notebook saved successfully"}
 
 
-@router.post("/rerun", response_model=RerunNotebookResponse)
-async def rerun_notebook():
-    """Re-run all cells in the notebook in order."""
-    logger.info("Re-running all cells in notebook")
-    try:
-        execution_results = await kernel_manager.rerun_notebook()
+@router.post("/rerun/stream")
+async def rerun_notebook_stream():
+    """Re-run all cells in the notebook in order with streaming output."""
+    logger.info("Re-running all cells in notebook with streaming")
 
-        # Calculate summary statistics
-        total_cells = len(execution_results)
-        successful_cells = sum(
-            1 for result in execution_results if result.status == "completed"
-        )
-        failed_cells = total_cells - successful_cells
+    async def event_generator():
+        """Generate SSE events from the rerun stream."""
+        try:
+            async for event in kernel_manager.rerun_notebook():
+                # Format as Server-Sent Events
+                event_data = event.model_dump_json()
+                yield f"data: {event_data}\n\n"
+        except Exception as e:
+            logger.error(f"Error in streaming rerun: {e}")
+            # Send error event
+            error_event = ExecutionStreamEvent(
+                event_type="error",
+                cell_id="rerun_error",
+                timestamp="",
+                data={"error": str(e)},
+            )
+            yield f"data: {error_event.model_dump_json()}\n\n"
 
-        logger.info(
-            f"Notebook rerun completed: {successful_cells}/{total_cells} cells successful"
-        )
-
-        return RerunNotebookResponse(
-            total_cells=total_cells,
-            successful_cells=successful_cells,
-            failed_cells=failed_cells,
-            execution_results=execution_results,
-        )
-    except Exception as e:
-        logger.error(f"Error during notebook rerun: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to rerun notebook: {str(e)}",
-        )
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",  # Disable nginx buffering
+        },
+    )
 
 
 @router.delete("/cells/{cell_id}", response_model=DeleteCellResponse)

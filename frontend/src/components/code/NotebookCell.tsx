@@ -135,19 +135,35 @@ export function NotebookCellComponent({
                 setExecutionStatus("");
               }, 1000);
               break;
-            case "error":
-              setExecutionStatus("Error");
+            case "error": {
+              // Check if this is a kernel death error
+              const errorData = event.data as { error?: string };
+              if (
+                errorData.error &&
+                errorData.error.toLowerCase().includes("kernel")
+              ) {
+                setExecutionStatus("Kernel Error - Restarting...");
+                // Give more time for kernel restart feedback
+                setTimeout(() => {
+                  setStreamingOutputs([]);
+                  setExecutionStatus("");
+                }, 5000);
+              } else {
+                setExecutionStatus("Error");
+                setTimeout(() => {
+                  setStreamingOutputs([]);
+                  setExecutionStatus("");
+                }, 3000);
+              }
+              break;
+            }
+            case "interrupted":
+              setExecutionStatus("Interrupted");
+              // Show interrupted status for longer to give user feedback
               setTimeout(() => {
                 setStreamingOutputs([]);
                 setExecutionStatus("");
               }, 3000);
-              break;
-            case "interrupted":
-              setExecutionStatus("Interrupted");
-              setTimeout(() => {
-                setStreamingOutputs([]);
-                setExecutionStatus("");
-              }, 2000);
               break;
           }
         },
