@@ -30,7 +30,6 @@ class KernelStatus(str, Enum):
     EXECUTING = "executing"
     INTERRUPTING = "interrupting"
     ERROR = "error"
-    DEAD = "dead"
 
 
 class CellWithIndex(NamedTuple):
