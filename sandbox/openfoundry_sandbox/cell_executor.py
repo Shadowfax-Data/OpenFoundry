@@ -5,7 +5,6 @@ from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path
 from typing import Any, AsyncGenerator, NamedTuple
-from dataclasses import dataclass
 
 from nbclient import NotebookClient
 from nbclient.exceptions import CellExecutionError
@@ -23,6 +22,7 @@ KERNEL_START_TIMEOUT = 10.0  # seconds to wait for kernel start
 
 class KernelStatus(str, Enum):
     """Simplified kernel status states."""
+
     STARTING = "starting"
     READY = "ready"
     EXECUTING = "executing"
@@ -31,25 +31,33 @@ class KernelStatus(str, Enum):
 
 class KernelNotReadyError(Exception):
     """Exception raised when the kernel is not ready for execution."""
+
     pass
 
 
 class CellWithIndex(NamedTuple):
     """Container for a notebook cell and its index in the notebook."""
+
     cell: NotebookNode
     index: int
 
 
 class ExecutionEvent(BaseModel):
     """Simplified model for execution events."""
-    event_type: str = Field(..., description="Type of event: started, output, completed, error")
+
+    event_type: str = Field(
+        ..., description="Type of event: started, output, completed, error"
+    )
     cell_id: str = Field(..., description="Cell ID being executed")
     timestamp: str = Field(..., description="ISO timestamp of the event")
-    data: dict[str, Any] = Field(default_factory=dict, description="Event-specific data")
+    data: dict[str, Any] = Field(
+        default_factory=dict, description="Event-specific data"
+    )
 
 
 class ExecutionRequest(NamedTuple):
     """Container for a queued execution request."""
+
     code: str
     cell_id: str
     result_queue: asyncio.Queue
@@ -77,7 +85,9 @@ class CellExecutor:
                 logger.info(f"Loading existing notebook from: {notebook_path}")
                 with open(notebook_path, "r") as f:
                     notebook = read(f, as_version=4)
-                logger.info(f"Successfully loaded notebook with {len(notebook.cells)} cells")
+                logger.info(
+                    f"Successfully loaded notebook with {len(notebook.cells)} cells"
+                )
                 return notebook
             except Exception as e:
                 logger.error(f"Failed to load notebook from {notebook_path}: {e}")
@@ -91,29 +101,30 @@ class CellExecutor:
             return True
 
         self._status = KernelStatus.STARTING
-        
+
         try:
             logger.info("Starting Jupyter Python kernel...")
             self.client = NotebookClient(self.nb, kernel_name="python3")
-            
+
             # Create kernel manager and start kernel
             self.client.create_kernel_manager()
             await asyncio.wait_for(
-                self.client.async_start_new_kernel(),
-                timeout=KERNEL_START_TIMEOUT
+                self.client.async_start_new_kernel(), timeout=KERNEL_START_TIMEOUT
             )
             await asyncio.wait_for(
                 self.client.async_start_new_kernel_client(),
-                timeout=KERNEL_START_TIMEOUT
+                timeout=KERNEL_START_TIMEOUT,
             )
 
             self.kernel_id = str(uuid.uuid4())
             self._status = KernelStatus.READY
-            
+
             # Start the queue processor
             if self._queue_processor_task is None or self._queue_processor_task.done():
-                self._queue_processor_task = asyncio.create_task(self._process_execution_queue())
-            
+                self._queue_processor_task = asyncio.create_task(
+                    self._process_execution_queue()
+                )
+
             logger.info("Jupyter kernel started successfully")
             return True
 
@@ -126,68 +137,107 @@ class CellExecutor:
     async def _process_execution_queue(self):
         """Process queued execution requests sequentially."""
         logger.info("Started execution queue processor")
-        
+
+        current_request = None
         try:
             while True:
                 # Wait for an execution request
-                request = await self._execution_queue.get()
-                
+                current_request = await self._execution_queue.get()
+
                 try:
                     # Execute the cell and stream results to the request's result queue
-                    async for event in self._execute_cell_with_streaming_internal(request.code, request.cell_id):
-                        await request.result_queue.put(event)
-                    
+                    async for event in self._execute_cell_with_streaming_internal(
+                        current_request.code, current_request.cell_id
+                    ):
+                        await current_request.result_queue.put(event)
+
                     # Signal completion
-                    await request.result_queue.put(None)
-                    
+                    await current_request.result_queue.put(None)
+
                 except Exception as e:
                     # Send error event to result queue
                     error_event = ExecutionEvent(
                         event_type="error",
-                        cell_id=request.cell_id,
+                        cell_id=current_request.cell_id,
                         timestamp=datetime.now(timezone.utc).isoformat(),
-                        data={"error": str(e)}
+                        data={"error": str(e)},
                     )
-                    await request.result_queue.put(error_event)
-                    await request.result_queue.put(None)
-                
+                    await current_request.result_queue.put(error_event)
+                    await current_request.result_queue.put(None)
+
                 finally:
                     # Mark task as done
                     self._execution_queue.task_done()
-                    
+                    current_request = None
+
         except asyncio.CancelledError:
             logger.info("Execution queue processor cancelled")
+
+            # If we were processing a request when cancelled, notify it
+            if current_request:
+                try:
+                    error_event = ExecutionEvent(
+                        event_type="error",
+                        cell_id=current_request.cell_id,
+                        timestamp=datetime.now(timezone.utc).isoformat(),
+                        data={
+                            "error": "Execution cancelled - kernel shutting down",
+                            "status": "cancelled",
+                        },
+                    )
+                    await current_request.result_queue.put(error_event)
+                    await current_request.result_queue.put(None)
+                    self._execution_queue.task_done()
+                except Exception as e:
+                    logger.error(f"Failed to notify cancelled request: {e}")
+
             raise
+
+    async def _clear_execution_queue(self):
+        """Clear the execution queue and notify pending requests."""
+        logger.info("Clearing execution queue")
+
+        cleared_count = 0
+        while not self._execution_queue.empty():
+            try:
+                request = self._execution_queue.get_nowait()
+
+                # Send error event to the pending request
+                error_event = ExecutionEvent(
+                    event_type="error",
+                    cell_id=request.cell_id,
+                    timestamp=datetime.now(timezone.utc).isoformat(),
+                    data={
+                        "error": "Execution cancelled - kernel shutting down",
+                        "status": "cancelled",
+                    },
+                )
+                await request.result_queue.put(error_event)
+
+                # Send completion signal
+                await request.result_queue.put(None)
+
+                # Mark task as done
+                self._execution_queue.task_done()
+                cleared_count += 1
+
+            except asyncio.QueueEmpty:
+                break
+
+        if cleared_count > 0:
+            logger.info(
+                f"Notified {cleared_count} pending execution requests about kernel shutting down"
+            )
 
     async def restart_kernel(self) -> bool:
         """Restart the kernel."""
         logger.info("Restarting Jupyter kernel...")
-        
-        # Cancel the queue processor
-        if self._queue_processor_task and not self._queue_processor_task.done():
-            self._queue_processor_task.cancel()
-            try:
-                await self._queue_processor_task
-            except asyncio.CancelledError:
-                pass
-        
-        # Shutdown existing kernel
-        if self.client and self.client.km:
-            await self.client.km.shutdown_kernel(now=True)
 
-        # Reset state
-        self.client = None
-        self.kernel_id = None
-        self._executing_cell_id = None
-        self._status = KernelStatus.STARTING
-        
-        # Clear the execution queue
-        while not self._execution_queue.empty():
-            try:
-                self._execution_queue.get_nowait()
-                self._execution_queue.task_done()
-            except asyncio.QueueEmpty:
-                break
+        # Shutdown existing kernel and clean up
+        shutdown_success = await self.shutdown_kernel()
+        if not shutdown_success:
+            logger.error("Failed to shutdown kernel before restart")
+            return False
 
         # Start new kernel (this will also restart the queue processor)
         try:
@@ -197,6 +247,42 @@ class CellExecutor:
             return success
         except Exception as e:
             logger.error(f"Failed to restart kernel: {e}")
+            self._status = KernelStatus.ERROR
+            return False
+
+    async def shutdown_kernel(self) -> bool:
+        """Shutdown the kernel and clean up resources."""
+        logger.info("Shutting down Jupyter kernel...")
+
+        try:
+            # Cancel the queue processor
+            if self._queue_processor_task and not self._queue_processor_task.done():
+                self._queue_processor_task.cancel()
+                try:
+                    await self._queue_processor_task
+                except asyncio.CancelledError:
+                    pass
+
+            # Clear the execution queue and notify pending requests
+            await self._clear_execution_queue()
+
+            # Shutdown the kernel
+            if self.client and self.client.km:
+                await self.client.km.shutdown_kernel(now=True)
+                logger.info("Kernel shutdown successfully")
+
+            # Reset state
+            self.client = None
+            self.kernel_id = None
+            self._executing_cell_id = None
+            self._status = KernelStatus.STARTING
+            self._queue_processor_task = None
+
+            logger.info("Kernel cleanup completed")
+            return True
+
+        except Exception as e:
+            logger.error(f"Failed to shutdown kernel: {e}")
             self._status = KernelStatus.ERROR
             return False
 
@@ -225,18 +311,22 @@ class CellExecutor:
         self, code: str, cell_id: str
     ) -> AsyncGenerator[ExecutionEvent, None]:
         """Execute code and stream outputs in real-time."""
-        
+
         # Check if kernel exists (but don't require it to be ready - it might be executing another cell)
         if self.client is None:
-            raise KernelNotReadyError(f"Kernel is not initialized. Status: {self._status}")
-        
+            raise KernelNotReadyError(
+                f"Kernel is not initialized. Status: {self._status}"
+            )
+
         # Create a result queue for this execution
         result_queue = asyncio.Queue()
-        
+
         # Queue the execution request
-        request = ExecutionRequest(code=code, cell_id=cell_id, result_queue=result_queue)
+        request = ExecutionRequest(
+            code=code, cell_id=cell_id, result_queue=result_queue
+        )
         await self._execution_queue.put(request)
-        
+
         # Stream results from the result queue
         while True:
             event = await result_queue.get()
@@ -249,12 +339,12 @@ class CellExecutor:
     ) -> AsyncGenerator[ExecutionEvent, None]:
         """Execute the cell and stream its outputs."""
         assert self.client is not None, "Kernel client is not initialized"
-        
+
         # Use execution lock and update status
         async with self._execution_lock:
             self._executing_cell_id = cell_id
             self._status = KernelStatus.EXECUTING
-            
+
             try:
                 # Prepare cell
                 cell_with_index = self._get_or_create_cell(code, cell_id)
@@ -263,13 +353,13 @@ class CellExecutor:
                 cell.outputs = []
 
                 started_at = datetime.now(timezone.utc).isoformat()
-                
+
                 # Emit started event
                 yield ExecutionEvent(
                     event_type="started",
                     cell_id=cell_id,
                     timestamp=started_at,
-                    data={"code": code}
+                    data={"code": code},
                 )
 
                 try:
@@ -291,7 +381,7 @@ class CellExecutor:
                                 event_type="output",
                                 cell_id=cell_id,
                                 timestamp=datetime.now(timezone.utc).isoformat(),
-                                data={"output": dict(output), "output_index": i}
+                                data={"output": dict(output), "output_index": i},
                             )
                         last_output_count = len(current_outputs)
 
@@ -306,7 +396,7 @@ class CellExecutor:
                             event_type="output",
                             cell_id=cell_id,
                             timestamp=datetime.now(timezone.utc).isoformat(),
-                            data={"output": dict(output), "output_index": i}
+                            data={"output": dict(output), "output_index": i},
                         )
 
                     # Emit completion event
@@ -316,19 +406,60 @@ class CellExecutor:
                         for output in final_outputs
                         if output.get("output_type") == "error"
                     ]
-                    
+
                     yield ExecutionEvent(
                         event_type="completed",
                         cell_id=cell_id,
                         timestamp=completed_at,
                         data={
                             "status": "error" if error_messages else "success",
-                            "error": "; ".join(error_messages) if error_messages else None,
+                            "error": "; ".join(error_messages)
+                            if error_messages
+                            else None,
                             "execution_count": cell.execution_count or 0,
                             "outputs": list(final_outputs),
                             "started_at": started_at,
                             "completed_at": completed_at,
-                        }
+                        },
+                    )
+
+                except CellExecutionError as e:
+                    # Handle cell execution errors (like ModuleNotFoundError, SyntaxError, etc.)
+                    # The error outputs should already be in the cell.outputs
+                    logger.info(f"Cell execution error for cell {cell_id}: {e}")
+
+                    # Stream any error outputs that were captured
+                    final_outputs = list(cell.outputs)
+                    for i, output in enumerate(final_outputs):
+                        yield ExecutionEvent(
+                            event_type="output",
+                            cell_id=cell_id,
+                            timestamp=datetime.now(timezone.utc).isoformat(),
+                            data={"output": dict(output), "output_index": i},
+                        )
+
+                    # Emit completion event with error status
+                    completed_at = datetime.now(timezone.utc).isoformat()
+                    error_messages = [
+                        f"{output.get('ename', 'Error')}: {output.get('evalue', 'Unknown error')}"
+                        for output in final_outputs
+                        if output.get("output_type") == "error"
+                    ]
+
+                    yield ExecutionEvent(
+                        event_type="completed",
+                        cell_id=cell_id,
+                        timestamp=completed_at,
+                        data={
+                            "status": "error",
+                            "error": "; ".join(error_messages)
+                            if error_messages
+                            else str(e),
+                            "execution_count": cell.execution_count or 0,
+                            "outputs": list(final_outputs),
+                            "started_at": started_at,
+                            "completed_at": completed_at,
+                        },
                     )
 
                 except Exception as e:
@@ -343,7 +474,7 @@ class CellExecutor:
                             "error": str(e),
                             "started_at": started_at,
                             "completed_at": completed_at,
-                        }
+                        },
                     )
             finally:
                 # Reset status when done
@@ -358,7 +489,7 @@ class CellExecutor:
 
         for i, cell in enumerate(code_cells):
             logger.info(f"Re-running cell {i+1}/{len(code_cells)} (ID: {cell.id})")
-            
+
             async for event in self.execute_code_streaming(cell.source, cell.id):
                 # Add rerun metadata
                 event.data["cell_index"] = i
@@ -369,7 +500,11 @@ class CellExecutor:
 
     async def interrupt_execution(self) -> bool:
         """Interrupt the currently executing cell."""
-        if self._status != KernelStatus.EXECUTING or not self.client or not self.client.km:
+        if (
+            self._status != KernelStatus.EXECUTING
+            or not self.client
+            or not self.client.km
+        ):
             logger.info("No cell is currently executing")
             return False
 
@@ -413,6 +548,3 @@ class CellExecutor:
 
         logger.warning(f"Cell with ID {cell_id} not found for deletion")
         return False
-
-
- 

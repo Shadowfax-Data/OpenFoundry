@@ -1,6 +1,5 @@
 import logging
 from pathlib import Path
-import asyncio
 
 from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import StreamingResponse
@@ -273,16 +272,10 @@ async def initialize_notebook():
 async def cleanup_notebook():
     """Cleanup notebook resources on shutdown."""
     logger.info("Cleaning up Jupyter kernel...")
-    
-    # Cancel the queue processor
-    if cell_executor._queue_processor_task and not cell_executor._queue_processor_task.done():
-        cell_executor._queue_processor_task.cancel()
-        try:
-            await cell_executor._queue_processor_task
-        except asyncio.CancelledError:
-            pass
-    
-    # Shutdown the kernel
-    if cell_executor.client is not None and cell_executor.client.km is not None:
-        await asyncio.to_thread(cell_executor.client.km.shutdown_kernel, now=True)
-    logger.info("Jupyter kernel cleaned up successfully")
+
+    # Use the dedicated shutdown method
+    success = await cell_executor.shutdown_kernel()
+    if success:
+        logger.info("Jupyter kernel cleaned up successfully")
+    else:
+        logger.error("Failed to clean up Jupyter kernel")
