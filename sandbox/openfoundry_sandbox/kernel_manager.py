@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any, AsyncGenerator, NamedTuple
 
 from nbclient import NotebookClient
+from nbclient.exceptions import CellExecutionError
 from nbformat import NotebookNode, read
 from nbformat.v4 import new_code_cell, new_notebook
 from pydantic import BaseModel, Field
@@ -466,16 +467,24 @@ class JupyterKernelManager:
                 },
             )
 
+        except CellExecutionError as e:
+            # This is a normal cell execution error (ModuleNotFoundError, SyntaxError, etc.)
+            # The error details are already captured in the cell outputs by nbclient
+            logger.info(
+                f"Cell execution failed with user code error (ID: {cell_id}): {e}"
+            )
+            # Let the finally block handle this as a normal completion with error outputs
+
         except Exception as e:
+            # This is a system fault (kernel crash, communication error, etc.)
             completed_at = datetime.now(timezone.utc).isoformat()
             error_msg = str(e)
 
-            logger.error(f"Unexpected Error executing cell (ID: {cell_id}): {e}")
+            logger.error(f"System error during cell execution (ID: {cell_id}): {e}")
 
-            # Quick lock for status update on error
+            # Transition kernel to ERROR state - it's no longer reliable
             async with self._lock:
-                if self._status == KernelStatus.EXECUTING:
-                    self._status = KernelStatus.ERROR
+                self._status = KernelStatus.ERROR
 
             yield ExecutionStreamEvent(
                 event_type="error",
@@ -496,6 +505,8 @@ class JupyterKernelManager:
                 if self._executing_cell_id == cell_id:
                     self._executing_cell_id = None
                 self._execution_task = None
+                # Only transition back to READY from EXECUTING state
+                # If we're in ERROR state due to a system error, stay in ERROR
                 if self._status == KernelStatus.EXECUTING:
                     self._status = KernelStatus.READY
 
