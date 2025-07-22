@@ -9,7 +9,8 @@ from pydantic import BaseModel, Field
 
 from openfoundry_sandbox.cell_executor import (
     CellExecutor,
-    ExecutionStreamEvent,
+    ExecutionEvent,
+    KernelStatus,
 )
 from openfoundry_sandbox.config import get_notebook_path
 
@@ -104,7 +105,7 @@ async def execute_code_stream(request: ExecuteCodeRequest):
         except Exception as e:
             logger.error(f"Error in streaming execution: {e}")
             # Send error event
-            error_event = ExecutionStreamEvent(
+            error_event = ExecutionEvent(
                 event_type="error",
                 cell_id=request.cell_id,
                 timestamp="",
@@ -128,7 +129,7 @@ async def get_kernel_status():
     """Get the current status of the kernel."""
     return KernelStatusResponse(
         is_ready=cell_executor.is_kernel_ready(),
-        is_starting=cell_executor.is_kernel_starting(),
+        is_starting=cell_executor.get_kernel_status() == KernelStatus.STARTING,
         kernel_id=cell_executor.get_kernel_id(),
     )
 
@@ -223,7 +224,7 @@ async def rerun_notebook_stream():
         except Exception as e:
             logger.error(f"Error in streaming rerun: {e}")
             # Send error event
-            error_event = ExecutionStreamEvent(
+            error_event = ExecutionEvent(
                 event_type="error",
                 cell_id="rerun_error",
                 timestamp="",
@@ -272,6 +273,16 @@ async def initialize_notebook():
 async def cleanup_notebook():
     """Cleanup notebook resources on shutdown."""
     logger.info("Cleaning up Jupyter kernel...")
+    
+    # Cancel the queue processor
+    if cell_executor._queue_processor_task and not cell_executor._queue_processor_task.done():
+        cell_executor._queue_processor_task.cancel()
+        try:
+            await cell_executor._queue_processor_task
+        except asyncio.CancelledError:
+            pass
+    
+    # Shutdown the kernel
     if cell_executor.client is not None and cell_executor.client.km is not None:
         await asyncio.to_thread(cell_executor.client.km.shutdown_kernel, now=True)
     logger.info("Jupyter kernel cleaned up successfully")
