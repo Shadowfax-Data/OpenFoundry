@@ -51,7 +51,7 @@ export function Home() {
     {
       id: "application",
       title: "Application",
-      description: "Build interactive web apps and dashboards",
+      description: "Build interactive data apps and dashboards",
       icon: <Globe className="h-6 w-6" />,
       iconBgColor: "bg-blue-600",
       onClick: handleSelectApplication,
