@@ -38,12 +38,14 @@ interface CreateAppDialogProps {
   onCreatingSession: (isCreating: boolean) => void;
   onClose: () => void;
   disabled?: boolean;
+  initialPrompt?: string;
 }
 
 export function CreateAppDialog({
   onCreatingSession,
   onClose,
   disabled = false,
+  initialPrompt,
 }: CreateAppDialogProps) {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
@@ -55,7 +57,7 @@ export function CreateAppDialog({
     defaultValues: {
       name: "",
       connectionIds: [],
-      prompt: "",
+      prompt: initialPrompt || "",
     },
   });
 
