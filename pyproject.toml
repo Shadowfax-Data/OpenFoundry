@@ -26,6 +26,8 @@ snowflake-connector-python = "^3.16.0"
 pyarrow = "^18.1.0"
 databricks-sql-connector = {extras = ["pyarrow"], version = "^4.0.5"}
 clickhouse-connect = "^0.8.18"
+google-cloud-bigquery = "^3.35.0"
+google-cloud-bigquery-storage = "^2.32.0"
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.8.0"

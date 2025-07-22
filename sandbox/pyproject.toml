@@ -66,6 +66,8 @@ cryptography = "^45.0.5"
 databricks-sql-connector = "^4.0.5"
 clickhouse-connect = "^0.8.18"
 psycopg2-binary = "^2.9.10"
+google-cloud-bigquery-storage = "^2.32.0"
+google-cloud-bigquery = "^3.35.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = ">=7.0.0"
