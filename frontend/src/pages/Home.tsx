@@ -2,7 +2,9 @@ import { IconChartArcs } from "@tabler/icons-react";
 import {
   ArrowUp,
   BarChart3,
+  BookOpen,
   FileText,
+  Globe,
   Hammer,
   Mic,
   Paperclip,
@@ -13,6 +15,7 @@ import {
 import { useState } from "react";
 import { useNavigate } from "react-router";
 
+import { BuildOptionsDialog } from "@/components/app/BuildOptionsDialog";
 import { CreateAppDialog } from "@/components/app/CreateAppDialog";
 import { SampleProjectCard } from "@/components/app/SampleProjectCard";
 import { Button } from "@/components/ui/button";
@@ -20,6 +23,8 @@ import { Button } from "@/components/ui/button";
 export function Home() {
   const navigate = useNavigate();
   const [createAppDialogOpen, setCreateAppDialogOpen] = useState(false);
+  const [buildOptionsDialogOpen, setBuildOptionsDialogOpen] = useState(false);
+  const [prompt, setPrompt] = useState("");
   const [initialPrompt, setInitialPrompt] = useState<string | undefined>(
     undefined,
   );
@@ -29,6 +34,38 @@ export function Home() {
     setInitialPrompt(prompt);
     setCreateAppDialogOpen(true);
   };
+
+  const handlePromptSubmit = () => {
+    if (prompt.trim()) {
+      setInitialPrompt(prompt.trim());
+      setBuildOptionsDialogOpen(true);
+    }
+  };
+
+  const handleSelectApplication = () => {
+    setBuildOptionsDialogOpen(false);
+    setCreateAppDialogOpen(true);
+  };
+
+  const buildOptions = [
+    {
+      id: "application",
+      title: "Application",
+      description: "Build interactive web apps and dashboards",
+      icon: <Globe className="h-6 w-6" />,
+      iconBgColor: "bg-blue-600",
+      onClick: handleSelectApplication,
+    },
+    {
+      id: "notebook",
+      title: "Notebook",
+      description: "Create data analysis and computational notebooks",
+      icon: <BookOpen className="h-6 w-6" />,
+      iconBgColor: "bg-purple-600",
+      onClick: () => {},
+      disabled: true,
+    },
+  ];
 
   return (
     <div className="h-full flex flex-col">
@@ -59,6 +96,14 @@ export function Home() {
                 type="text"
                 placeholder="Ask OpenFoundry to build..."
                 className="w-full rounded-lg border border-gray-200 bg-background px-4 py-3 text-sm placeholder:text-muted-foreground focus:border-gray-300 focus:outline-none focus:ring-0"
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && prompt.trim()) {
+                    e.preventDefault();
+                    handlePromptSubmit();
+                  }
+                }}
               />
               <div className="absolute right-3 top-3 flex items-center space-x-2">
                 <Button size="sm" variant="ghost" className="h-6 w-6 p-0">
@@ -67,7 +112,13 @@ export function Home() {
                 <Button size="sm" variant="ghost" className="h-6 w-6 p-0">
                   <Mic className="h-4 w-4" />
                 </Button>
-                <Button size="sm" variant="ghost" className="h-6 w-6 p-0">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-6 w-6 p-0"
+                  onClick={handlePromptSubmit}
+                  disabled={!prompt.trim()}
+                >
                   <ArrowUp className="h-4 w-4" />
                 </Button>
               </div>
@@ -177,6 +228,13 @@ export function Home() {
           </div>
         </div>
       </div>
+      {buildOptionsDialogOpen && initialPrompt && (
+        <BuildOptionsDialog
+          prompt={initialPrompt}
+          onClose={() => setBuildOptionsDialogOpen(false)}
+          options={buildOptions}
+        />
+      )}
       {createAppDialogOpen && (
         <CreateAppDialog
           onCreatingSession={setIsCreatingSession}
