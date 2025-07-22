@@ -28,6 +28,7 @@ export function AppChat() {
   const [isSandboxReady, setIsSandboxReady] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
   const [searchParams] = useSearchParams();
+  const [initialPromptSent, setInitialPromptSent] = useState(false);
 
   // Extract prompt from query params
   const prompt = searchParams.get("prompt")?.trim() || "";
@@ -42,7 +43,6 @@ export function AppChat() {
   } = useAppChat({
     appId: appId!,
     sessionId: sessionId!,
-    initialPrompt: prompt,
   });
 
   const session = useAppSelector(selectAppAgentSessionById(appId!, sessionId!));
@@ -92,6 +92,32 @@ export function AppChat() {
 
     return () => clearInterval(intervalId);
   }, [appId, sessionId]); // Only depend on appId and sessionId
+
+  useEffect(() => {
+    if (isSandboxReady && prompt && !initialPromptSent) {
+      sendMessage(prompt);
+      setInitialPromptSent(true);
+
+      // Remove the prompt from URL to prevent re-sending on refresh
+      const newSearchParams = new URLSearchParams(searchParams);
+      newSearchParams.delete("prompt");
+      const newUrl = newSearchParams.toString()
+        ? `?${newSearchParams.toString()}`
+        : "";
+      navigate(`/apps/${appId}/sessions/${sessionId}/chat${newUrl}`, {
+        replace: true,
+      });
+    }
+  }, [
+    isSandboxReady,
+    prompt,
+    initialPromptSent,
+    sendMessage,
+    navigate,
+    searchParams,
+    appId,
+    sessionId,
+  ]);
 
   const handleResetChat = async () => {
     if (!appId || !sessionId) return;
