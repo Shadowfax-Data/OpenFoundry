@@ -1,0 +1,8 @@
+{
+    "label": "Tutorial - Data Connections",
+    "position": 1,
+    "link": {
+      "type": "generated-index",
+      "description": "Learn how to connect to your data warehouse or database."
+    }
+  }

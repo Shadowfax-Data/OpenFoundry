@@ -1,0 +1,97 @@
+/**
+ * Any CSS included here will be global. The classic template
+ * bundles Infima by default. Infima is a CSS framework designed to
+ * work well for content-centric websites.
+ */
+
+/* You can override the default Infima variables here. */
+:root {
+  --ifm-color-primary: #3b82f6;
+  --ifm-color-primary-dark: #2563eb;
+  --ifm-color-primary-darker: #1d4ed8;
+  --ifm-color-primary-darkest: #1e40af;
+  --ifm-color-primary-light: #60a5fa;
+  --ifm-color-primary-lighter: #93c5fd;
+  --ifm-color-primary-lightest: #dbeafe;
+  --ifm-code-font-size: 95%;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
+}
+
+/* For readability concerns, you should choose a lighter palette in dark mode. */
+[data-theme='dark'] {
+  --ifm-color-primary: #60a5fa;
+  --ifm-color-primary-dark: #3b82f6;
+  --ifm-color-primary-darker: #2563eb;
+  --ifm-color-primary-darkest: #1d4ed8;
+  --ifm-color-primary-light: #93c5fd;
+  --ifm-color-primary-lighter: #bfdbfe;
+  --ifm-color-primary-lightest: #dbeafe;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+}
+
+/* Force hero banner text to always be black */
+.hero--primary .hero__title,
+.hero--primary .hero__subtitle {
+  color: black !important;
+}
+
+[data-theme='dark'] .hero--primary .hero__title,
+[data-theme='dark'] .hero--primary .hero__subtitle {
+  color: white !important;
+}
+
+/* Custom Get Started button styling */
+.hero .button--secondary {
+  background-color: #1e40af !important;
+  border-color: #1e40af !important;
+  color: white !important;
+}
+
+.hero .button--secondary:hover {
+  background-color: #1e3a8a !important;
+  border-color: #1e3a8a !important;
+  color: white !important;
+}
+
+/* Navbar logo color changes */
+.navbar__logo img {
+  filter: brightness(0); /* Makes the navbar logo black in light mode */
+}
+
+[data-theme='dark'] .navbar__logo img {
+  filter: brightness(0) invert(1); /* Makes the navbar logo white in dark mode */
+}
+
+/* Custom footer styling to match light header */
+.footer {
+  background-color: var(--ifm-background-surface-color) !important;
+  border-top: 1px solid var(--ifm-color-emphasis-200) !important;
+}
+
+.footer__title {
+  color: black !important;
+}
+
+[data-theme='dark'] .footer__title {
+  color: var(--ifm-heading-color) !important;
+}
+
+.footer__item {
+  color: var(--ifm-color-emphasis-700) !important;
+}
+
+.footer__item:hover {
+  color: var(--ifm-color-primary) !important;
+}
+
+.footer__copyright {
+  color: var(--ifm-color-emphasis-600) !important;
+}
+
+.footer__link-item {
+  color: var(--ifm-color-emphasis-700) !important;
+}
+
+.footer__link-item:hover {
+  color: var(--ifm-color-primary) !important;
+}

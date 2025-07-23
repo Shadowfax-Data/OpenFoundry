@@ -1,0 +1,217 @@
+.features {
+  display: flex;
+  align-items: center;
+  padding: 4rem 0;
+  width: 100%;
+  background: var(--ifm-background-color);
+}
+
+.featureHeader {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.sectionTitle {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  color: var(--ifm-heading-color);
+}
+
+.sectionSubtitle {
+  font-size: 1.2rem;
+  color: var(--ifm-color-emphasis-700);
+  max-width: 600px;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+
+.featureCard {
+  background: var(--ifm-color-primary-lightest);
+  border: 1px solid var(--ifm-color-emphasis-200);
+  border-radius: 12px;
+  padding: 2rem;
+  height: 100%;
+  transition: all 0.3s ease-in-out;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  margin-bottom: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+[data-theme='dark'] .featureCard {
+  background: #1e293b;
+  border: 1px solid var(--ifm-color-emphasis-300);
+}
+
+.featureCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  border-color: var(--ifm-color-primary);
+}
+
+.featureCardLink {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+  height: 100%;
+}
+
+.featureCardLink:hover {
+  text-decoration: none;
+  color: inherit;
+}
+
+.clickableCard {
+  cursor: pointer;
+  position: relative;
+}
+
+.clickableCard:hover {
+  border-color: var(--ifm-color-primary);
+}
+
+.clickableCard::after {
+  content: '→';
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  font-size: 1.2rem;
+  color: var(--ifm-color-primary);
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+}
+
+.clickableCard:hover::after {
+  opacity: 1;
+}
+
+.featureIconContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 50%;
+  transition: all 0.3s ease-in-out;
+}
+
+.featureCard:hover .featureIconContainer {
+  background: rgba(255, 255, 255, 1);
+  transform: scale(1.05);
+}
+
+.featureSvg {
+  height: 48px;
+  width: 48px;
+  transition: all 0.3s ease-in-out;
+}
+
+/* Specific styling for each icon type */
+.featureSvg[data-icon="streamlit"] {
+  color: #ff4b4b;
+}
+
+.featureSvg[data-icon="jupyter"] {
+  color: #f37726;
+}
+
+.featureSvg[data-icon="zap"] {
+  color: #3b82f6;
+}
+
+.featureCard:hover .featureSvg {
+  transform: scale(1.1);
+}
+
+[data-theme='dark'] .featureIconContainer {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme='dark'] .featureCard:hover .featureIconContainer {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Keep brand colors in dark mode */
+[data-theme='dark'] .featureSvg[data-icon="streamlit"] {
+  color: #ff4b4b;
+}
+
+[data-theme='dark'] .featureSvg[data-icon="jupyter"] {
+  color: #f37726;
+}
+
+[data-theme='dark'] .featureSvg[data-icon="zap"] {
+  color: #60a5fa;
+}
+
+.featureContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+
+.featureTitle {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: black;
+  line-height: 1.3;
+}
+
+.featureDescription {
+  margin: 0;
+  color: #333;
+  line-height: 1.6;
+  flex: 1;
+}
+
+[data-theme='dark'] .featureTitle {
+  color: white;
+}
+
+[data-theme='dark'] .featureDescription {
+  color: #e5e7eb;
+}
+
+/* Responsive adjustments */
+@media screen and (max-width: 996px) {
+  .features {
+    padding: 3rem 0;
+  }
+
+  .sectionTitle {
+    font-size: 2rem;
+  }
+
+  .featureCard {
+    margin-bottom: 1.5rem;
+  }
+}
+
+@media screen and (max-width: 768px) {
+  .features {
+    padding: 2rem 0;
+  }
+
+  .sectionTitle {
+    font-size: 1.75rem;
+  }
+
+  .sectionSubtitle {
+    font-size: 1.1rem;
+  }
+
+  .featureCard {
+    padding: 1.5rem;
+  }
+
+  .featureSvg {
+    height: 40px;
+    width: 40px;
+  }
+}
