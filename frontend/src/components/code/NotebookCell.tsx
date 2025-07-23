@@ -1,3 +1,4 @@
+import DOMPurify from "dompurify";
 import { Play, Square, Trash2 } from "lucide-react";
 import { useState } from "react";
 
@@ -73,6 +74,100 @@ const processImageData = (
 
   // Add the full data URI prefix
   return `data:${mimeType};base64,${base64String}`;
+};
+
+// Helper function to sanitize HTML content
+const sanitizeHTML = (html: string | string[]): string => {
+  const htmlString = Array.isArray(html) ? html.join("") : String(html);
+  return DOMPurify.sanitize(htmlString, {
+    // Allow common notebook output elements
+    ALLOWED_TAGS: [
+      "div",
+      "span",
+      "p",
+      "br",
+      "strong",
+      "em",
+      "b",
+      "i",
+      "u",
+      "h1",
+      "h2",
+      "h3",
+      "h4",
+      "h5",
+      "h6",
+      "table",
+      "thead",
+      "tbody",
+      "tfoot",
+      "tr",
+      "td",
+      "th",
+      "caption",
+      "ul",
+      "ol",
+      "li",
+      "dl",
+      "dt",
+      "dd",
+      "pre",
+      "code",
+      "blockquote",
+      "img",
+      "svg",
+      "path",
+      "g",
+      "circle",
+      "rect",
+      "line",
+      "polygon",
+      "text",
+      "a",
+      "hr",
+      "small",
+      "sub",
+      "sup",
+      "style", // Allow inline styles for notebook outputs
+    ],
+    ALLOWED_ATTR: [
+      "class",
+      "id",
+      "style",
+      "title",
+      "alt",
+      "src",
+      "href",
+      "target",
+      "width",
+      "height",
+      "viewBox",
+      "xmlns",
+      "d",
+      "fill",
+      "stroke",
+      "stroke-width",
+      "x",
+      "y",
+      "dx",
+      "dy",
+      "r",
+      "cx",
+      "cy",
+      "x1",
+      "y1",
+      "x2",
+      "y2",
+      "points",
+      "text-anchor",
+      "font-family",
+      "font-size",
+      "font-weight",
+    ],
+    // Keep safe URLs only
+    ALLOWED_URI_REGEXP:
+      /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|cid|xmpp|data):|[^a-z]|[a-z+.-]+(?:[^a-z+.-:]|$))/i,
+  });
 };
 
 export function NotebookCellComponent({
@@ -292,9 +387,11 @@ export function NotebookCellComponent({
                   <div className="flex justify-center">
                     <div
                       dangerouslySetInnerHTML={{
-                        __html: Array.isArray(output.data["image/svg+xml"])
-                          ? output.data["image/svg+xml"].join("")
-                          : (output.data["image/svg+xml"] as string),
+                        __html: sanitizeHTML(
+                          Array.isArray(output.data["image/svg+xml"])
+                            ? output.data["image/svg+xml"].join("")
+                            : (output.data["image/svg+xml"] as string),
+                        ),
                       }}
                       className="max-w-full"
                     />
@@ -305,9 +402,11 @@ export function NotebookCellComponent({
                   <div
                     className="text-sm notebook-output"
                     dangerouslySetInnerHTML={{
-                      __html: Array.isArray(output.data["text/html"])
-                        ? output.data["text/html"].join("")
-                        : (output.data["text/html"] as string),
+                      __html: sanitizeHTML(
+                        Array.isArray(output.data["text/html"])
+                          ? output.data["text/html"].join("")
+                          : (output.data["text/html"] as string),
+                      ),
                     }}
                   />
                 )}
@@ -320,9 +419,11 @@ export function NotebookCellComponent({
                     <div
                       className="text-sm"
                       dangerouslySetInnerHTML={{
-                        __html: Array.isArray(output.data["text/plain"])
-                          ? output.data["text/plain"].join("")
-                          : (output.data["text/plain"] as string),
+                        __html: sanitizeHTML(
+                          Array.isArray(output.data["text/plain"])
+                            ? output.data["text/plain"].join("")
+                            : (output.data["text/plain"] as string),
+                        ),
                       }}
                     />
                   )}
@@ -364,9 +465,11 @@ export function NotebookCellComponent({
                   <div className="flex justify-center">
                     <div
                       dangerouslySetInnerHTML={{
-                        __html: Array.isArray(output.data["image/svg+xml"])
-                          ? output.data["image/svg+xml"].join("")
-                          : (output.data["image/svg+xml"] as string),
+                        __html: sanitizeHTML(
+                          Array.isArray(output.data["image/svg+xml"])
+                            ? output.data["image/svg+xml"].join("")
+                            : (output.data["image/svg+xml"] as string),
+                        ),
                       }}
                       className="max-w-full"
                     />
@@ -377,9 +480,11 @@ export function NotebookCellComponent({
                   <div
                     className="text-sm notebook-output"
                     dangerouslySetInnerHTML={{
-                      __html: Array.isArray(output.data["text/html"])
-                        ? output.data["text/html"].join("")
-                        : (output.data["text/html"] as string),
+                      __html: sanitizeHTML(
+                        Array.isArray(output.data["text/html"])
+                          ? output.data["text/html"].join("")
+                          : (output.data["text/html"] as string),
+                      ),
                     }}
                   />
                 )}
@@ -392,9 +497,11 @@ export function NotebookCellComponent({
                     <div
                       className="text-sm"
                       dangerouslySetInnerHTML={{
-                        __html: Array.isArray(output.data["text/plain"])
-                          ? output.data["text/plain"].join("")
-                          : (output.data["text/plain"] as string),
+                        __html: sanitizeHTML(
+                          Array.isArray(output.data["text/plain"])
+                            ? output.data["text/plain"].join("")
+                            : (output.data["text/plain"] as string),
+                        ),
                       }}
                     />
                   )}

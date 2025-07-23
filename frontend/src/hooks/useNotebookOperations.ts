@@ -180,9 +180,7 @@ export const useNotebookOperations = ({
       if (data && data.cells) {
         data.cells = data.cells.map((cell: NotebookCell) => ({
           ...cell,
-          id:
-            cell.id ||
-            `backend-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          id: cell.id ?? crypto.randomUUID(),
         }));
       }
 
@@ -560,7 +558,7 @@ export const useNotebookOperations = ({
   const addCell = useCallback(
     (index: number, cellType: "code" | "markdown" = "code") => {
       const newCell: NotebookCell = {
-        id: `backend-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, // Generate unique backend ID
+        id: crypto.randomUUID(),
         cell_type: cellType,
         source: [],
         outputs: [],
