@@ -9,6 +9,8 @@ from nbformat import NotebookNode
 from nbformat.v4 import new_code_cell, new_notebook
 from pydantic import BaseModel, Field
 
+from openfoundry_sandbox.config import get_workspace_path
+
 logger = logging.getLogger(__name__)
 
 
@@ -110,7 +112,8 @@ class JupyterKernelManager:
             self.client.create_kernel_manager()
 
             # Now start the kernel
-            await self.client.async_start_new_kernel()
+            workspace_path = get_workspace_path()
+            await self.client.async_start_new_kernel(cwd=workspace_path)
 
             # Create and start kernel client
             await self.client.async_start_new_kernel_client()

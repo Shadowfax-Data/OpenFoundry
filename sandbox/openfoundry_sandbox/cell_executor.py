@@ -12,7 +12,7 @@ from nbformat import NotebookNode, read
 from nbformat.v4 import new_code_cell, new_notebook
 from pydantic import BaseModel, Field
 
-from openfoundry_sandbox.config import get_notebook_path
+from openfoundry_sandbox.config import get_notebook_path, get_workspace_path
 
 logger = logging.getLogger(__name__)
 
@@ -108,8 +108,10 @@ class CellExecutor:
 
             # Create kernel manager and start kernel
             self.client.create_kernel_manager()
+            workspace_path = get_workspace_path()
             await asyncio.wait_for(
-                self.client.async_start_new_kernel(), timeout=KERNEL_START_TIMEOUT
+                self.client.async_start_new_kernel(cwd=workspace_path),
+                timeout=KERNEL_START_TIMEOUT,
             )
             await asyncio.wait_for(
                 self.client.async_start_new_kernel_client(),

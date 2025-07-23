@@ -30,6 +30,7 @@ class NotebookAgentSession(AgentSessionBase):
             {
                 "notebook_session": True,
                 "notebook_path": "/workspace/notebook.ipynb",
+                "workspace_path": "/workspace",
             }
         )
 

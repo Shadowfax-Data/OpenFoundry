@@ -67,6 +67,17 @@ class Notebook(Base):
         with open(notebook_file, "w") as f:
             f.write(rendered_notebook_content)
 
+        # Render and write utils.py
+        utils_template_path = os.path.join(current_dir, "..", "apps", "utils.py.j2")
+        with open(utils_template_path, "r") as f:
+            utils_template_str = f.read()
+
+        utils_template = jinja2.Template(utils_template_str)
+        rendered_utils_content = utils_template.render()
+        utils_file = os.path.join(notebook_dir, "utils.py")
+        with open(utils_file, "w") as f:
+            f.write(rendered_utils_content)
+
     def get_workspace_directory(self):
         """Get the workspace directory for this notebook."""
         return os.path.join(STORAGE_DIR, "notebook", str(self.id), "files")
