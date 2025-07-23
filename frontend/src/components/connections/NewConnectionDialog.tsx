@@ -1,6 +1,8 @@
 import {
   SiClickhouse,
   SiDatabricks,
+  SiGooglebigquery,
+  SiPostgresql,
   SiSnowflake,
 } from "@icons-pack/react-simple-icons";
 import { useNavigate } from "react-router";
@@ -48,6 +50,20 @@ export function NewConnectionDialog({ children }: NewConnectionDialogProps) {
           </div>
           <div
             className="p-4 border rounded-md cursor-pointer hover:bg-muted"
+            onClick={() => navigate("/connections/bigquery/new")}
+          >
+            <div className="flex items-center gap-3">
+              <SiGooglebigquery className="text-[#4c8bf5]" />
+              <div>
+                <span className="font-semibold">BigQuery</span>
+                <p className="text-sm text-muted-foreground">
+                  Connect to a BigQuery data warehouse.
+                </p>
+              </div>
+            </div>
+          </div>
+          <div
+            className="p-4 border rounded-md cursor-pointer hover:bg-muted"
             onClick={() => navigate("/connections/databricks/new")}
           >
             <div className="flex items-center gap-3">
@@ -70,6 +86,20 @@ export function NewConnectionDialog({ children }: NewConnectionDialogProps) {
                 <span className="font-semibold">ClickHouse</span>
                 <p className="text-sm text-muted-foreground">
                   Connect to a ClickHouse data warehouse.
+                </p>
+              </div>
+            </div>
+          </div>
+          <div
+            className="p-4 border rounded-md cursor-pointer hover:bg-muted"
+            onClick={() => navigate("/connections/postgres/new")}
+          >
+            <div className="flex items-center gap-3">
+              <SiPostgresql className="text-blue-600" />
+              <div>
+                <span className="font-semibold">PostgreSQL</span>
+                <p className="text-sm text-muted-foreground">
+                  Connect to a PostgreSQL database.
                 </p>
               </div>
             </div>

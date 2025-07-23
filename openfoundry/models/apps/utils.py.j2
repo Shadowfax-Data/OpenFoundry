@@ -1,11 +1,21 @@
-import os
+import json
 from pathlib import Path
-import streamlit as st
 from typing import NamedTuple
+
+import clickhouse_connect.common as clickhouse_common
+import psycopg2
+import snowflake.connector
+import streamlit as st
+from clickhouse_connect import dbapi as clickhouse_dbapi
+from databricks import sql
+from google.cloud import bigquery
+from google.cloud.bigquery import dbapi as bigquery_dbapi
+
 
 class ConnectionKey(NamedTuple):
     name: str
     type: str
+
 
 def _get_connection_type(creds: dict[str, str]) -> str | None:
     """Determines connection type based on secret keys."""
@@ -13,12 +23,15 @@ def _get_connection_type(creds: dict[str, str]) -> str | None:
         "SNOWFLAKE_": "snowflake",
         "DATABRICKS_": "databricks",
         "CLICKHOUSE_": "clickhouse",
+        "BIGQUERY_": "bigquery",
+        "POSTGRES_": "postgres",
     }
     for key in creds:
         for prefix, conn_type in type_mapping.items():
             if key.startswith(prefix):
                 return conn_type
     return None
+
 
 def load_connection_secrets(base_dir: str = "/etc/secrets/connections"):
     """Recursively read each connection key-files into a dict."""
@@ -36,24 +49,24 @@ def load_connection_secrets(base_dir: str = "/etc/secrets/connections"):
                 conns[key] = creds
     return conns
 
-import snowflake.connector
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import serialization
 
 def list_snowflake_connections():
     """Returns a list of available Snowflake connection names."""
     connection_secrets = load_connection_secrets()
-    return [key.name for key, creds in connection_secrets.items() if key.type == "snowflake"]
+    return [
+        key.name for key, creds in connection_secrets.items() if key.type == "snowflake"
+    ]
+
 
 def get_snowflake_conn(connection_name: str):
-    """
-    Establishes a connection to Snowflake, handling private key decoding.
+    """Establishes a connection to Snowflake, handling private key decoding.
 
     Args:
         connection_name: The name of the specific connection to use.
 
     Returns:
         Snowflake connection object or None if connection fails.
+
     """
     connection_secrets = load_connection_secrets()
 
@@ -61,8 +74,14 @@ def get_snowflake_conn(connection_name: str):
     snowflake_key = ConnectionKey(name=connection_name, type="snowflake")
 
     if snowflake_key not in connection_secrets:
-        available_connections = [key.name for key, creds in connection_secrets.items() if key.type == "snowflake"]
-        st.error(f"Snowflake connection '{connection_name}' not found. Available connections: {available_connections}")
+        available_connections = [
+            key.name
+            for key, creds in connection_secrets.items()
+            if key.type == "snowflake"
+        ]
+        st.error(
+            f"Snowflake connection '{connection_name}' not found. Available connections: {available_connections}"
+        )
         return None
 
     SNOWFLAKE_CREDS = connection_secrets[snowflake_key]
@@ -75,7 +94,7 @@ def get_snowflake_conn(connection_name: str):
             "role": SNOWFLAKE_CREDS.get("SNOWFLAKE_ROLE"),
             "warehouse": SNOWFLAKE_CREDS.get("SNOWFLAKE_WAREHOUSE"),
             "database": SNOWFLAKE_CREDS.get("SNOWFLAKE_DATABASE"),
-            "schema": SNOWFLAKE_CREDS.get("SNOWFLAKE_SCHEMA")
+            "schema": SNOWFLAKE_CREDS.get("SNOWFLAKE_SCHEMA"),
         }
 
         return snowflake.connector.connect(
@@ -87,22 +106,26 @@ def get_snowflake_conn(connection_name: str):
         st.error(f"Failed to connect to Snowflake connection '{connection_name}': {e}")
         return None
 
-from databricks import sql
 
 def list_databricks_connections():
     """Returns a list of available Databricks connection names."""
     connection_secrets = load_connection_secrets()
-    return [key.name for key, creds in connection_secrets.items() if key.type == "databricks"]
+    return [
+        key.name
+        for key, creds in connection_secrets.items()
+        if key.type == "databricks"
+    ]
+
 
 def get_databricks_conn(connection_name: str):
-    """
-    Establishes a connection to Databricks.
+    """Establishes a connection to Databricks.
 
     Args:
         connection_name: The name of the specific connection to use.
 
     Returns:
         Databricks connection object or None if connection fails.
+
     """
     connection_secrets = load_connection_secrets()
 
@@ -110,8 +133,14 @@ def get_databricks_conn(connection_name: str):
     databricks_key = ConnectionKey(name=connection_name, type="databricks")
 
     if databricks_key not in connection_secrets:
-        available_connections = [key.name for key, creds in connection_secrets.items() if key.type == "databricks"]
-        st.error(f"Databricks connection '{connection_name}' not found. Available connections: {available_connections}")
+        available_connections = [
+            key.name
+            for key, creds in connection_secrets.items()
+            if key.type == "databricks"
+        ]
+        st.error(
+            f"Databricks connection '{connection_name}' not found. Available connections: {available_connections}"
+        )
         return None
 
     DATABRICKS_CREDS = connection_secrets[databricks_key]
@@ -131,23 +160,26 @@ def get_databricks_conn(connection_name: str):
         st.error(f"Failed to connect to Databricks connection '{connection_name}': {e}")
         return None
 
-from clickhouse_connect import dbapi
-import clickhouse_connect.common as clickhouse_common
 
 def list_clickhouse_connections():
     """Returns a list of available ClickHouse connection names."""
     connection_secrets = load_connection_secrets()
-    return [key.name for key, creds in connection_secrets.items() if key.type == "clickhouse"]
+    return [
+        key.name
+        for key, creds in connection_secrets.items()
+        if key.type == "clickhouse"
+    ]
+
 
 def get_clickhouse_conn(connection_name: str):
-    """
-    Establishes a connection to ClickHouse.
+    """Establishes a connection to ClickHouse.
 
     Args:
         connection_name: The name of the specific connection to use.
 
     Returns:
         ClickHouse connection object or None if connection fails.
+
     """
     connection_secrets = load_connection_secrets()
 
@@ -155,15 +187,21 @@ def get_clickhouse_conn(connection_name: str):
     clickhouse_key = ConnectionKey(name=connection_name, type="clickhouse")
 
     if clickhouse_key not in connection_secrets:
-        available_connections = [key.name for key, creds in connection_secrets.items() if key.type == "clickhouse"]
-        st.error(f"ClickHouse connection '{connection_name}' not found. Available connections: {available_connections}")
+        available_connections = [
+            key.name
+            for key, creds in connection_secrets.items()
+            if key.type == "clickhouse"
+        ]
+        st.error(
+            f"ClickHouse connection '{connection_name}' not found. Available connections: {available_connections}"
+        )
         return None
 
     CLICKHOUSE_CREDS = connection_secrets[clickhouse_key]
 
     try:
         # Set ClickHouse connection settings for better compatibility
-        clickhouse_common.set_setting('autogenerate_session_id', False)
+        clickhouse_common.set_setting("autogenerate_session_id", False)
 
         conn_params = {
             "host": CLICKHOUSE_CREDS.get("CLICKHOUSE_HOST"),
@@ -174,8 +212,122 @@ def get_clickhouse_conn(connection_name: str):
             "secure": True,
         }
 
-        return dbapi.connect(**conn_params)
+        return clickhouse_dbapi.connect(**conn_params)
 
     except Exception as e:
         st.error(f"Failed to connect to ClickHouse connection '{connection_name}': {e}")
+        return None
+
+
+def list_postgres_connections():
+    """Returns a list of available PostgreSQL connection names."""
+    connection_secrets = load_connection_secrets()
+    return [
+        key.name for key, creds in connection_secrets.items() if key.type == "postgres"
+    ]
+
+
+def get_postgres_conn(connection_name: str):
+    """Establishes a connection to PostgreSQL.
+
+    Args:
+        connection_name: The name of the specific connection to use.
+
+    Returns:
+        PostgreSQL connection object or None if connection fails.
+
+    """
+    connection_secrets = load_connection_secrets()
+
+    # Find the specific PostgreSQL connection directly
+    postgres_key = ConnectionKey(name=connection_name, type="postgres")
+
+    if postgres_key not in connection_secrets:
+        available_connections = [
+            key.name
+            for key, creds in connection_secrets.items()
+            if key.type == "postgres"
+        ]
+        st.error(
+            f"PostgreSQL connection '{connection_name}' not found. Available connections: {available_connections}"
+        )
+        return None
+
+    POSTGRES_CREDS = connection_secrets[postgres_key]
+
+    try:
+        conn_params = {
+            "host": POSTGRES_CREDS.get("POSTGRES_HOST"),
+            "port": int(POSTGRES_CREDS.get("POSTGRES_PORT", 5432)),
+            "dbname": POSTGRES_CREDS.get("POSTGRES_DATABASE"),
+            "user": POSTGRES_CREDS.get("POSTGRES_USER"),
+            "password": POSTGRES_CREDS.get("POSTGRES_PASSWORD"),
+        }
+
+        return psycopg2.connect(**conn_params)
+
+    except Exception as e:
+        st.error(f"Failed to connect to PostgreSQL connection '{connection_name}': {e}")
+        return None
+
+
+def list_bigquery_connections():
+    """Returns a list of available BigQuery connection names."""
+    connection_secrets = load_connection_secrets()
+    return [
+        key.name for key, creds in connection_secrets.items() if key.type == "bigquery"
+    ]
+
+
+def get_bigquery_conn(connection_name: str):
+    """Establishes a connection to BigQuery.
+
+    Args:
+        connection_name: The name of the specific connection to use.
+
+    Returns:
+        BigQuery connection object or None if connection fails.
+
+    """
+    connection_secrets = load_connection_secrets()
+
+    # Find the specific BigQuery connection directly
+    bigquery_key = ConnectionKey(name=connection_name, type="bigquery")
+
+    if bigquery_key not in connection_secrets:
+        available_connections = [
+            key.name
+            for key, creds in connection_secrets.items()
+            if key.type == "bigquery"
+        ]
+        st.error(
+            f"BigQuery connection '{connection_name}' not found. Available connections: {available_connections}"
+        )
+        return None
+
+    BIGQUERY_CREDS = connection_secrets[bigquery_key]
+
+    try:
+        service_account_info = json.loads(
+            BIGQUERY_CREDS.get("BIGQUERY_SERVICE_ACCOUNT_KEY")
+        )
+        project_id = BIGQUERY_CREDS.get("BIGQUERY_PROJECT_ID")
+        dataset_id = BIGQUERY_CREDS.get("BIGQUERY_DATASET_ID")
+
+        # Create a QueryJobConfig with default dataset
+        default_query_job_config = bigquery.QueryJobConfig(
+            default_dataset=f"{project_id}.{dataset_id}"
+        )
+
+        # Create the client with proper project configuration and default query job config
+        client = bigquery.Client.from_service_account_info(
+            service_account_info,
+            project=project_id,
+            default_query_job_config=default_query_job_config
+        )
+
+        # Create the DB API connection
+        return bigquery_dbapi.connect(client=client)
+    except Exception as e:
+        st.error(f"Failed to connect to BigQuery connection '{connection_name}': {e}")
         return None

@@ -2,20 +2,79 @@ import { IconChartArcs } from "@tabler/icons-react";
 import {
   ArrowUp,
   BarChart3,
+  BookOpen,
   FileText,
+  Globe,
   Hammer,
-  Mic,
-  Paperclip,
-  Target,
   TrendingUp,
   Users,
 } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 
+import { BuildOptionsDialog } from "@/components/app/BuildOptionsDialog";
+import { CreateAppDialog } from "@/components/app/CreateAppDialog";
+import { SampleProjectCard } from "@/components/app/SampleProjectCard";
 import { Button } from "@/components/ui/button";
+import { useAppDispatch } from "@/store";
+import { fetchConnections } from "@/store/slices/connectionsSlice";
 
 export function Home() {
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
+  const [createAppDialogOpen, setCreateAppDialogOpen] = useState(false);
+  const [buildOptionsDialogOpen, setBuildOptionsDialogOpen] = useState(false);
+  const [prompt, setPrompt] = useState("");
+  const [initialPrompt, setInitialPrompt] = useState<string | undefined>(
+    undefined,
+  );
+  const [isCreatingSession, setIsCreatingSession] = useState(false);
+
+  useEffect(() => {
+    dispatch(fetchConnections());
+  }, [dispatch]);
+
+  const handleSampleProjectClick = (prompt: string) => {
+    setInitialPrompt(prompt);
+    setCreateAppDialogOpen(true);
+  };
+
+  const handleBuildApplicationClick = () => {
+    setInitialPrompt(undefined);
+    setCreateAppDialogOpen(true);
+  };
+
+  const handlePromptSubmit = () => {
+    if (prompt.trim()) {
+      setInitialPrompt(prompt.trim());
+      setBuildOptionsDialogOpen(true);
+    }
+  };
+
+  const handleSelectApplication = () => {
+    setBuildOptionsDialogOpen(false);
+    setCreateAppDialogOpen(true);
+  };
+
+  const buildOptions = [
+    {
+      id: "application",
+      title: "Application",
+      description: "Build interactive data apps and dashboards",
+      icon: <Globe className="h-6 w-6" />,
+      iconBgColor: "bg-blue-600",
+      onClick: handleSelectApplication,
+    },
+    {
+      id: "notebook",
+      title: "Notebook",
+      description: "Create data analysis and computational notebooks",
+      icon: <BookOpen className="h-6 w-6" />,
+      iconBgColor: "bg-purple-600",
+      onClick: () => {},
+      disabled: true,
+    },
+  ];
 
   return (
     <div className="h-full flex flex-col">
@@ -46,15 +105,23 @@ export function Home() {
                 type="text"
                 placeholder="Ask OpenFoundry to build..."
                 className="w-full rounded-lg border border-gray-200 bg-background px-4 py-3 text-sm placeholder:text-muted-foreground focus:border-gray-300 focus:outline-none focus:ring-0"
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && prompt.trim()) {
+                    e.preventDefault();
+                    handlePromptSubmit();
+                  }
+                }}
               />
-              <div className="absolute right-3 top-3 flex items-center space-x-2">
-                <Button size="sm" variant="ghost" className="h-6 w-6 p-0">
-                  <Paperclip className="h-4 w-4" />
-                </Button>
-                <Button size="sm" variant="ghost" className="h-6 w-6 p-0">
-                  <Mic className="h-4 w-4" />
-                </Button>
-                <Button size="sm" variant="ghost" className="h-6 w-6 p-0">
+              <div className="absolute right-3 top-3 flex items-center">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-6 w-6 p-0"
+                  onClick={handlePromptSubmit}
+                  disabled={!prompt.trim()}
+                >
                   <ArrowUp className="h-4 w-4" />
                 </Button>
               </div>
@@ -67,9 +134,10 @@ export function Home() {
               variant="outline"
               size="sm"
               className="flex items-center gap-2"
+              onClick={() => navigate("/connections")}
             >
               <BarChart3 className="h-4 w-4" />
-              Set up data warehouse
+              Set up data connection
             </Button>
             <Button
               variant="outline"
@@ -84,25 +152,10 @@ export function Home() {
               variant="outline"
               size="sm"
               className="flex items-center gap-2"
+              onClick={handleBuildApplicationClick}
             >
               <FileText className="h-4 w-4" />
-              Build a data application
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="flex items-center gap-2"
-            >
-              <Target className="h-4 w-4" />
-              Update a data model
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="flex items-center gap-2"
-            >
-              <TrendingUp className="h-4 w-4" />
-              Analytics
+              Create a data application
             </Button>
           </div>
 
@@ -114,50 +167,70 @@ export function Home() {
               decisions.
             </p>
 
-            <div className="grid grid-cols-4 gap-4">
-              <div className="rounded-lg border p-4 hover:bg-gray-50">
-                <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600 text-white">
-                  <BarChart3 className="h-5 w-5" />
-                </div>
-                <h3 className="font-medium">Sales Dashboard</h3>
-                <p className="text-sm text-muted-foreground">
-                  Track revenue and performance metrics
-                </p>
-              </div>
-
-              <div className="rounded-lg border p-4 hover:bg-gray-50">
-                <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-green-600 text-white">
-                  <Users className="h-5 w-5" />
-                </div>
-                <h3 className="font-medium">User Analytics</h3>
-                <p className="text-sm text-muted-foreground">
-                  Monitor user behavior and engagement
-                </p>
-              </div>
-
-              <div className="rounded-lg border p-4 hover:bg-gray-50">
-                <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-purple-600 text-white">
-                  <TrendingUp className="h-5 w-5" />
-                </div>
-                <h3 className="font-medium">Growth Metrics</h3>
-                <p className="text-sm text-muted-foreground">
-                  Analyze customer acquisition and retention
-                </p>
-              </div>
-
-              <div className="rounded-lg border p-4 hover:bg-gray-50">
-                <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-orange-600 text-white">
-                  <FileText className="h-5 w-5" />
-                </div>
-                <h3 className="font-medium">Reports</h3>
-                <p className="text-sm text-muted-foreground">
-                  Generate comprehensive data reports
-                </p>
-              </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <SampleProjectCard
+                icon={<BarChart3 className="h-5 w-5" />}
+                title="Sales Dashboard"
+                description="Track revenue and performance metrics"
+                onClick={() =>
+                  handleSampleProjectClick(
+                    "Build a sales dashboard to track revenue and performance metrics.",
+                  )
+                }
+                iconBgColor="bg-blue-600"
+              />
+              <SampleProjectCard
+                icon={<Users className="h-5 w-5" />}
+                title="User Analytics"
+                description="Monitor user behavior and engagement"
+                onClick={() =>
+                  handleSampleProjectClick(
+                    "Create a user analytics dashboard to monitor user behavior and engagement.",
+                  )
+                }
+                iconBgColor="bg-green-600"
+              />
+              <SampleProjectCard
+                icon={<TrendingUp className="h-5 w-5" />}
+                title="Growth Metrics"
+                description="Analyze customer acquisition and retention"
+                onClick={() =>
+                  handleSampleProjectClick(
+                    "Develop a growth metrics dashboard to analyze customer acquisition and retention.",
+                  )
+                }
+                iconBgColor="bg-purple-600"
+              />
+              <SampleProjectCard
+                icon={<FileText className="h-5 w-5" />}
+                title="Reports"
+                description="Generate comprehensive data dashboards"
+                onClick={() =>
+                  handleSampleProjectClick(
+                    "Generate comprehensive data dashboards for our key business areas.",
+                  )
+                }
+                iconBgColor="bg-orange-600"
+              />
             </div>
           </div>
         </div>
       </div>
+      {buildOptionsDialogOpen && initialPrompt && (
+        <BuildOptionsDialog
+          prompt={initialPrompt}
+          onClose={() => setBuildOptionsDialogOpen(false)}
+          options={buildOptions}
+        />
+      )}
+      {createAppDialogOpen && (
+        <CreateAppDialog
+          onCreatingSession={setIsCreatingSession}
+          onClose={() => setCreateAppDialogOpen(false)}
+          initialPrompt={initialPrompt}
+          disabled={isCreatingSession}
+        />
+      )}
     </div>
   );
 }

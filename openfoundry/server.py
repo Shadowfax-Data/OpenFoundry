@@ -17,6 +17,7 @@ from openfoundry.routers.agent_sessions.notebook_agent_session_api import (
 )
 from openfoundry.routers.app_api import router as app_router
 from openfoundry.routers.connections import (
+    bigquery_connection_api_router,
     clickhouse_connection_api_router,
     connection_api_router,
     databricks_connection_api_router,
@@ -55,6 +56,7 @@ app.include_router(clickhouse_connection_api_router, tags=["connections"])
 app.include_router(databricks_connection_api_router, tags=["connections"])
 app.include_router(snowflake_connection_api_router, tags=["connections"])
 app.include_router(postgres_connection_api_router, tags=["connections"])
+app.include_router(bigquery_connection_api_router, tags=["connections"])
 
 app.add_middleware(
     SQLAlchemySessionMiddleware,
