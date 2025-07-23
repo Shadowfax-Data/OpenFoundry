@@ -58,3 +58,7 @@ make run-openfoundry
 ```
 
 The application will be running on http://localhost:8000
+
+Navigating into http://localhost:8000, you will see the following homepage.
+
+![homepage](/img/openfoundry-home.png)
