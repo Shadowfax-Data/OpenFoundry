@@ -1,153 +1,17 @@
-import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 import { AppAgentSessionsState } from "@/store/types";
-import { AppAgentSessionFromAPI } from "@/types/api";
+import { createAgentSessionThunks } from "@/store/utils/agentSessionThunks";
 
-// Async thunk for fetching app agent sessions for a specific app
-export const fetchAppAgentSessions = createAsyncThunk(
-  "appAgentSessions/fetchAppAgentSessions",
-  async (appId: string, { rejectWithValue }) => {
-    try {
-      const response = await fetch(`/api/apps/${appId}/sessions`);
+// Create all the async thunks using the generic factory
+const thunks = createAgentSessionThunks("apps", "appAgentSessions");
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const sessions: AppAgentSessionFromAPI[] = await response.json();
-      return { appId, sessions };
-    } catch (error) {
-      return rejectWithValue(
-        error instanceof Error
-          ? error.message
-          : "Failed to fetch app agent sessions",
-      );
-    }
-  },
-);
-
-// Async thunk for creating a new app agent session
-export const createAppAgentSession = createAsyncThunk(
-  "appAgentSessions/createAppAgentSession",
-  async (appId: string, { rejectWithValue }) => {
-    try {
-      const response = await fetch(`/api/apps/${appId}/sessions`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const session: AppAgentSessionFromAPI = await response.json();
-      return { appId, session };
-    } catch (error) {
-      return rejectWithValue(
-        error instanceof Error
-          ? error.message
-          : "Failed to create app agent session",
-      );
-    }
-  },
-);
-
-// Async thunk for stopping an app agent session
-export const stopAppAgentSession = createAsyncThunk(
-  "appAgentSessions/stopAppAgentSession",
-  async (
-    { appId, sessionId }: { appId: string; sessionId: string },
-    { rejectWithValue },
-  ) => {
-    try {
-      const response = await fetch(
-        `/api/apps/${appId}/sessions/${sessionId}/stop`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        },
-      );
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const session: AppAgentSessionFromAPI = await response.json();
-      return { appId, session };
-    } catch (error) {
-      return rejectWithValue(
-        error instanceof Error
-          ? error.message
-          : "Failed to stop app agent session",
-      );
-    }
-  },
-);
-
-// Async thunk for resuming an app agent session
-export const resumeAppAgentSession = createAsyncThunk(
-  "appAgentSessions/resumeAppAgentSession",
-  async (
-    { appId, sessionId }: { appId: string; sessionId: string },
-    { rejectWithValue },
-  ) => {
-    try {
-      const response = await fetch(
-        `/api/apps/${appId}/sessions/${sessionId}/resume`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        },
-      );
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const session: AppAgentSessionFromAPI = await response.json();
-      return { appId, session };
-    } catch (error) {
-      return rejectWithValue(
-        error instanceof Error
-          ? error.message
-          : "Failed to resume app agent session",
-      );
-    }
-  },
-);
-
-// Async thunk for deleting an app agent session
-export const deleteAppAgentSession = createAsyncThunk(
-  "appAgentSessions/deleteAppAgentSession",
-  async (
-    { appId, sessionId }: { appId: string; sessionId: string },
-    { rejectWithValue },
-  ) => {
-    try {
-      const response = await fetch(`/api/apps/${appId}/sessions/${sessionId}`, {
-        method: "DELETE",
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      return { appId, sessionId };
-    } catch (error) {
-      return rejectWithValue(
-        error instanceof Error
-          ? error.message
-          : "Failed to delete app agent session",
-      );
-    }
-  },
-);
+// Export the thunks with their original names for backward compatibility
+export const fetchAppAgentSessions = thunks.fetchSessions;
+export const createAppAgentSession = thunks.createSession;
+export const stopAppAgentSession = thunks.stopSession;
+export const resumeAppAgentSession = thunks.resumeSession;
+export const deleteAppAgentSession = thunks.deleteSession!; // Non-null assertion since this is apps
 
 const initialState: AppAgentSessionsState = {
   sessions: {},

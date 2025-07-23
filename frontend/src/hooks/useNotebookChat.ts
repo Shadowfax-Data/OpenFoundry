@@ -8,6 +8,11 @@ import {
 import { RootState } from "@/store/types";
 
 import { useBaseChat } from "./useBaseChat";
+import {
+  createAgentSession,
+  fetchSessionDetails,
+  saveWorkspace,
+} from "./utils/agentSessionAPI";
 
 interface UseNotebookChatProps {
   notebookId: string;
@@ -39,25 +44,21 @@ export const useNotebookChat = ({
   const [notebookPreviewUrl, setNotebookPreviewUrl] = useState<string>("");
 
   useEffect(() => {
-    const fetchSessionDetails = async () => {
+    const loadSessionDetails = async () => {
       if (sessionId) {
-        try {
-          const response = await fetch(
-            `/api/notebooks/${notebookId}/sessions/${sessionId}`,
-          );
-          if (response.ok) {
-            const data = await response.json();
-            // Note: These fields might not exist in your current API response
-            // You can add them later when implementing preview functionality
-            setNotebookPreviewUrl(data.preview_url || "");
-          }
-        } catch (error) {
-          console.error("Failed to fetch notebook session details:", error);
+        const data = await fetchSessionDetails({
+          resourceType: "notebooks",
+          resourceId: notebookId,
+          sessionId,
+        });
+
+        if (data) {
+          setNotebookPreviewUrl(data.preview_url || "");
         }
       }
     };
 
-    fetchSessionDetails();
+    loadSessionDetails();
   }, [notebookId, sessionId]);
 
   const exportNotebook = async () => {
@@ -83,36 +84,25 @@ export const useNotebookChat = ({
     }
   };
 
-  const createAgentSession = async () => {
+  const handleCreateAgentSession = async () => {
     try {
-      const response = await fetch(`/api/notebooks/${notebookId}/sessions`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+      return await createAgentSession({
+        resourceType: "notebooks",
+        resourceId: notebookId,
       });
-      if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
-      }
-      const session = await response.json();
-      return session;
     } catch (error) {
       console.error("Failed to create agent session:", error);
       throw error;
     }
   };
 
-  const saveWorkspace = async () => {
+  const handleSaveWorkspace = async () => {
     try {
-      const response = await fetch(
-        `/api/notebooks/${notebookId}/sessions/${sessionId}/save`,
-        {
-          method: "POST",
-        },
-      );
-      if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
-      }
+      await saveWorkspace({
+        resourceType: "notebooks",
+        resourceId: notebookId,
+        sessionId,
+      });
       toast.success("Workspace saved successfully.");
     } catch (error) {
       toast.error(
@@ -126,7 +116,7 @@ export const useNotebookChat = ({
     ...chatProps,
     notebookPreviewUrl,
     exportNotebook,
-    createAgentSession,
-    saveWorkspace,
+    createAgentSession: handleCreateAgentSession,
+    saveWorkspace: handleSaveWorkspace,
   };
 };
