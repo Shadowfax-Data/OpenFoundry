@@ -195,7 +195,6 @@ export function NotebookChat() {
               onAddCell={notebookOps.addCell}
               onDeleteCell={notebookOps.deleteCell}
               onStopExecution={notebookOps.stopExecution}
-              onRestartKernel={notebookOps.restartKernel}
               onRerunNotebook={notebookOps.rerunNotebook}
               onSaveWorkspace={async () => {
                 if (!notebookId || !sessionId) return;

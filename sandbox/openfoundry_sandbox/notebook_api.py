@@ -68,16 +68,6 @@ class StopExecutionResponse(BaseModel):
     message: str = Field(..., description="Result message")
 
 
-class RestartKernelResponse(BaseModel):
-    """Response model for kernel restart."""
-
-    success: bool = Field(..., description="Whether the restart was successful")
-    message: str = Field(..., description="Restart result message")
-    kernel_id: str | None = Field(
-        None, description="New kernel ID if restart was successful"
-    )
-
-
 # Global cell executor instance
 cell_executor = CellExecutor()
 
@@ -156,26 +146,6 @@ async def stop_execution(request: StopExecutionRequest):
         message = "No execution to interrupt or interrupt failed"
         logger.warning(message)
         return StopExecutionResponse(message=message, success=False)
-
-
-@router.post("/restart", response_model=RestartKernelResponse)
-async def restart_kernel():
-    """Restart the Jupyter kernel."""
-    logger.info("Restarting kernel via API")
-
-    success = await cell_executor.restart_kernel()
-
-    if success:
-        message = "Kernel restarted successfully"
-        new_kernel_id = cell_executor.get_kernel_id()
-        logger.info(f"{message}. New kernel ID: {new_kernel_id}")
-        return RestartKernelResponse(
-            success=True, message=message, kernel_id=new_kernel_id
-        )
-    else:
-        message = "Failed to restart kernel"
-        logger.error(message)
-        return RestartKernelResponse(success=False, message=message, kernel_id=None)
 
 
 @router.post("/save")

@@ -37,7 +37,6 @@ interface InteractiveNotebookProps {
   onAddCell: (index: number, cellType: "code" | "markdown") => void;
   onDeleteCell: (index: number) => Promise<void>;
   onStopExecution: (cellId: string) => Promise<boolean>;
-  onRestartKernel: () => Promise<boolean>;
   onRerunNotebook: () => Promise<boolean>;
   onSaveWorkspace?: () => Promise<void>;
 }
@@ -53,7 +52,6 @@ export function InteractiveNotebook({
   onAddCell,
   onDeleteCell,
   onStopExecution,
-  onRestartKernel,
   onRerunNotebook,
   onSaveWorkspace,
 }: InteractiveNotebookProps) {
@@ -117,16 +115,6 @@ export function InteractiveNotebook({
             >
               <RotateCcw className="h-4 w-4 mr-1" />
               Rerun All
-            </Button>
-
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onRestartKernel}
-              title="Restart kernel"
-            >
-              <RotateCcw className="h-4 w-4 mr-1" />
-              Restart Kernel
             </Button>
 
             {onSaveWorkspace && (

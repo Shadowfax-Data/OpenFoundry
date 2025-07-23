@@ -459,30 +459,6 @@ export const useNotebookOperations = ({
       }
     }, [baseUrl]);
 
-  // Restart kernel
-  const restartKernel = useCallback(async (): Promise<boolean> => {
-    try {
-      setError(null);
-      const response = await fetch(`${baseUrl}/restart`, {
-        method: "POST",
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to restart kernel: ${response.statusText}`);
-      }
-
-      // Refresh kernel status and notebook data after restart
-      await Promise.all([getKernelStatus(), getNotebook()]);
-      return true;
-    } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : "Failed to restart kernel";
-      setError(errorMessage);
-      console.error("Error restarting kernel:", err);
-      return false;
-    }
-  }, [baseUrl, getKernelStatus, getNotebook]);
-
   // Rerun all cells with streaming
   const rerunNotebook = useCallback(async (): Promise<boolean> => {
     try {
@@ -766,7 +742,6 @@ export const useNotebookOperations = ({
     executeCellWithStatus,
     stopExecution,
     getKernelStatus,
-    restartKernel,
     rerunNotebook,
     addCell,
     updateCell,

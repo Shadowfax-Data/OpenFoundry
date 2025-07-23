@@ -536,28 +536,6 @@ async def get_notebook_kernel_status(
 
 
 @router.post(
-    "/notebooks/{notebook_id}/sessions/{session_id}/restart",
-)
-async def restart_notebook_kernel(
-    notebook_id: uuid.UUID,
-    session_id: uuid.UUID,
-    request: Request,
-    run_context: NotebookAgentRunContext = Depends(get_notebook_agent_run_context),
-):
-    """Restart the notebook kernel."""
-    async with run_context.get_sandbox_client() as client:
-        try:
-            response = await client.post("/api/notebook/restart")
-        except httpx.RequestError as e:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Failed to restart kernel: {e}",
-            )
-        response.raise_for_status()
-        return response.json()
-
-
-@router.post(
     "/notebooks/{notebook_id}/sessions/{session_id}/rerun",
 )
 async def rerun_notebook(

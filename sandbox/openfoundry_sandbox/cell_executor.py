@@ -229,27 +229,6 @@ class CellExecutor:
                 f"Notified {cleared_count} pending execution requests about kernel shutting down"
             )
 
-    async def restart_kernel(self) -> bool:
-        """Restart the kernel."""
-        logger.info("Restarting Jupyter kernel...")
-
-        # Shutdown existing kernel and clean up
-        shutdown_success = await self.shutdown_kernel()
-        if not shutdown_success:
-            logger.error("Failed to shutdown kernel before restart")
-            return False
-
-        # Start new kernel (this will also restart the queue processor)
-        try:
-            success = await self.start_kernel()
-            if success:
-                logger.info("Kernel restarted successfully")
-            return success
-        except Exception as e:
-            logger.error(f"Failed to restart kernel: {e}")
-            self._status = KernelStatus.ERROR
-            return False
-
     async def shutdown_kernel(self) -> bool:
         """Shutdown the kernel and clean up resources."""
         logger.info("Shutting down Jupyter kernel...")
