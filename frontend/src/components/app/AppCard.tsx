@@ -1,4 +1,10 @@
-import { SiDatabricks, SiSnowflake } from "@icons-pack/react-simple-icons";
+import {
+  SiClickhouse,
+  SiDatabricks,
+  SiGooglebigquery,
+  SiPostgresql,
+  SiSnowflake,
+} from "@icons-pack/react-simple-icons";
 import {
   AppWindowMac,
   Calendar,
@@ -60,6 +66,12 @@ export function AppCard({
         return <SiSnowflake className="h-4 w-4" />;
       case "databricks":
         return <SiDatabricks className="h-4 w-4" />;
+      case "clickhouse":
+        return <SiClickhouse className="h-4 w-4" />;
+      case "bigquery":
+        return <SiGooglebigquery className="h-4 w-4" />;
+      case "postgres":
+        return <SiPostgresql className="h-4 w-4" />;
       default:
         return null;
     }
