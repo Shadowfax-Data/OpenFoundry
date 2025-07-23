@@ -6,9 +6,6 @@ import {
   FileText,
   Globe,
   Hammer,
-  Mic,
-  Paperclip,
-  Target,
   TrendingUp,
   Users,
 } from "lucide-react";
@@ -39,6 +36,11 @@ export function Home() {
 
   const handleSampleProjectClick = (prompt: string) => {
     setInitialPrompt(prompt);
+    setCreateAppDialogOpen(true);
+  };
+
+  const handleBuildApplicationClick = () => {
+    setInitialPrompt(undefined);
     setCreateAppDialogOpen(true);
   };
 
@@ -112,13 +114,7 @@ export function Home() {
                   }
                 }}
               />
-              <div className="absolute right-3 top-3 flex items-center space-x-2">
-                <Button size="sm" variant="ghost" className="h-6 w-6 p-0">
-                  <Paperclip className="h-4 w-4" />
-                </Button>
-                <Button size="sm" variant="ghost" className="h-6 w-6 p-0">
-                  <Mic className="h-4 w-4" />
-                </Button>
+              <div className="absolute right-3 top-3 flex items-center">
                 <Button
                   size="sm"
                   variant="ghost"
@@ -156,25 +152,10 @@ export function Home() {
               variant="outline"
               size="sm"
               className="flex items-center gap-2"
+              onClick={handleBuildApplicationClick}
             >
               <FileText className="h-4 w-4" />
-              Build a data application
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="flex items-center gap-2"
-            >
-              <Target className="h-4 w-4" />
-              Update a data model
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="flex items-center gap-2"
-            >
-              <TrendingUp className="h-4 w-4" />
-              Analytics
+              Create a data application
             </Button>
           </div>
 
