@@ -559,8 +559,6 @@ export const useNotebookOperations = ({
   // Cell management functions
   const addCell = useCallback(
     (index: number, cellType: "code" | "markdown" = "code") => {
-      if (!notebookData) return;
-
       const newCell: NotebookCell = {
         id: `backend-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, // Generate unique backend ID
         cell_type: cellType,
@@ -569,21 +567,18 @@ export const useNotebookOperations = ({
         execution_count: null,
       };
 
-      const newCells = [...notebookData.cells];
-      newCells.splice(index, 0, newCell);
-
-      setNotebookData({
-        ...notebookData,
-        cells: newCells,
+      setNotebookData((prev) => {
+        if (!prev) return prev; // keep early-exit safety
+        const newCells = [...prev.cells];
+        newCells.splice(index, 0, newCell);
+        return { ...prev, cells: newCells };
       });
     },
-    [notebookData],
+    [], // Remove notebookData dependency since we use functional updates
   );
 
   const updateCell = useCallback(
     (index: number, updatedCell: NotebookCellInput) => {
-      if (!notebookData) return;
-
       // Normalize the source to always be a string array
       const normalizedCell: NotebookCell = {
         ...updatedCell,
@@ -592,24 +587,29 @@ export const useNotebookOperations = ({
           : [updatedCell.source],
       };
 
-      const newCells = [...notebookData.cells];
-      newCells[index] = normalizedCell;
-
-      setNotebookData({
-        ...notebookData,
-        cells: newCells,
+      setNotebookData((prev) => {
+        if (!prev) return prev; // keep early-exit safety
+        const newCells = [...prev.cells];
+        newCells[index] = normalizedCell;
+        return { ...prev, cells: newCells };
       });
     },
-    [notebookData],
+    [], // Remove notebookData dependency since we use functional updates
   );
 
   const deleteCell = useCallback(
     async (index: number) => {
-      if (!notebookData || index < 0 || index >= notebookData.cells.length)
-        return;
+      // Get cell info using functional approach to avoid stale closure
+      let cellId: string | null = null;
+      setNotebookData((prev) => {
+        if (!prev || index < 0 || index >= prev.cells.length) {
+          return prev; // Early exit if invalid
+        }
+        cellId = prev.cells[index].id;
+        return prev; // No state change, just accessing current value
+      });
 
-      const cellToDelete = notebookData.cells[index];
-      const cellId = cellToDelete.id;
+      if (!cellId) return; // Exit if we couldn't get a valid cell ID
 
       try {
         setError(null);
@@ -630,7 +630,7 @@ export const useNotebookOperations = ({
         console.error("Error deleting cell:", err);
       }
     },
-    [notebookData, baseUrl, getNotebook],
+    [baseUrl, getNotebook], // Remove notebookData dependency
   );
 
   const stopExecution = useCallback(
