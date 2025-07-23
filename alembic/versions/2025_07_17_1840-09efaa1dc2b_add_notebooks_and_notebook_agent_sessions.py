@@ -1,7 +1,7 @@
 """add notebooks and notebook agent sessions
 
 Revision ID: 09efaa1dc2b
-Revises: 01f142e6cc0a
+Revises: 3fcbda9ed259
 Create Date: 2025-07-17 18:40:00.000000
 
 """
