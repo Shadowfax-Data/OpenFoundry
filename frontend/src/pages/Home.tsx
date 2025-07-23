@@ -12,16 +12,19 @@ import {
   TrendingUp,
   Users,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 
 import { BuildOptionsDialog } from "@/components/app/BuildOptionsDialog";
 import { CreateAppDialog } from "@/components/app/CreateAppDialog";
 import { SampleProjectCard } from "@/components/app/SampleProjectCard";
 import { Button } from "@/components/ui/button";
+import { useAppDispatch } from "@/store";
+import { fetchConnections } from "@/store/slices/connectionsSlice";
 
 export function Home() {
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
   const [createAppDialogOpen, setCreateAppDialogOpen] = useState(false);
   const [buildOptionsDialogOpen, setBuildOptionsDialogOpen] = useState(false);
   const [prompt, setPrompt] = useState("");
@@ -29,6 +32,10 @@ export function Home() {
     undefined,
   );
   const [isCreatingSession, setIsCreatingSession] = useState(false);
+
+  useEffect(() => {
+    dispatch(fetchConnections());
+  }, [dispatch]);
 
   const handleSampleProjectClick = (prompt: string) => {
     setInitialPrompt(prompt);
