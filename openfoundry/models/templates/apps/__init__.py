@@ -1,0 +1,1 @@
+"""App templates for OpenFoundry."""

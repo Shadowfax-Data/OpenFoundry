@@ -57,7 +57,9 @@ class Notebook(Base):
 
         current_dir = Path(__file__).parent
         # Render and write notebook.ipynb
-        notebook_template_path = os.path.join(current_dir, "notebook.ipynb.j2")
+        notebook_template_path = os.path.join(
+            current_dir, "..", "templates", "notebooks", "notebook.ipynb.j2"
+        )
         with open(notebook_template_path, "r") as f:
             notebook_template_str = f.read()
 
@@ -68,7 +70,9 @@ class Notebook(Base):
             f.write(rendered_notebook_content)
 
         # Render and write utils.py
-        utils_template_path = os.path.join(current_dir, "..", "apps", "utils.py.j2")
+        utils_template_path = os.path.join(
+            current_dir, "..", "templates", "shared", "utils.py.j2"
+        )
         with open(utils_template_path, "r") as f:
             utils_template_str = f.read()
 
