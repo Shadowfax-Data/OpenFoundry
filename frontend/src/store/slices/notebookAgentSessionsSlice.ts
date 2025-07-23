@@ -1,160 +1,17 @@
-import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 import { NotebookAgentSessionsState } from "@/store/types";
-import { NotebookAgentSessionFromAPI } from "@/types/api";
+import { createAgentSessionThunks } from "@/store/utils/agentSessionThunks";
 
-// Async thunk for fetching notebook agent sessions for a specific notebook
-export const fetchNotebookAgentSessions = createAsyncThunk(
-  "notebookAgentSessions/fetchNotebookAgentSessions",
-  async (notebookId: string, { rejectWithValue }) => {
-    try {
-      const response = await fetch(`/api/notebooks/${notebookId}/sessions`);
+// Create all the async thunks using the generic factory
+const thunks = createAgentSessionThunks("notebooks", "notebookAgentSessions");
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const sessions: NotebookAgentSessionFromAPI[] = await response.json();
-      return { notebookId, sessions };
-    } catch (error) {
-      return rejectWithValue(
-        error instanceof Error
-          ? error.message
-          : "Failed to fetch notebook agent sessions",
-      );
-    }
-  },
-);
-
-// Async thunk for creating a new notebook agent session
-export const createNotebookAgentSession = createAsyncThunk(
-  "notebookAgentSessions/createNotebookAgentSession",
-  async (notebookId: string, { rejectWithValue }) => {
-    try {
-      const response = await fetch(`/api/notebooks/${notebookId}/sessions`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const session: NotebookAgentSessionFromAPI = await response.json();
-      return { notebookId, session };
-    } catch (error) {
-      return rejectWithValue(
-        error instanceof Error
-          ? error.message
-          : "Failed to create notebook agent session",
-      );
-    }
-  },
-);
-
-// Async thunk for stopping a notebook agent session
-export const stopNotebookAgentSession = createAsyncThunk(
-  "notebookAgentSessions/stopNotebookAgentSession",
-  async (
-    { notebookId, sessionId }: { notebookId: string; sessionId: string },
-    { rejectWithValue },
-  ) => {
-    try {
-      const response = await fetch(
-        `/api/notebooks/${notebookId}/sessions/${sessionId}/stop`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        },
-      );
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const session: NotebookAgentSessionFromAPI = await response.json();
-      return { notebookId, session };
-    } catch (error) {
-      return rejectWithValue(
-        error instanceof Error
-          ? error.message
-          : "Failed to stop notebook agent session",
-      );
-    }
-  },
-);
-
-// Async thunk for resuming a notebook agent session
-export const resumeNotebookAgentSession = createAsyncThunk(
-  "notebookAgentSessions/resumeNotebookAgentSession",
-  async (
-    { notebookId, sessionId }: { notebookId: string; sessionId: string },
-    { rejectWithValue },
-  ) => {
-    try {
-      const response = await fetch(
-        `/api/notebooks/${notebookId}/sessions/${sessionId}/resume`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        },
-      );
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const session: NotebookAgentSessionFromAPI = await response.json();
-      return { notebookId, session };
-    } catch (error) {
-      return rejectWithValue(
-        error instanceof Error
-          ? error.message
-          : "Failed to resume notebook agent session",
-      );
-    }
-  },
-);
-
-// Async thunk for saving notebook workspace
-export const saveNotebookWorkspace = createAsyncThunk(
-  "notebookAgentSessions/saveNotebookWorkspace",
-  async (
-    { notebookId, sessionId }: { notebookId: string; sessionId: string },
-    { rejectWithValue },
-  ) => {
-    try {
-      const response = await fetch(
-        `/api/notebooks/${notebookId}/sessions/${sessionId}/save`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        },
-      );
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const result = await response.json();
-      return { notebookId, sessionId, message: result.message };
-    } catch (error) {
-      return rejectWithValue(
-        error instanceof Error
-          ? error.message
-          : "Failed to save notebook workspace",
-      );
-    }
-  },
-);
+// Export the thunks with their original names for backward compatibility
+export const fetchNotebookAgentSessions = thunks.fetchSessions;
+export const createNotebookAgentSession = thunks.createSession;
+export const stopNotebookAgentSession = thunks.stopSession;
+export const resumeNotebookAgentSession = thunks.resumeSession;
+export const saveNotebookWorkspace = thunks.saveWorkspace!; // Non-null assertion since this is notebooks
 
 const initialState: NotebookAgentSessionsState = {
   sessions: {},

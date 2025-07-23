@@ -34,6 +34,23 @@ interface UseNotebookExecutionProps {
   ) => void;
 }
 
+interface StreamingEvent {
+  event_type: "started" | "output" | "completed" | "error" | "interrupted";
+  cell_id: string;
+  timestamp: string;
+  data: StreamingEventData;
+}
+
+interface StreamingOptions {
+  onEvent?: (event: StreamingEvent) => void;
+  onCompleted?: (
+    eventData: StreamingEvent,
+    completedData: CompletedEventData,
+  ) => void;
+  onError?: (errorMessage: string) => void;
+  bufferSizeExceededMessage?: string;
+}
+
 export const useNotebookExecution = ({
   baseUrl,
   onCellUpdate,
@@ -41,21 +58,82 @@ export const useNotebookExecution = ({
   const [executingCells, setExecutingCells] = useState<Set<string>>(new Set());
   const [error, setError] = useState<string | null>(null);
 
+  // Helper function to handle streaming responses
+  const processStreamingResponse = useCallback(
+    async (
+      response: Response,
+      options: StreamingOptions = {},
+    ): Promise<void> => {
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error("No response body reader available");
+      }
+
+      const decoder = new TextDecoder();
+      let buffer = "";
+      const MAX_BUFFER_SIZE = 1024 * 1024; // 1MB limit
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        if (buffer.length + chunk.length > MAX_BUFFER_SIZE) {
+          const message =
+            options.bufferSizeExceededMessage ||
+            "Buffer size exceeded, truncating output";
+          console.warn(message);
+          if (options.onError) {
+            options.onError(message);
+          }
+          break;
+        }
+        buffer += chunk;
+
+        // Process complete lines
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || ""; // Keep incomplete line in buffer
+
+        for (const line of lines) {
+          if (line.startsWith("data: ")) {
+            try {
+              const eventData: StreamingEvent = JSON.parse(line.slice(6));
+
+              // Call the event handler if provided
+              if (options.onEvent) {
+                options.onEvent(eventData);
+              }
+
+              // Handle completed events with callback
+              if (eventData.event_type === "completed" && options.onCompleted) {
+                const completedData = eventData.data as CompletedEventData;
+                options.onCompleted(eventData, completedData);
+              }
+
+              // Handle error events
+              if (eventData.event_type === "error") {
+                const errorData = eventData.data as ErrorEventData;
+                const errorMessage = errorData.error || "Execution failed";
+                if (options.onError) {
+                  options.onError(errorMessage);
+                }
+                throw new Error(errorMessage);
+              }
+            } catch (parseError) {
+              console.error("Error parsing event data:", parseError);
+            }
+          }
+        }
+      }
+    },
+    [],
+  );
+
   // Execute code with streaming using fetch
   const executeCodeStreamingFetch = useCallback(
     async (
       request: ExecuteCodeRequest,
-      onEvent?: (event: {
-        event_type:
-          | "started"
-          | "output"
-          | "completed"
-          | "error"
-          | "interrupted";
-        cell_id: string;
-        timestamp: string;
-        data: StreamingEventData;
-      }) => void,
+      onEvent?: (event: StreamingEvent) => void,
     ): Promise<ExecuteCodeResponse | null> => {
       try {
         setError(null);
@@ -73,95 +151,52 @@ export const useNotebookExecution = ({
           throw new Error(`Failed to execute code: ${response.statusText}`);
         }
 
-        const reader = response.body?.getReader();
-        if (!reader) {
-          throw new Error("No response body reader available");
-        }
-
-        const decoder = new TextDecoder();
-        let buffer = "";
-        const MAX_BUFFER_SIZE = 1024 * 1024; // 1MB limit
         let finalResult: ExecuteCodeResponse | null = null;
 
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          const chunk = decoder.decode(value, { stream: true });
-          if (buffer.length + chunk.length > MAX_BUFFER_SIZE) {
-            console.warn("Buffer size exceeded, truncating output");
-            setError("Output too large - execution truncated");
-            break;
-          }
-          buffer += chunk;
-
-          // Process complete lines
-          const lines = buffer.split("\n");
-          buffer = lines.pop() || ""; // Keep incomplete line in buffer
-
-          for (const line of lines) {
-            if (line.startsWith("data: ")) {
-              try {
-                const eventData = JSON.parse(line.slice(6));
-
-                // Call the event handler if provided
-                if (onEvent) {
-                  onEvent(eventData);
-                }
-
-                // Handle different event types
-                switch (eventData.event_type) {
-                  case "started": {
-                    console.log(
-                      `Execution started for cell ${eventData.cell_id}`,
-                    );
-                    break;
-                  }
-
-                  case "output": {
-                    console.log(
-                      `Output received for cell ${eventData.cell_id}:`,
-                      eventData.data.output,
-                    );
-                    break;
-                  }
-
-                  case "completed": {
-                    const completedData = eventData.data as CompletedEventData;
-                    finalResult = {
-                      cell_id: eventData.cell_id,
-                      code: request.code,
-                      execution_count: completedData.execution_count || 0,
-                      outputs: completedData.outputs || [],
-                      status: completedData.status,
-                      error: completedData.error,
-                      started_at: completedData.started_at,
-                      completed_at: completedData.completed_at,
-                    };
-
-                    // Update cell via callback
-                    if (onCellUpdate) {
-                      onCellUpdate(eventData.cell_id, {
-                        outputs: completedData.outputs || [],
-                        execution_count: completedData.execution_count || null,
-                      });
-                    }
-                    break;
-                  }
-
-                  case "error": {
-                    const errorData = eventData.data as ErrorEventData;
-                    const errorMessage = errorData.error || "Execution failed";
-                    setError(errorMessage);
-                    throw new Error(errorMessage);
-                  }
-                }
-              } catch (parseError) {
-                console.error("Error parsing event data:", parseError);
-              }
+        await processStreamingResponse(response, {
+          onEvent: (eventData) => {
+            if (onEvent) {
+              onEvent(eventData);
             }
-          }
-        }
+
+            // Handle different event types for logging
+            switch (eventData.event_type) {
+              case "started":
+                console.log(`Execution started for cell ${eventData.cell_id}`);
+                break;
+              case "output":
+                console.log(
+                  `Output received for cell ${eventData.cell_id}:`,
+                  eventData.data,
+                );
+                break;
+            }
+          },
+          onCompleted: (eventData, completedData) => {
+            finalResult = {
+              cell_id: eventData.cell_id,
+              code: request.code,
+              execution_count: completedData.execution_count || 0,
+              outputs: completedData.outputs || [],
+              status: completedData.status,
+              error: completedData.error,
+              started_at: completedData.started_at,
+              completed_at: completedData.completed_at,
+            };
+
+            // Update cell via callback
+            if (onCellUpdate) {
+              onCellUpdate(eventData.cell_id, {
+                outputs: completedData.outputs || [],
+                execution_count: completedData.execution_count || null,
+              });
+            }
+          },
+          onError: (errorMessage) => {
+            setError(errorMessage);
+          },
+          bufferSizeExceededMessage: "Output too large - execution truncated",
+        });
 
         return finalResult;
       } catch (err) {
@@ -172,7 +207,7 @@ export const useNotebookExecution = ({
         return null;
       }
     },
-    [baseUrl, onCellUpdate],
+    [baseUrl, onCellUpdate, processStreamingResponse],
   );
 
   // Stop execution
@@ -215,17 +250,7 @@ export const useNotebookExecution = ({
       cellId: string,
       code: string,
       options?: {
-        onEvent?: (event: {
-          event_type:
-            | "started"
-            | "output"
-            | "completed"
-            | "error"
-            | "interrupted";
-          cell_id: string;
-          timestamp: string;
-          data: StreamingEventData;
-        }) => void;
+        onEvent?: (event: StreamingEvent) => void;
       },
     ): Promise<void> => {
       setExecutingCells((prev) => new Set(prev).add(cellId));
@@ -265,65 +290,28 @@ export const useNotebookExecution = ({
       }
 
       // Handle streaming response
-      const reader = response.body?.getReader();
-      if (!reader) {
-        throw new Error("Failed to get response reader");
-      }
-
-      const decoder = new TextDecoder();
-      let buffer = "";
-      const MAX_BUFFER_SIZE = 1024 * 1024; // 1MB limit
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const chunk = decoder.decode(value, { stream: true });
-        if (buffer.length + chunk.length > MAX_BUFFER_SIZE) {
-          console.warn("Buffer size exceeded during rerun, truncating output");
-          setError("Rerun output too large - execution truncated");
-          break;
-        }
-        buffer += chunk;
-
-        // Process complete lines
-        const lines = buffer.split("\n");
-        buffer = lines.pop() || ""; // Keep incomplete line in buffer
-
-        for (const line of lines) {
-          if (line.startsWith("data: ")) {
-            try {
-              const eventData = JSON.parse(line.slice(6));
-
-              // Handle error events
-              if (eventData.event_type === "error") {
-                console.error("Rerun error:", eventData.data?.error);
-                throw new Error(eventData.data?.error || "Rerun failed");
-              }
-
-              // Update cells via callback for completed cells
-              if (eventData.event_type === "completed") {
-                const completedData = eventData.data as CompletedEventData;
-                if (onCellUpdate) {
-                  onCellUpdate(eventData.cell_id, {
-                    outputs: completedData.outputs || [],
-                    execution_count: completedData.execution_count || null,
-                  });
-                }
-              }
-
-              // Log other events for debugging
-              console.log(
-                "Rerun event:",
-                eventData.event_type,
-                eventData.cell_id,
-              );
-            } catch (parseError) {
-              console.error("Error parsing rerun event data:", parseError);
+      await processStreamingResponse(response, {
+        onEvent: (eventData) => {
+          // Update cells via callback for completed cells
+          if (eventData.event_type === "completed") {
+            const completedData = eventData.data as CompletedEventData;
+            if (onCellUpdate) {
+              onCellUpdate(eventData.cell_id, {
+                outputs: completedData.outputs || [],
+                execution_count: completedData.execution_count || null,
+              });
             }
           }
-        }
-      }
+
+          // Log other events for debugging
+          console.log("Rerun event:", eventData.event_type, eventData.cell_id);
+        },
+        onError: (errorMessage) => {
+          setError(errorMessage);
+        },
+        bufferSizeExceededMessage:
+          "Rerun output too large - execution truncated",
+      });
 
       return true;
     } catch (err) {
@@ -333,7 +321,7 @@ export const useNotebookExecution = ({
       console.error("Error rerunning notebook:", err);
       return false;
     }
-  }, [baseUrl, onCellUpdate]);
+  }, [baseUrl, onCellUpdate, processStreamingResponse]);
 
   return {
     executingCells,
