@@ -50,30 +50,41 @@ const processImageData = (
   data: string | string[],
   mimeType: string,
 ): string => {
-  let base64String = "";
+  try {
+    let base64String = "";
 
-  // Handle array format (from notebook output)
-  if (Array.isArray(data)) {
-    base64String = data.join("");
-  } else {
-    base64String = String(data);
+    // Handle array format (from notebook output)
+    if (Array.isArray(data)) {
+      base64String = data.join("");
+    } else {
+      base64String = String(data);
+    }
+
+    // Validate base64 string format before processing
+    if (!base64String.trim()) {
+      console.warn("Empty base64 data provided");
+      return "";
+    }
+
+    // Remove all whitespace
+    base64String = base64String.replace(/\s/g, "");
+
+    // Check if data already contains a data URI prefix
+    if (base64String.startsWith("data:")) {
+      return base64String;
+    }
+
+    // Check if it already starts with the base64 part only
+    if (base64String.startsWith(`${mimeType};base64,`)) {
+      return `data:${base64String}`;
+    }
+
+    // Add the full data URI prefix
+    return `data:${mimeType};base64,${base64String}`;
+  } catch (error) {
+    console.error("Failed to process image data:", error);
+    return ""; // Return empty string instead of potentially breaking the component
   }
-
-  // Remove all whitespace
-  base64String = base64String.replace(/\s/g, "");
-
-  // Check if data already contains a data URI prefix
-  if (base64String.startsWith("data:")) {
-    return base64String;
-  }
-
-  // Check if it already starts with the base64 part only
-  if (base64String.startsWith(`${mimeType};base64,`)) {
-    return `data:${base64String}`;
-  }
-
-  // Add the full data URI prefix
-  return `data:${mimeType};base64,${base64String}`;
 };
 
 // Helper function to sanitize HTML content

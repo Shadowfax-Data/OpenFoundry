@@ -1,733 +1,129 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect } from "react";
 
-// Define proper types for notebook outputs
-export interface NotebookOutputData {
-  "text/plain"?: string | string[];
-  "text/html"?: string | string[];
-  "image/png"?: string | string[];
-  "image/jpeg"?: string | string[];
-  "image/svg+xml"?: string | string[];
-  [mimeType: string]: unknown;
-}
+import { useKernelStatus } from "./useKernelStatus";
+import { useNotebookCells } from "./useNotebookCells";
+import { useNotebookData } from "./useNotebookData";
+import { useNotebookExecution } from "./useNotebookExecution";
 
-export interface StreamOutput {
-  output_type: "stream";
-  name: "stdout" | "stderr";
-  text: string | string[];
-}
+// Re-export types for backward compatibility
+export type {
+  CompletedEventData,
+  DisplayDataOutput,
+  ErrorEventData,
+  ErrorOutput,
+  ExecuteResultOutput,
+  InterruptedEventData,
+  NotebookCell,
+  NotebookCellInput,
+  NotebookData,
+  NotebookMetadata,
+  NotebookOutput,
+  NotebookOutputData,
+  OutputEventData,
+  StartedEventData,
+  StreamingEventData,
+  StreamOutput,
+} from "./types";
+export { KernelStatus } from "./useKernelStatus";
 
-export interface ExecuteResultOutput {
-  output_type: "execute_result";
-  execution_count: number;
-  data: NotebookOutputData;
-  metadata?: Record<string, unknown>;
-}
-
-export interface ErrorOutput {
-  output_type: "error";
-  ename: string;
-  evalue: string;
-  traceback: string[];
-}
-
-export interface DisplayDataOutput {
-  output_type: "display_data";
-  data: NotebookOutputData;
-  metadata?: Record<string, unknown>;
-}
-
-export type NotebookOutput =
-  | StreamOutput
-  | ExecuteResultOutput
-  | ErrorOutput
-  | DisplayDataOutput;
-
-// Define event data types for streaming
-export interface StartedEventData {
-  execution_count?: number;
-}
-
-export interface OutputEventData {
-  output: NotebookOutput;
-}
-
-export interface CompletedEventData {
-  execution_count: number;
-  outputs: NotebookOutput[];
-  status: "completed" | "error";
-  error?: string;
-  started_at: string;
-  completed_at: string;
-}
-
-export interface ErrorEventData {
-  error: string;
-  traceback?: string[];
-}
-
-export interface InterruptedEventData {
-  message?: string;
-}
-
-export type StreamingEventData =
-  | StartedEventData
-  | OutputEventData
-  | CompletedEventData
-  | ErrorEventData
-  | InterruptedEventData;
-
-export interface NotebookCell {
-  id: string;
-  cell_type: "code" | "markdown";
-  source: string[];
-  outputs?: NotebookOutput[];
-  execution_count?: number | null;
-}
-
-// Type for UI components that can handle both string and string[] sources
-export interface NotebookCellInput {
-  id: string;
-  cell_type: "code" | "markdown";
-  source: string[] | string;
-  outputs?: NotebookOutput[];
-  execution_count?: number | null;
-}
-
-export interface NotebookMetadata {
-  kernelspec?: {
-    display_name: string;
-    language: string;
-    name: string;
-  };
-  language_info?: {
-    codemirror_mode?: {
-      name: string;
-      version?: number;
-    };
-    file_extension: string;
-    mimetype: string;
-    name: string;
-    nbconvert_exporter: string;
-    pygments_lexer: string;
-    version: string;
-  };
-  [key: string]: unknown;
-}
-
-export interface NotebookData {
-  cells: NotebookCell[];
-  metadata: NotebookMetadata;
-  nbformat: number;
-  nbformat_minor: number;
-}
-
-export interface KernelStatus {
-  is_ready: boolean;
-  is_starting: boolean;
-  kernel_id: string | null;
-  sandbox_healthy: boolean;
-  overall_ready: boolean;
-}
-
-interface ExecuteCodeRequest {
-  code: string;
-  cell_id: string;
-}
-
-interface ExecuteCodeResponse {
-  cell_id: string;
-  code: string;
-  execution_count: number;
-  outputs: NotebookOutput[];
-  status: "completed" | "error";
-  error?: string;
-  started_at: string;
-  completed_at: string;
-}
+// Import types from the types file
+import { NotebookData, NotebookOutput } from "./types";
 
 interface UseNotebookOperationsProps {
   notebookId: string;
   sessionId: string;
-  autoLoad?: boolean; // Add this prop to control when to start loading
+  autoLoad?: boolean;
 }
 
 export const useNotebookOperations = ({
   notebookId,
   sessionId,
-  autoLoad = true, // Default to true for backward compatibility
+  autoLoad = true,
 }: UseNotebookOperationsProps) => {
-  const [notebookData, setNotebookData] = useState<NotebookData | null>(null);
-  const [kernelStatus, setKernelStatus] = useState<KernelStatus | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [executingCells, setExecutingCells] = useState<Set<string>>(new Set());
+  // Use the focused hooks
+  const {
+    notebookData,
+    setNotebookData,
+    loading,
+    error: dataError,
+    setError: setDataError,
+    getNotebook,
+    baseUrl,
+  } = useNotebookData({ notebookId, sessionId, autoLoad });
 
-  const baseUrl = `/api/notebooks/${notebookId}/sessions/${sessionId}`;
+  const {
+    kernelStatus,
+    getKernelStatus,
+    error: kernelError,
+    setError: setKernelError,
+  } = useKernelStatus({ baseUrl });
 
-  // Get notebook data
-  const getNotebook = useCallback(async (): Promise<NotebookData | null> => {
-    try {
-      setError(null);
-      const response = await fetch(`${baseUrl}/notebook`);
-
-      if (!response.ok) {
-        throw new Error(`Failed to get notebook: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-
-      // Ensure all cells have frontend_cell_ids
-      if (data && data.cells) {
-        data.cells = data.cells.map((cell: NotebookCell) => ({
-          ...cell,
-          id: cell.id ?? crypto.randomUUID(),
-        }));
-      }
-
-      setNotebookData(data);
-      return data;
-    } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : "Failed to get notebook";
-      setError(errorMessage);
-      console.error("Error getting notebook:", err);
-      return null;
-    }
-  }, [baseUrl]);
-
-  // Execute code with streaming output
-  const executeCodeStreaming = useCallback(
+  // Create a callback to update cells from execution results
+  const handleCellUpdate = useCallback(
     (
-      request: ExecuteCodeRequest,
-      onEvent?: (event: {
-        event_type: "started" | "output" | "completed" | "error";
-        cell_id: string;
-        timestamp: string;
-        data: StreamingEventData;
-      }) => void,
-    ): Promise<ExecuteCodeResponse | null> => {
-      return new Promise((resolve, reject) => {
-        setError(null);
-
-        const eventSource = new EventSource(`${baseUrl}/execute/stream`, {
-          // Note: EventSource doesn't support POST by default
-          // We'll need to implement this differently
-        });
-
-        let finalResult: ExecuteCodeResponse | null = null;
-
-        eventSource.onmessage = (event) => {
-          try {
-            const data = JSON.parse(event.data);
-
-            // Call the event handler if provided
-            if (onEvent) {
-              onEvent(data);
-            }
-
-            // Handle different event types
-            switch (data.event_type) {
-              case "started": {
-                console.log(`Execution started for cell ${data.cell_id}`);
-                break;
-              }
-
-              case "output": {
-                console.log(
-                  `Output received for cell ${data.cell_id}:`,
-                  data.data.output,
-                );
-                // You could update the notebook display here in real-time
-                break;
-              }
-
-              case "completed": {
-                const completedData = data.data as CompletedEventData;
-                finalResult = {
-                  cell_id: data.cell_id,
-                  code: request.code,
-                  execution_count: completedData.execution_count || 0,
-                  outputs: completedData.outputs || [],
-                  status: completedData.status,
-                  error: completedData.error,
-                  started_at: completedData.started_at,
-                  completed_at: completedData.completed_at,
-                };
-                eventSource.close();
-                resolve(finalResult);
-                break;
-              }
-
-              case "error": {
-                eventSource.close();
-                const errorData = data.data as ErrorEventData;
-                const errorMessage = errorData.error || "Execution failed";
-                setError(errorMessage);
-                reject(new Error(errorMessage));
-                break;
-              }
-            }
-          } catch (err) {
-            console.error("Error parsing event data:", err);
-            eventSource.close();
-            reject(err);
-          }
-        };
-
-        eventSource.onerror = (error) => {
-          console.error("EventSource error:", error);
-          eventSource.close();
-          setError("Connection error during execution");
-          reject(new Error("Connection error during execution"));
-        };
-
-        // Since EventSource doesn't support POST, we'll need to use fetch with streaming
-        // This is a placeholder - we'll implement the actual streaming below
-      });
-    },
-    [baseUrl],
-  );
-
-  // Execute code with streaming using fetch (since EventSource doesn't support POST)
-  const executeCodeStreamingFetch = useCallback(
-    async (
-      request: ExecuteCodeRequest,
-      onEvent?: (event: {
-        event_type:
-          | "started"
-          | "output"
-          | "completed"
-          | "error"
-          | "interrupted";
-        cell_id: string;
-        timestamp: string;
-        data: StreamingEventData;
-      }) => void,
-    ): Promise<ExecuteCodeResponse | null> => {
-      try {
-        setError(null);
-
-        const response = await fetch(`${baseUrl}/execute/stream`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "text/event-stream",
-          },
-          body: JSON.stringify(request),
-        });
-
-        if (!response.ok) {
-          throw new Error(`Failed to execute code: ${response.statusText}`);
-        }
-
-        const reader = response.body?.getReader();
-        if (!reader) {
-          throw new Error("No response body reader available");
-        }
-
-        const decoder = new TextDecoder();
-        let buffer = "";
-        let finalResult: ExecuteCodeResponse | null = null;
-
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          buffer += decoder.decode(value, { stream: true });
-
-          // Process complete lines
-          const lines = buffer.split("\n");
-          buffer = lines.pop() || ""; // Keep incomplete line in buffer
-
-          for (const line of lines) {
-            if (line.startsWith("data: ")) {
-              try {
-                const eventData = JSON.parse(line.slice(6));
-
-                // Call the event handler if provided
-                if (onEvent) {
-                  onEvent(eventData);
-                }
-
-                // Handle different event types
-                switch (eventData.event_type) {
-                  case "started": {
-                    console.log(
-                      `Execution started for cell ${eventData.cell_id}`,
-                    );
-                    break;
-                  }
-
-                  case "output": {
-                    console.log(
-                      `Output received for cell ${eventData.cell_id}:`,
-                      eventData.data.output,
-                    );
-                    // Real-time output display is handled by the NotebookCell component
-                    // via the onEvent callback for streaming outputs
-                    break;
-                  }
-
-                  case "completed": {
-                    const completedData = eventData.data as CompletedEventData;
-                    finalResult = {
-                      cell_id: eventData.cell_id,
-                      code: request.code,
-                      execution_count: completedData.execution_count || 0,
-                      outputs: completedData.outputs || [],
-                      status: completedData.status,
-                      error: completedData.error,
-                      started_at: completedData.started_at,
-                      completed_at: completedData.completed_at,
-                    };
-
-                    // Update notebook data in real-time with completed cell
-                    setNotebookData((prevData) => {
-                      if (!prevData) return prevData;
-
-                      const updatedCells = prevData.cells.map((cell) => {
-                        if (cell.id === eventData.cell_id) {
-                          return {
-                            ...cell,
-                            outputs: completedData.outputs || [],
-                            execution_count:
-                              completedData.execution_count || null,
-                          };
-                        }
-                        return cell;
-                      });
-
-                      return {
-                        ...prevData,
-                        cells: updatedCells,
-                      };
-                    });
-                    break;
-                  }
-
-                  case "error": {
-                    const errorData = eventData.data as ErrorEventData;
-                    const errorMessage = errorData.error || "Execution failed";
-                    setError(errorMessage);
-                    throw new Error(errorMessage);
-                  }
-                }
-              } catch (parseError) {
-                console.error("Error parsing event data:", parseError);
-              }
-            }
-          }
-        }
-
-        // No need to refresh notebook data - already updated in real-time
-        return finalResult;
-      } catch (err) {
-        const errorMessage =
-          err instanceof Error ? err.message : "Failed to execute code";
-        setError(errorMessage);
-        console.error("Error executing code with streaming:", err);
-        return null;
-      }
-    },
-    [baseUrl],
-  );
-
-  // Get kernel status
-  const getKernelStatus =
-    useCallback(async (): Promise<KernelStatus | null> => {
-      try {
-        setError(null);
-        const response = await fetch(`${baseUrl}/status`);
-
-        if (!response.ok) {
-          throw new Error(
-            `Failed to get kernel status: ${response.statusText}`,
-          );
-        }
-
-        const status = await response.json();
-        setKernelStatus(status);
-        return status;
-      } catch (err) {
-        const errorMessage =
-          err instanceof Error ? err.message : "Failed to get kernel status";
-        setError(errorMessage);
-        console.error("Error getting kernel status:", err);
-        return null;
-      }
-    }, [baseUrl]);
-
-  // Rerun all cells with streaming
-  const rerunNotebook = useCallback(async (): Promise<boolean> => {
-    try {
-      setError(null);
-      setLoading(true);
-
-      const response = await fetch(`${baseUrl}/rerun`, {
-        method: "POST",
-        headers: {
-          Accept: "text/event-stream",
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to rerun notebook: ${response.statusText}`);
-      }
-
-      // Handle streaming response
-      const reader = response.body?.getReader();
-      if (!reader) {
-        throw new Error("Failed to get response reader");
-      }
-
-      const decoder = new TextDecoder();
-      let buffer = "";
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-
-        // Process complete lines
-        const lines = buffer.split("\n");
-        buffer = lines.pop() || ""; // Keep incomplete line in buffer
-
-        for (const line of lines) {
-          if (line.startsWith("data: ")) {
-            try {
-              const eventData = JSON.parse(line.slice(6));
-
-              // Handle error events
-              if (eventData.event_type === "error") {
-                console.error("Rerun error:", eventData.data?.error);
-                throw new Error(eventData.data?.error || "Rerun failed");
-              }
-
-              // Update notebook data in real-time for completed cells
-              if (eventData.event_type === "completed") {
-                const completedData = eventData.data as CompletedEventData;
-                setNotebookData((prevData) => {
-                  if (!prevData) return prevData;
-
-                  const updatedCells = prevData.cells.map((cell) => {
-                    if (cell.id === eventData.cell_id) {
-                      return {
-                        ...cell,
-                        outputs: completedData.outputs || [],
-                        execution_count: completedData.execution_count || null,
-                      };
-                    }
-                    return cell;
-                  });
-
-                  return {
-                    ...prevData,
-                    cells: updatedCells,
-                  };
-                });
-              }
-
-              // Log other events for debugging
-              console.log(
-                "Rerun event:",
-                eventData.event_type,
-                eventData.cell_id,
-              );
-            } catch (parseError) {
-              console.error("Error parsing rerun event data:", parseError);
-            }
-          }
-        }
-      }
-
-      // No need to refresh notebook data - already updated in real-time
-      return true;
-    } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : "Failed to rerun notebook";
-      setError(errorMessage);
-      console.error("Error rerunning notebook:", err);
-      return false;
-    } finally {
-      setLoading(false);
-    }
-  }, [baseUrl]);
-
-  // Cell management functions
-  const addCell = useCallback(
-    (index: number, cellType: "code" | "markdown" = "code") => {
-      const newCell: NotebookCell = {
-        id: crypto.randomUUID(),
-        cell_type: cellType,
-        source: [],
-        outputs: [],
-        execution_count: null,
-      };
-
-      setNotebookData((prev) => {
-        if (!prev) return prev; // keep early-exit safety
-        const newCells = [...prev.cells];
-        newCells.splice(index, 0, newCell);
-        return { ...prev, cells: newCells };
-      });
-    },
-    [], // Remove notebookData dependency since we use functional updates
-  );
-
-  const updateCell = useCallback(
-    (index: number, updatedCell: NotebookCellInput) => {
-      // Normalize the source to always be a string array
-      const normalizedCell: NotebookCell = {
-        ...updatedCell,
-        source: Array.isArray(updatedCell.source)
-          ? updatedCell.source
-          : [updatedCell.source],
-      };
-
-      setNotebookData((prev) => {
-        if (!prev) return prev; // keep early-exit safety
-        const newCells = [...prev.cells];
-        newCells[index] = normalizedCell;
-        return { ...prev, cells: newCells };
-      });
-    },
-    [], // Remove notebookData dependency since we use functional updates
-  );
-
-  const deleteCell = useCallback(
-    async (index: number) => {
-      // Get cell info using functional approach to avoid stale closure
-      let cellId: string | null = null;
-      setNotebookData((prev) => {
-        if (!prev || index < 0 || index >= prev.cells.length) {
-          return prev; // Early exit if invalid
-        }
-        cellId = prev.cells[index].id;
-        return prev; // No state change, just accessing current value
-      });
-
-      if (!cellId) return; // Exit if we couldn't get a valid cell ID
-
-      try {
-        setError(null);
-        const response = await fetch(`${baseUrl}/cells/${cellId}`, {
-          method: "DELETE",
-        });
-
-        if (!response.ok) {
-          throw new Error(`Failed to delete cell: ${response.statusText}`);
-        }
-
-        // After successful deletion, refresh the notebook data to get the updated state
-        await getNotebook();
-      } catch (err) {
-        const errorMessage =
-          err instanceof Error ? err.message : "Failed to delete cell";
-        setError(errorMessage);
-        console.error("Error deleting cell:", err);
-      }
-    },
-    [baseUrl, getNotebook], // Remove notebookData dependency
-  );
-
-  const stopExecution = useCallback(
-    async (cellId: string): Promise<boolean> => {
-      try {
-        setError(null);
-
-        const endpoint = `${baseUrl}/stop_cell_execution/${encodeURIComponent(cellId)}`;
-
-        const response = await fetch(endpoint, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error(
-            `Failed to stop cell execution: ${response.statusText}`,
-          );
-        }
-
-        const result = await response.json();
-        return result.success;
-      } catch (err) {
-        const errorMessage =
-          err instanceof Error ? err.message : "Failed to stop cell execution";
-        setError(errorMessage);
-        console.error("Error stopping cell execution:", err);
-        return false;
-      }
-    },
-    [baseUrl],
-  );
-
-  const executeCellWithStatus = useCallback(
-    async (
       cellId: string,
-      code: string,
-      options?: {
-        onEvent?: (event: {
-          event_type:
-            | "started"
-            | "output"
-            | "completed"
-            | "error"
-            | "interrupted";
-          cell_id: string;
-          timestamp: string;
-          data: StreamingEventData;
-        }) => void;
+      updates: {
+        outputs?: NotebookOutput[];
+        execution_count?: number | null;
       },
-    ): Promise<void> => {
-      setExecutingCells((prev) => new Set(prev).add(cellId));
+    ) => {
+      setNotebookData((prevData: NotebookData | null) => {
+        if (!prevData) return prevData;
 
-      try {
-        const executeRequest: ExecuteCodeRequest = {
-          code,
-          cell_id: cellId,
-        };
-
-        // Always use streaming execution
-        await executeCodeStreamingFetch(executeRequest, options?.onEvent);
-      } finally {
-        setExecutingCells((prev) => {
-          const newSet = new Set(prev);
-          newSet.delete(cellId);
-          return newSet;
+        const updatedCells = prevData.cells.map((cell) => {
+          if (cell.id === cellId) {
+            return { ...cell, ...updates };
+          }
+          return cell;
         });
-      }
+
+        return { ...prevData, cells: updatedCells };
+      });
     },
-    [executeCodeStreamingFetch],
+    [setNotebookData],
   );
 
-  // Ensure we have at least one empty cell for new notebooks
-  const ensureMinimumCells = useCallback(() => {
-    if (notebookData && notebookData.cells.length === 0) {
-      addCell(0, "code");
-    }
-  }, [notebookData, addCell]);
+  const {
+    executingCells,
+    executeCodeStreamingFetch,
+    executeCellWithStatus,
+    stopExecution,
+    rerunNotebook,
+    error: executionError,
+    setError: setExecutionError,
+  } = useNotebookExecution({ baseUrl, onCellUpdate: handleCellUpdate });
 
-  // Load initial data - only when autoLoad is true
+  const { addCell, updateCell, deleteCell } = useNotebookCells({
+    notebookData,
+    setNotebookData,
+    baseUrl,
+    getNotebook,
+    setError: setDataError,
+  });
+
+  // Combine errors from all hooks
+  const error = dataError || kernelError || executionError;
+  const setError = useCallback(
+    (newError: string | null) => {
+      setDataError(newError);
+      setKernelError(newError);
+      setExecutionError(newError);
+    },
+    [setDataError, setKernelError, setExecutionError],
+  );
+
+  // Load kernel status on mount if autoLoad is enabled
   useEffect(() => {
-    if (!autoLoad) return; // Don't load if autoLoad is false
+    if (!autoLoad) return;
 
-    const loadInitialData = async () => {
-      setLoading(true);
-      await Promise.all([getNotebook(), getKernelStatus()]);
-      setLoading(false);
+    const loadKernelStatus = async () => {
+      await getKernelStatus();
     };
 
-    loadInitialData();
-  }, [getNotebook, getKernelStatus, autoLoad]); // Add autoLoad to dependencies
+    loadKernelStatus();
+  }, [getKernelStatus, autoLoad]);
 
-  // Ensure minimum cells when notebook data changes
-  useEffect(() => {
-    ensureMinimumCells();
-  }, [ensureMinimumCells]);
-
+  // Return the same API as before for backward compatibility
   return {
     notebookData,
     kernelStatus,
@@ -735,7 +131,6 @@ export const useNotebookOperations = ({
     error,
     executingCells,
     getNotebook,
-    executeCodeStreaming,
     executeCodeStreamingFetch,
     executeCellWithStatus,
     stopExecution,
@@ -744,5 +139,6 @@ export const useNotebookOperations = ({
     addCell,
     updateCell,
     deleteCell,
+    setError,
   };
 };
