@@ -10,8 +10,8 @@ all the code implementation and data connections underneath.
 
 ## Core Features
 
-- **AI-powered App Development:** Build interative Streamlit applications and Notebooks with intelligent AI agents.
-- **Data Connection Management:** Connect to Snowflake. Databricks, and many other datasources
+- **AI-powered App Development:** Build interactive Streamlit applications and Notebooks with intelligent AI agents.
+- **Data Connection Management:** Connect to Snowflake, Databricks, and many other datasources
 - **Secure Sandbox Environment:** Isolated Docker containers for safe code execution
 - **Run locally on Private Data:** Deploy and operate OpenFoundry entirely on your own infrastructure, ensuring your data never leaves your environment
 
@@ -26,7 +26,7 @@ all the code implementation and data connections underneath.
 
 ## Installation
 
-### Prerequsites
+### Prerequisites
 - Python 3.12+
 - Node.js 20+
 - Docker

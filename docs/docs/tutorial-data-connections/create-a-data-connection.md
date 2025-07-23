@@ -4,28 +4,28 @@ sidebar_position: 1
 
 # Create a Data Connection
 
-To begin, lets start by connecting to a data warehouse or database by navigating to the **Connections** tab
+To begin, let's start by connecting to a data warehouse or database by navigating to the **Connections** tab
 
 Once navigated into the connections tab, create a new connection by clicking the `+ connection` button.
-A list of avaliable connections will appear in which you can navigate into.
+A list of available connections will appear in which you can navigate into.
 
 ![connection_types](/img/connection-types.png)
 
-Lets go through each connection type to see how we can connect to them!
+Let's go through each connection type to see how we can connect to them!
 
 ### Snowflake
 Snowflake requires several fields that need to be filled out in order to establish a connection.
 - **Name:** This is the name that will be used to identify the connection
-- **Account:** Your Snowflake account identifier, in whcih you can find in your Snowflake URL
+- **Account:** Your Snowflake account identifier, in which you can find in your Snowflake URL
 - **User:** Your Snowflake username that has been configured for the key-pair authentication
 - **Role:** The Snowflake role to use for connections. Examples include ACCOUNTADMIN, SYSADMIN
-- **Database, Schema, Warehous:** Specify which database, schema, and compute warehouse you would like to connect to
+- **Database, Schema, Warehouse:** Specify which database, schema, and compute warehouse you would like to connect to
 - **Private Key:** Upload the private key file (.pem, .key, .p8) for key-pair authentication. This should correspond to the public key that is registered with your Snowflake User
 
 ### BigQuery
 BigQuery requires only four fields to be filled out.
 - **Name:** This is the name that will be used to identify the connection
-- **Service Account Key:** You can Drag and Drop your downloaded service account JSON key from your Google Cloud Console. It contains the neccessary credentials for authenication
+- **Service Account Key:** You can Drag and Drop your downloaded service account JSON key from your Google Cloud Console. It contains the necessary credentials for authentication
 - **Project ID:** The Google Cloud Project ID that you want to connect to. Should match the project where your Datasets are located.
 - **Dataset ID:** The Google Cloud Dataset ID. Should match the dataset where your BigQuery Tables are located.
 
@@ -34,7 +34,7 @@ To create a service account key. Navigate to **Google Cloud Console** -> **IAM &
 :::
 
 ### Databricks
-Databricks will also require serveral fields to be filled out
+Databricks will also require several fields to be filled out
 - **Name:** This is the name that will be used to identify the connection
 - **Host:** The databricks workspace URL. Be sure to not include the http:// or https:// prefix. This can be found in your SQL Warehouse's Connection Details tab.
 - **HTTP Path:** The HTTP Path for your Databricks SQL Warehouse (e.g., /sql/1.0/warehouses/xxx).
