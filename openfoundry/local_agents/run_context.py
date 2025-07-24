@@ -83,8 +83,4 @@ class NotebookAgentRunContext(AgentRunContext):
     Uses the base AgentRunContext functionality for notebook operations.
     """
 
-    async def check_notebook_environment(self) -> None:
-        """Check if the notebook environment is ready."""
-        async with self.get_sandbox_client() as client:
-            response = await client.get("/health")
-            response.raise_for_status()
+    pass

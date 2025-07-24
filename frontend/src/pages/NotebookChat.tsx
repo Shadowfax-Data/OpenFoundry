@@ -52,12 +52,10 @@ export function NotebookChat() {
     if (!isComplete) {
       // Tool started
       setIsAgentWorkingOnNotebook(true);
-      console.log(`🔧 Notebook tool started: ${toolName}`);
+      console.log(`Notebook tool started: ${toolName}`);
     } else {
       // Tool completed - trigger immediate refresh
-      console.log(
-        `✅ Notebook tool completed: ${toolName} - refreshing notebook`,
-      );
+      console.log(`Notebook tool completed: ${toolName} - refreshing notebook`);
 
       // Clear any existing timeout
       if (refreshTimeoutRef.current) {
