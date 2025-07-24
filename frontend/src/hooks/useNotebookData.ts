@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { NotebookCell, NotebookData } from "./types";
 
@@ -6,16 +6,21 @@ interface UseNotebookDataProps {
   notebookId: string;
   sessionId: string;
   autoLoad?: boolean;
+  enablePolling?: boolean;
+  pollingInterval?: number;
 }
 
 export const useNotebookData = ({
   notebookId,
   sessionId,
   autoLoad = true,
+  enablePolling = false,
+  pollingInterval = 3000,
 }: UseNotebookDataProps) => {
   const [notebookData, setNotebookData] = useState<NotebookData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const baseUrl = `/api/notebooks/${notebookId}/sessions/${sessionId}`;
 
@@ -50,6 +55,25 @@ export const useNotebookData = ({
     }
   }, [baseUrl]);
 
+  // Start polling
+  const startPolling = useCallback(() => {
+    if (pollingIntervalRef.current) {
+      clearInterval(pollingIntervalRef.current);
+    }
+
+    pollingIntervalRef.current = setInterval(() => {
+      getNotebook();
+    }, pollingInterval);
+  }, [getNotebook, pollingInterval]);
+
+  // Stop polling
+  const stopPolling = useCallback(() => {
+    if (pollingIntervalRef.current) {
+      clearInterval(pollingIntervalRef.current);
+      pollingIntervalRef.current = null;
+    }
+  }, []);
+
   // Load initial data - only when autoLoad is true
   useEffect(() => {
     if (!autoLoad) return;
@@ -63,6 +87,19 @@ export const useNotebookData = ({
     loadInitialData();
   }, [getNotebook, autoLoad]);
 
+  // Handle polling
+  useEffect(() => {
+    if (enablePolling) {
+      startPolling();
+    } else {
+      stopPolling();
+    }
+
+    return () => {
+      stopPolling();
+    };
+  }, [enablePolling, startPolling, stopPolling]);
+
   return {
     notebookData,
     setNotebookData,
@@ -71,5 +108,7 @@ export const useNotebookData = ({
     setError,
     getNotebook,
     baseUrl,
+    startPolling,
+    stopPolling,
   };
 };

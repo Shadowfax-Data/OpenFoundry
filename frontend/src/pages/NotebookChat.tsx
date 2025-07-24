@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router";
 import { toast } from "sonner";
 
@@ -33,16 +33,54 @@ export function NotebookChat() {
   // Extract prompt from query params
   const prompt = searchParams.get("prompt")?.trim() || "";
 
-  const { messages, isStreaming, error, sendMessage } = useNotebookChat({
-    notebookId: notebookId!,
-    sessionId: sessionId!,
-    initialPrompt: prompt,
-  });
+  // Event-driven notebook refresh system
+  const [isAgentWorkingOnNotebook, setIsAgentWorkingOnNotebook] =
+    useState(false);
+  const refreshTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const notebookOps = useNotebookOperations({
     notebookId: notebookId!,
     sessionId: sessionId!,
-    autoLoad: isSandboxReady, // Only load after sandbox is ready
+    autoLoad: isSandboxReady,
+  });
+
+  // Handle notebook tool activity with immediate refresh
+  const handleNotebookToolActivity = (
+    toolName: string,
+    isComplete: boolean,
+  ) => {
+    if (!isComplete) {
+      // Tool started
+      setIsAgentWorkingOnNotebook(true);
+      console.log(`🔧 Notebook tool started: ${toolName}`);
+    } else {
+      // Tool completed - trigger immediate refresh
+      console.log(
+        `✅ Notebook tool completed: ${toolName} - refreshing notebook`,
+      );
+
+      // Clear any existing timeout
+      if (refreshTimeoutRef.current) {
+        clearTimeout(refreshTimeoutRef.current);
+      }
+
+      // Immediate refresh
+      notebookOps.getNotebook();
+
+      // Set a timeout to stop the working indicator and do one final refresh
+      refreshTimeoutRef.current = setTimeout(() => {
+        setIsAgentWorkingOnNotebook(false);
+        // Final refresh to catch any delayed changes
+        notebookOps.getNotebook();
+      }, 2000);
+    }
+  };
+
+  const { messages, isStreaming, error, sendMessage } = useNotebookChat({
+    notebookId: notebookId!,
+    sessionId: sessionId!,
+    initialPrompt: prompt,
+    onNotebookToolActivity: handleNotebookToolActivity,
   });
 
   const session = useAppSelector(
@@ -55,6 +93,15 @@ export function NotebookChat() {
       dispatch(fetchNotebookAgentSessions(notebookId));
     }
   }, [notebookId, sessionId, session, dispatch]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (refreshTimeoutRef.current) {
+        clearTimeout(refreshTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Health check for sandbox - only run once at the beginning
   useEffect(() => {
@@ -92,7 +139,7 @@ export function NotebookChat() {
     });
 
     return () => clearInterval(intervalId);
-  }, [notebookId, sessionId]); // Only depend on notebookId and sessionId
+  }, [notebookId, sessionId]);
 
   const handleResetChat = async () => {
     if (!notebookId || !sessionId) return;
@@ -181,50 +228,60 @@ export function NotebookChat() {
               <div className="text-center text-muted-foreground">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
                 <p>Waiting for sandbox to become ready...</p>
+                {isAgentWorkingOnNotebook && (
+                  <p className="text-xs mt-2">🔄 Agent updating notebook...</p>
+                )}
               </div>
             </div>
           ) : (
-            <InteractiveNotebook
-              notebookData={notebookOps.notebookData}
-              kernelStatus={notebookOps.kernelStatus}
-              loading={notebookOps.loading}
-              error={notebookOps.error}
-              executingCells={notebookOps.executingCells}
-              onExecuteCell={notebookOps.executeCellWithStatus}
-              onUpdateCell={notebookOps.updateCell}
-              onAddCell={notebookOps.addCell}
-              onDeleteCell={notebookOps.deleteCell}
-              onStopExecution={notebookOps.stopExecution}
-              onRerunNotebook={notebookOps.rerunNotebook}
-              onSaveWorkspace={async () => {
-                if (!notebookId || !sessionId) return;
+            <div className="h-full relative">
+              {isAgentWorkingOnNotebook && (
+                <div className="absolute top-2 right-2 z-10 bg-blue-100 text-blue-800 px-2 py-1 rounded-md text-xs">
+                  🔄 Syncing...
+                </div>
+              )}
+              <InteractiveNotebook
+                notebookData={notebookOps.notebookData}
+                kernelStatus={notebookOps.kernelStatus}
+                loading={notebookOps.loading}
+                error={notebookOps.error}
+                executingCells={notebookOps.executingCells}
+                onExecuteCell={notebookOps.executeCellWithStatus}
+                onUpdateCell={notebookOps.updateCell}
+                onAddCell={notebookOps.addCell}
+                onDeleteCell={notebookOps.deleteCell}
+                onStopExecution={notebookOps.stopExecution}
+                onRerunNotebook={notebookOps.rerunNotebook}
+                onSaveWorkspace={async () => {
+                  if (!notebookId || !sessionId) return;
 
-                try {
-                  const response = await fetch(
-                    `/api/notebooks/${notebookId}/sessions/${sessionId}/save`,
-                    {
-                      method: "POST",
-                      headers: {
-                        "Content-Type": "application/json",
+                  try {
+                    const response = await fetch(
+                      `/api/notebooks/${notebookId}/sessions/${sessionId}/save`,
+                      {
+                        method: "POST",
+                        headers: {
+                          "Content-Type": "application/json",
+                        },
                       },
-                    },
-                  );
-
-                  if (response.ok) {
-                    const result = await response.json();
-                    toast.success(
-                      result.message || "Notebook saved successfully",
                     );
-                  } else {
-                    const error = await response.text();
-                    toast.error(`Failed to save notebook: ${error}`);
+
+                    if (response.ok) {
+                      const result = await response.json();
+                      toast.success(
+                        result.message || "Notebook saved successfully",
+                      );
+                    } else {
+                      const error = await response.text();
+                      toast.error(`Failed to save notebook: ${error}`);
+                    }
+                  } catch (error) {
+                    console.error("Error saving notebook:", error);
+                    toast.error("Failed to save notebook");
                   }
-                } catch (error) {
-                  console.error("Error saving notebook:", error);
-                  toast.error("Failed to save notebook");
-                }
-              }}
-            />
+                }}
+              />
+            </div>
           )}
         </ResizablePanel>
       </ResizablePanelGroup>

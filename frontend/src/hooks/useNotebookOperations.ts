@@ -40,7 +40,7 @@ export const useNotebookOperations = ({
   sessionId,
   autoLoad = true,
 }: UseNotebookOperationsProps) => {
-  // Use the focused hooks
+  // Use the focused hooks - polling disabled in favor of event-driven updates
   const {
     notebookData,
     setNotebookData,
@@ -49,7 +49,11 @@ export const useNotebookOperations = ({
     setError: setDataError,
     getNotebook,
     baseUrl,
-  } = useNotebookData({ notebookId, sessionId, autoLoad });
+  } = useNotebookData({
+    notebookId,
+    sessionId,
+    autoLoad,
+  });
 
   const {
     kernelStatus,
@@ -123,7 +127,7 @@ export const useNotebookOperations = ({
     loadKernelStatus();
   }, [getKernelStatus, autoLoad]);
 
-  // Return the same API as before for backward compatibility
+  // Return the notebook operations API
   return {
     notebookData,
     kernelStatus,

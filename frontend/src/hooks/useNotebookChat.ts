@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
+import { useSelector } from "react-redux";
 import { toast } from "sonner";
 
 import {
   notebookChatSlice,
   selectCurrentNotebookWriteFileInfo,
+  selectNotebookToolActivity,
 } from "@/store/slices/notebookChatSlice";
 import { RootState } from "@/store/types";
 
@@ -18,12 +20,14 @@ interface UseNotebookChatProps {
   notebookId: string;
   sessionId: string;
   initialPrompt?: string;
+  onNotebookToolActivity?: (toolName: string, isComplete: boolean) => void;
 }
 
 export const useNotebookChat = ({
   notebookId,
   sessionId,
   initialPrompt,
+  onNotebookToolActivity,
 }: UseNotebookChatProps) => {
   const welcomeMessage = initialPrompt
     ? "" // No welcome message if there's an initial prompt
@@ -42,6 +46,31 @@ export const useNotebookChat = ({
   });
 
   const [notebookPreviewUrl, setNotebookPreviewUrl] = useState<string>("");
+
+  // Monitor notebook tool activity
+  const notebookToolActivity = useSelector(selectNotebookToolActivity);
+  const [lastCompletedTool, setLastCompletedTool] = useState<string | null>(
+    null,
+  );
+
+  // Detect when notebook tools start and complete
+  useEffect(() => {
+    if (notebookToolActivity) {
+      // Tool is active
+      if (onNotebookToolActivity) {
+        onNotebookToolActivity(notebookToolActivity.toolName, false);
+      }
+    } else if (lastCompletedTool && onNotebookToolActivity) {
+      // Tool just completed (transitioned from active to inactive)
+      onNotebookToolActivity(lastCompletedTool, true);
+      setLastCompletedTool(null);
+    }
+
+    // Track the current tool for completion detection
+    if (notebookToolActivity) {
+      setLastCompletedTool(notebookToolActivity.toolName);
+    }
+  }, [notebookToolActivity, lastCompletedTool, onNotebookToolActivity]);
 
   useEffect(() => {
     const loadSessionDetails = async () => {
@@ -118,5 +147,6 @@ export const useNotebookChat = ({
     exportNotebook,
     createAgentSession: handleCreateAgentSession,
     saveWorkspace: handleSaveWorkspace,
+    notebookToolActivity, // Expose for debugging/monitoring
   };
 };
