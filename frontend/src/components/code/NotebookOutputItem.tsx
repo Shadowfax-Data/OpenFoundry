@@ -152,7 +152,7 @@ export function NotebookOutputItem({
   if (output.output_type === "stream") {
     return (
       <pre
-        className={`text-sm font-mono whitespace-pre-wrap ${textColorClass}`}
+        className={`text-sm font-mono whitespace-pre-wrap overflow-x-auto max-w-full break-words ${textColorClass}`}
       >
         {Array.isArray(output.text) ? output.text.join("") : output.text}
       </pre>
@@ -237,7 +237,7 @@ export function NotebookOutputItem({
 
   if (output.output_type === "error") {
     return (
-      <pre className="text-sm font-mono text-red-600 whitespace-pre-wrap">
+      <pre className="text-sm font-mono text-red-600 whitespace-pre-wrap overflow-x-auto max-w-full break-words max-h-96 overflow-y-auto">
         {output.traceback?.join?.("\n") || output.evalue}
       </pre>
     );
