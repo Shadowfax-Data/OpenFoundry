@@ -487,7 +487,7 @@ async def stop_notebook_cell_execution(
         stop_request = {"cell_id": cell_id}
         response = await client.post("/api/notebook/stop", json=stop_request)
         response.raise_for_status()
-        return {"message": "Execution stopped successfully"}
+        return response.json()
 
 
 @router.get(
