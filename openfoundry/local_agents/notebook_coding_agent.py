@@ -1,15 +1,11 @@
 from agents import Agent, ModelSettings
 
-from openfoundry.local_agents.bash_tools import (
-    list_processes,
-    tail_process_logs,
-)
-from openfoundry.local_agents.common_tools import (
-    execute_sql,
-    list_connections,
-    list_files,
-    read_file,
-    write_file,
+from openfoundry.local_agents.notebook_tools import (
+    delete_cell,
+    execute_cell,
+    get_notebook,
+    run_all_cells,
+    stop_cell,
 )
 from openfoundry.local_agents.utils.template_loader import load_prompt_template
 
@@ -27,13 +23,11 @@ def get_notebook_coding_agent(
         name=NOTEBOOK_CODING_AGENT_NAME,
         instructions=selected_prompt,
         tools=[
-            write_file,
-            read_file,
-            list_files,
-            list_processes,
-            tail_process_logs,
-            list_connections,
-            execute_sql,
+            execute_cell,
+            get_notebook,
+            run_all_cells,
+            stop_cell,
+            delete_cell,
         ],
         model=model,
         model_settings=model_settings,
