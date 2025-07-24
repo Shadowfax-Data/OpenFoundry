@@ -1,0 +1,90 @@
+/**
+ * CSS files with the .module.css suffix will be treated as CSS modules
+ * and scoped locally.
+ */
+
+.heroBanner {
+  padding: 4rem 0;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, var(--ifm-color-primary-lightest) 0%, #f0f8ff 50%, var(--ifm-color-primary-lightest) 100%) !important;
+}
+
+[data-theme='dark'] .heroBanner {
+  background: linear-gradient(135deg, #1e293b 0%, #334155 50%, #1e293b 100%) !important;
+}
+
+.heroBanner .hero__title {
+  color: black !important;
+}
+
+.heroBanner .hero__subtitle {
+  color: black !important;
+}
+
+[data-theme='dark'] .heroBanner .hero__title {
+  color: white !important;
+}
+
+[data-theme='dark'] .heroBanner .hero__subtitle {
+  color: white !important;
+}
+
+.heroTitleContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.heroLogo {
+  width: 64px;
+  height: 64px;
+  filter: brightness(0); /* Makes the logo black in light mode */
+}
+
+[data-theme='dark'] .heroLogo {
+  filter: brightness(0) invert(1); /* Makes the logo white in dark mode */
+}
+
+.ecosystemContainer {
+  margin: 2rem 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+@media screen and (max-width: 996px) {
+  .heroBanner {
+    padding: 2rem;
+  }
+
+  .heroTitleContainer {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .heroLogo {
+    width: 48px;
+    height: 48px;
+  }
+}
+
+@media screen and (max-width: 768px) {
+  .heroLogo {
+    width: 40px;
+    height: 40px;
+  }
+
+  .ecosystemContainer {
+    margin: 1.5rem 0;
+  }
+}
+
+.buttons {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
