@@ -33,7 +33,10 @@ class KernelStatusResponse(BaseModel):
 
     is_ready: bool = Field(..., description="Whether the kernel is ready for execution")
     is_starting: bool = Field(
-        ..., description="Whether the kernel is currently starting"
+        ..., description="Whether the kernel is currently starting or initializing"
+    )
+    is_initializing: bool = Field(
+        ..., description="Whether the kernel is running initial auto-execution"
     )
     kernel_id: str | None = Field(None, description="Unique kernel identifier")
 
@@ -116,9 +119,12 @@ async def execute_code_stream(request: ExecuteCodeRequest):
 @router.get("/status", response_model=KernelStatusResponse)
 async def get_kernel_status():
     """Get the current status of the kernel."""
+    current_status = cell_executor.get_kernel_status()
     return KernelStatusResponse(
         is_ready=cell_executor.is_kernel_ready(),
-        is_starting=cell_executor.get_kernel_status() == KernelStatus.STARTING,
+        is_starting=current_status
+        in [KernelStatus.STARTING, KernelStatus.INITIALIZING],
+        is_initializing=current_status == KernelStatus.INITIALIZING,
         kernel_id=cell_executor.get_kernel_id(),
     )
 
@@ -236,7 +242,39 @@ async def initialize_notebook():
     """Initialize the notebook kernel on startup."""
     logger.info("Initializing Jupyter kernel...")
     await cell_executor.start_kernel()
-    logger.info("Jupyter kernel initialized successfully")
+    logger.info("Jupyter kernel started, now auto-executing initial cells...")
+
+    # Auto-execute all cells upon initialization (synchronously)
+    try:
+        code_cells = [
+            cell for cell in cell_executor.nb.cells if cell.cell_type == "code"
+        ]
+        if code_cells:
+            logger.info(
+                f"Auto-executing {len(code_cells)} code cells on initialization..."
+            )
+
+            # Run all cells synchronously and wait for completion
+            async for event in cell_executor.rerun_notebook():
+                # Log execution progress
+                if event.event_type == "started":
+                    logger.debug(f"Auto-executing cell {event.cell_id}")
+                elif event.event_type == "completed":
+                    logger.debug(f"Completed auto-execution of cell {event.cell_id}")
+                elif event.event_type == "error":
+                    logger.warning(
+                        f"Error in auto-execution of cell {event.cell_id}: {event.data.get('error', 'Unknown error')}"
+                    )
+
+            logger.info("Auto-execution of all cells completed successfully")
+        else:
+            logger.info("No code cells found to auto-execute")
+    except Exception as e:
+        logger.error(f"Error during auto-execution of cells: {e}")
+    finally:
+        # Always mark initialization as complete - kernel is now ready
+        # This ensures the kernel doesn't get stuck in initializing state
+        cell_executor.complete_initialization()
 
 
 async def cleanup_notebook():

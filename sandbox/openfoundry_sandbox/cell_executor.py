@@ -24,6 +24,7 @@ class KernelStatus(str, Enum):
     """Simplified kernel status states."""
 
     STARTING = "starting"
+    INITIALIZING = "initializing"
     READY = "ready"
     EXECUTING = "executing"
     ERROR = "error"
@@ -119,7 +120,7 @@ class CellExecutor:
             )
 
             self.kernel_id = str(uuid.uuid4())
-            self._status = KernelStatus.READY
+            self._status = KernelStatus.INITIALIZING
 
             # Start the queue processor
             if self._queue_processor_task is None or self._queue_processor_task.done():
@@ -127,7 +128,7 @@ class CellExecutor:
                     self._process_execution_queue()
                 )
 
-            logger.info("Jupyter kernel started successfully")
+            logger.info("Jupyter kernel started successfully, now initializing...")
             return True
 
         except Exception as e:
@@ -135,6 +136,16 @@ class CellExecutor:
             self.client = None
             self._status = KernelStatus.ERROR
             raise
+
+    def complete_initialization(self):
+        """Mark the kernel as fully ready after initialization is complete."""
+        if self._status == KernelStatus.INITIALIZING:
+            self._status = KernelStatus.READY
+            logger.info("Kernel initialization completed - kernel is now ready")
+        else:
+            logger.warning(
+                f"Attempted to complete initialization from status: {self._status}"
+            )
 
     async def _process_execution_queue(self):
         """Process queued execution requests sequentially."""
