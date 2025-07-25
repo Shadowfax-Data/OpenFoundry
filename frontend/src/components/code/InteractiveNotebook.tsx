@@ -143,7 +143,7 @@ export function InteractiveNotebook({
             </Button>
           </div>
         ) : (
-          <div className="max-w-4xl mx-auto">
+          <div className="max-w-none mx-4">
             {notebookData.cells.map((cell, index) => (
               <NotebookCellComponent
                 key={cell.id}
