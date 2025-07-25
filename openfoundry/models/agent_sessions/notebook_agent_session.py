@@ -28,7 +28,7 @@ class NotebookAgentSession(AgentSessionBase):
         # Add notebook-specific initialization
         base_data.update(
             {
-                "notebook_session": True,
+                "is_notebook_session": True,
                 "notebook_path": "/workspace/notebook.ipynb",
                 "workspace_path": "/workspace",
             }

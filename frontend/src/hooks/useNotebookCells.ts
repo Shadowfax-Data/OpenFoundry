@@ -1,5 +1,7 @@
 import { useCallback, useEffect } from "react";
 
+import { generateShortCellId } from "@/lib/utils";
+
 import { NotebookCell, NotebookCellInput, NotebookData } from "./types";
 
 interface UseNotebookCellsProps {
@@ -21,7 +23,7 @@ export const useNotebookCells = ({
   const addCell = useCallback(
     (index: number, cellType: "code" | "markdown" = "code") => {
       const newCell: NotebookCell = {
-        id: crypto.randomUUID(),
+        id: generateShortCellId(),
         cell_type: cellType,
         source: [],
         outputs: [],

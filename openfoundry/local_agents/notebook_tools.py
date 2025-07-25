@@ -34,7 +34,7 @@ async def execute_cell(
     """
     # Generate a new cell ID if none provided
     if cell_id is None:
-        cell_id = str(uuid.uuid4())
+        cell_id = uuid.uuid4().hex[:6]
 
     async with wrapper.context.get_sandbox_client() as client:
         response = await client.post(

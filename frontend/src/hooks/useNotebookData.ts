@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { generateShortCellId } from "@/lib/utils";
+
 import { NotebookCell, NotebookData } from "./types";
 
 interface UseNotebookDataProps {
@@ -40,7 +42,7 @@ export const useNotebookData = ({
       if (data && data.cells) {
         data.cells = data.cells.map((cell: NotebookCell) => ({
           ...cell,
-          id: cell.id ?? crypto.randomUUID(),
+          id: cell.id ?? generateShortCellId(),
         }));
       }
 
