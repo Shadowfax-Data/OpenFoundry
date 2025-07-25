@@ -59,6 +59,9 @@ class InitializeRequest(BaseModel):
     secrets: list[SecretPayload] | None = Field(
         None, description="List of secrets to initialize in the container"
     )
+    is_notebook_session: bool | None = Field(
+        None, description="Whether this is a notebook session"
+    )
 
 
 class StrReplaceEditorRequest(BaseModel):
@@ -149,18 +152,11 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.error(f"Failed to initialize from environment data: {e}")
 
-    # Initialize notebook kernel
-    try:
-        await initialize_notebook()
-    except Exception as e:
-        logger.error(f"Failed to initialize notebook kernel: {e}")
-
     yield
 
-    # Cleanup notebook kernel on shutdown
+    # Always cleanup notebook kernel on shutdown (idempotent operation)
     try:
         await cleanup_notebook()
-        logger.info("Cleaned up notebook kernel during shutdown")
     except Exception as e:
         logger.error(f"Error cleaning up notebook kernel during shutdown: {e}")
 
@@ -532,6 +528,15 @@ async def _perform_initialization(request: InitializeRequest):
     # Initialize connections from /etc/secrets/connections/
     connection_manager.initialize_connections()
     logger.info(f"Initialized connections: {connection_manager.list_connections()}")
+
+    # Initialize notebook kernel if this is a notebook session
+    if request.is_notebook_session:
+        try:
+            await initialize_notebook()
+            logger.info("Successfully initialized notebook kernel")
+        except Exception as e:
+            logger.error(f"Failed to initialize notebook kernel: {e}")
+            raise
 
     # Handle streamlit startup if streamlit_run_config is present
     if request.streamlit_run_config:

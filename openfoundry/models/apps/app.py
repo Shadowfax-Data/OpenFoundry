@@ -59,7 +59,9 @@ class App(Base):
         current_dir = Path(__file__).parent
 
         # Render and write utils.py
-        utils_template_path = os.path.join(current_dir, "utils.py.j2")
+        utils_template_path = os.path.join(
+            current_dir, "..", "templates", "shared", "utils.py.j2"
+        )
         with open(utils_template_path, "r") as f:
             utils_template_str = f.read()
 
@@ -70,7 +72,9 @@ class App(Base):
             f.write(rendered_utils_content)
 
         # Render and write app.py
-        app_template_path = os.path.join(current_dir, "app.py.j2")
+        app_template_path = os.path.join(
+            current_dir, "..", "templates", "apps", "app.py.j2"
+        )
         with open(app_template_path, "r") as f:
             app_template_str = f.read()
 

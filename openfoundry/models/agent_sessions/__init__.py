@@ -5,6 +5,7 @@ from .agent_session import (
     AgentSessionType,
 )
 from .app_agent_session import AppAgentSession
+from .notebook_agent_session import NotebookAgentSession
 
 __all__ = [
     "AgentSession",
@@ -12,4 +13,5 @@ __all__ = [
     "AgentSessionStatus",
     "AgentSessionType",
     "AppAgentSession",
+    "NotebookAgentSession",
 ]

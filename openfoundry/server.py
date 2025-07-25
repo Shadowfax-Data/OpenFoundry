@@ -10,6 +10,10 @@ from openfoundry.middleware import LocalhostCORSMiddleware, SQLAlchemySessionMid
 from openfoundry.routers.agent_sessions import (
     app_agent_router,
     app_agent_session_router,
+    notebook_agent_router,
+)
+from openfoundry.routers.agent_sessions.notebook_agent_session_api import (
+    router as notebook_agent_session_router,
 )
 from openfoundry.routers.app_api import router as app_router
 from openfoundry.routers.connections import (
@@ -20,6 +24,7 @@ from openfoundry.routers.connections import (
     postgres_connection_api_router,
     snowflake_connection_api_router,
 )
+from openfoundry.routers.notebook_api import router as notebook_router
 from openfoundry.static import SPAStaticFiles
 
 
@@ -42,7 +47,10 @@ app = FastAPI(lifespan=lifespan)
 # Include all routers
 app.include_router(app_agent_session_router, tags=["apps", "agent-sessions"])
 app.include_router(app_agent_router, tags=["apps", "agent-sessions"])
+app.include_router(notebook_agent_session_router, tags=["notebooks", "agent-sessions"])
+app.include_router(notebook_agent_router, tags=["notebooks", "agent-sessions"])
 app.include_router(app_router, tags=["apps"])
+app.include_router(notebook_router, tags=["notebooks"])
 app.include_router(connection_api_router, tags=["connections"])
 app.include_router(clickhouse_connection_api_router, tags=["connections"])
 app.include_router(databricks_connection_api_router, tags=["connections"])

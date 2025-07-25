@@ -8,6 +8,8 @@ import { ClickhouseConnectionPage } from "@/pages/ClickhouseConnectionPage";
 import { Connections } from "@/pages/Connections";
 import { DatabricksConnectionPage } from "@/pages/DatabricksConnectionPage";
 import { Home } from "@/pages/Home";
+import { NotebookChat } from "@/pages/NotebookChat";
+import NotebooksPage from "@/pages/NotebooksPage";
 import { PostgresConnectionPage } from "@/pages/PostgresConnectionPage";
 import { SnowflakeConnectionPage } from "@/pages/SnowflakeConnectionPage";
 
@@ -31,6 +33,18 @@ export const router = createBrowserRouter([
       {
         path: "apps/:appId/sessions/:sessionId/chat",
         element: <AppChat />,
+      },
+      {
+        path: "notebooks",
+        element: <NotebooksPage />,
+      },
+      {
+        path: "notebooks/new",
+        element: <NotebooksPage autoOpenCreateDialog={true} />,
+      },
+      {
+        path: "notebooks/:notebookId/sessions/:sessionId/chat",
+        element: <NotebookChat />,
       },
       {
         path: "connections",

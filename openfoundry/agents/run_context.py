@@ -74,3 +74,13 @@ class AppAgentRunContext(AgentRunContext):
         async with self._get_httpx_client(self.app_url) as client:
             response = await client.get("/")
             response.raise_for_status()
+
+
+@dataclass
+class NotebookAgentRunContext(AgentRunContext):
+    """Run context for notebook agent sessions.
+
+    Uses the base AgentRunContext functionality for notebook operations.
+    """
+
+    pass
