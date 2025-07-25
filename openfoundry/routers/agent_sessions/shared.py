@@ -29,14 +29,14 @@ from openai.types.responses import (
 from pydantic import BaseModel
 from sqlalchemy import func
 
-from openfoundry.config import OPENAI_API_KEY
-from openfoundry.database import session_local
-from openfoundry.local_agents import NAME_TO_AGENT_FACTORY, get_model_name_and_settings
-from openfoundry.local_agents.run_context import (
+from openfoundry.agents import NAME_TO_AGENT_FACTORY, get_model_name_and_settings
+from openfoundry.agents.run_context import (
     AgentRunContext,
     AppAgentRunContext,
     NotebookAgentRunContext,
 )
+from openfoundry.config import OPENAI_API_KEY
+from openfoundry.database import session_local
 from openfoundry.logger import logger
 from openfoundry.models.agent_sessions.agent_session import (
     AgentSession,

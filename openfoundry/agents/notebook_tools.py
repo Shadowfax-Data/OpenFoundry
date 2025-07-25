@@ -8,8 +8,8 @@ import uuid
 
 from agents import RunContextWrapper, function_tool
 
-from openfoundry.local_agents.run_context import AgentRunContext
-from openfoundry.local_agents.utils.format_utils import dict_to_xml
+from openfoundry.agents.run_context import AgentRunContext
+from openfoundry.agents.utils.format_utils import dict_to_xml
 
 
 @function_tool

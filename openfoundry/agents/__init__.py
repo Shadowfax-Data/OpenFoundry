@@ -3,8 +3,8 @@ from typing import Callable
 from agents import ModelSettings
 from openai.types.shared.reasoning import Reasoning
 
-from openfoundry.local_agents.notebook_coding_agent import get_notebook_coding_agent
-from openfoundry.local_agents.streamlit_app_coding_agent import (
+from openfoundry.agents.notebook_coding_agent import get_notebook_coding_agent
+from openfoundry.agents.streamlit_app_coding_agent import (
     get_streamlit_app_coding_agent,
 )
 

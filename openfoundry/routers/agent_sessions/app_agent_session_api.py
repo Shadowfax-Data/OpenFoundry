@@ -17,8 +17,8 @@ from fastapi import (
 from pydantic import BaseModel
 from sqlalchemy.orm import Session, joinedload
 
-from openfoundry.local_agents.run_context import AppAgentRunContext
-from openfoundry.local_agents.streamlit_app_coding_agent import (
+from openfoundry.agents.run_context import AppAgentRunContext
+from openfoundry.agents.streamlit_app_coding_agent import (
     STREAMLIT_APP_CODING_AGENT_NAME,
 )
 from openfoundry.logger import logger

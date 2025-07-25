@@ -15,7 +15,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from sqlalchemy.orm import Session, joinedload
 
-from openfoundry.local_agents.run_context import NotebookAgentRunContext
+from openfoundry.agents.run_context import NotebookAgentRunContext
 from openfoundry.logger import logger
 from openfoundry.models.agent_sessions import (
     AgentSession,

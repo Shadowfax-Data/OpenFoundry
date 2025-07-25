@@ -1,13 +1,13 @@
 from agents import Agent, ModelSettings
 
-from openfoundry.local_agents.notebook_tools import (
+from openfoundry.agents.notebook_tools import (
     delete_cell,
     execute_cell,
     get_notebook,
     run_all_cells,
     stop_cell,
 )
-from openfoundry.local_agents.utils.template_loader import load_prompt_template
+from openfoundry.agents.utils.template_loader import load_prompt_template
 
 NOTEBOOK_CODING_AGENT_NAME = "notebook_coding_agent"
 
