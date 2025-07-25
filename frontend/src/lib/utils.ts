@@ -52,3 +52,16 @@ export const formatTimeAgo = (dateString: string): string => {
     return updatedDate.toLocaleDateString();
   }
 };
+
+/**
+ * Generates a short 6-character hex cell ID
+ * Provides sufficient entropy for notebook cells while being LLM-friendly
+ * @returns A 6-character hex string (e.g., "a1b2c3")
+ */
+export const generateShortCellId = (): string => {
+  const array = new Uint8Array(3); // 3 bytes = 6 hex characters
+  crypto.getRandomValues(array);
+  return Array.from(array, (byte) => byte.toString(16).padStart(2, "0")).join(
+    "",
+  );
+};

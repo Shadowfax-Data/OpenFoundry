@@ -34,6 +34,40 @@ export interface CreateAppRequest {
   connection_ids: string[];
 }
 
+// Notebook types - Backend API response type
+export interface NotebookFromAPI {
+  id: string; // UUID from backend
+  name: string;
+  created_on: string; // ISO datetime string
+  updated_on: string; // ISO datetime string
+  deleted_on: string | null; // ISO datetime string
+  connections: ConnectionFromAPI[]; // List of connected connections
+}
+
+// Frontend notebook type with computed UI properties
+export interface Notebook extends NotebookFromAPI {
+  // Computed/derived properties for UI
+  color: string;
+  lastModified: string; // Human-readable format
+}
+
+// Notebook Agent Session types
+export interface NotebookAgentSessionFromAPI {
+  id: string; // UUID from backend
+  notebook_id: string; // UUID from backend
+  version: number;
+  status: "active" | "stopped";
+  created_on: string; // ISO datetime string
+  port: number;
+  container_id: string;
+}
+
+// API request types for notebooks
+export interface CreateNotebookRequest {
+  name: string;
+  connection_ids: string[];
+}
+
 // Backend API response type for connections
 export interface ConnectionFromAPI {
   id: string;

@@ -5,6 +5,9 @@ import appAgentSessionsReducer from "./slices/appAgentSessionsSlice";
 import appChatReducer from "./slices/appChatSlice";
 import appsReducer from "./slices/appsSlice";
 import connectionsReducer from "./slices/connectionsSlice";
+import notebookAgentSessionsReducer from "./slices/notebookAgentSessionsSlice";
+import notebookChatReducer from "./slices/notebookChatSlice";
+import notebooksReducer from "./slices/notebooksSlice";
 import { RootState } from "./types";
 
 export const store = configureStore({
@@ -13,6 +16,9 @@ export const store = configureStore({
     appAgentSessions: appAgentSessionsReducer,
     appChat: appChatReducer,
     connections: connectionsReducer,
+    notebooks: notebooksReducer,
+    notebookAgentSessions: notebookAgentSessionsReducer,
+    notebookChat: notebookChatReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

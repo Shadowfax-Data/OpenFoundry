@@ -33,6 +33,7 @@ from openfoundry.agents import NAME_TO_AGENT_FACTORY, get_model_name_and_setting
 from openfoundry.agents.run_context import (
     AgentRunContext,
     AppAgentRunContext,
+    NotebookAgentRunContext,
 )
 from openfoundry.config import OPENAI_API_KEY
 from openfoundry.database import session_local
@@ -43,6 +44,9 @@ from openfoundry.models.agent_sessions.agent_session import (
     AgentSessionStatus,
 )
 from openfoundry.models.agent_sessions.app_agent_session import AppAgentSession
+from openfoundry.models.agent_sessions.notebook_agent_session import (
+    NotebookAgentSession,
+)
 from openfoundry.models.conversation_item import ConversationItem
 
 set_tracing_export_api_key(OPENAI_API_KEY)
@@ -158,12 +162,19 @@ async def send_agent_chat_message(
     )
 
     # Create appropriate context
+    context: AgentRunContext
     if isinstance(agent_session, AppAgentSession):
         context = AppAgentRunContext(
             session_id=session_id,
             version=agent_session.agent_session.version,
             sandbox_url=f"http://localhost:{agent_session.agent_session.port}",
             app_url=f"http://localhost:{agent_session.app_port}",
+        )
+    elif isinstance(agent_session, NotebookAgentSession):
+        context = NotebookAgentRunContext(
+            session_id=session_id,
+            version=agent_session.agent_session.version,
+            sandbox_url=f"http://localhost:{agent_session.agent_session.port}",
         )
     else:
         raise ValueError(f"Agent session {agent_session.id} is not supported")

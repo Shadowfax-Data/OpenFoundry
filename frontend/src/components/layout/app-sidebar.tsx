@@ -1,5 +1,5 @@
 import { IconChartArcs } from "@tabler/icons-react";
-import { AppWindow, ChevronDown, Database, Home } from "lucide-react";
+import { AppWindow, Book, ChevronDown, Database, Home } from "lucide-react";
 import { Link, useLocation } from "react-router";
 
 import { Button } from "@/components/ui/button";
@@ -45,6 +45,15 @@ export function AppSidebar() {
                 Application
               </Link>
             </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link
+                to="/notebooks/new"
+                className="flex items-center cursor-pointer"
+              >
+                <Book className="mr-2 h-4 w-4" />
+                Notebook
+              </Link>
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </SidebarHeader>
@@ -71,10 +80,29 @@ export function AppSidebar() {
                     <SidebarMenuButton asChild>
                       <Link
                         to="/apps"
-                        className={`w-full ${location.pathname.startsWith("/apps") ? "bg-sidebar-accent text-sidebar-accent-foreground" : ""}`}
+                        className={`w-full ${
+                          location.pathname.startsWith("/apps")
+                            ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                            : ""
+                        }`}
                       >
                         <AppWindow className="mr-2 h-4 w-4" />
                         Apps
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild>
+                      <Link
+                        to="/notebooks"
+                        className={`w-full ${
+                          location.pathname.startsWith("/notebooks")
+                            ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                            : ""
+                        }`}
+                      >
+                        <Book className="mr-2 h-4 w-4" />
+                        Notebooks
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>

@@ -1,5 +1,7 @@
 from .app_agent_api import router as app_agent_router
 from .app_agent_session_api import router as app_agent_session_router
+from .notebook_agent_api import router as notebook_agent_router
+from .notebook_agent_session_api import router as notebook_agent_session_router
 from .shared import (
     MessageRequest,
     MessageResponse,
@@ -12,6 +14,8 @@ from .shared import (
 __all__ = [
     "app_agent_session_router",
     "app_agent_router",
+    "notebook_agent_session_router",
+    "notebook_agent_router",
     "MessageRequest",
     "MessageResponse",
     "get_agent_tasks",

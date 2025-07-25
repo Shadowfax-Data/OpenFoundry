@@ -122,3 +122,134 @@
     cursor: pointer;
   }
 }
+
+/* Notebook DataFrame output styles */
+@layer components {
+  /* Scrollable container for all notebook output */
+  .notebook-output {
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: visible;
+    position: relative;
+  }
+
+  /* Specific styling for pandas dataframe containers */
+  .notebook-output .dataframe {
+    margin: 8px 0;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  }
+
+  .notebook-output table {
+    min-width: 100%;
+    width: max-content;
+    border-collapse: collapse;
+    font-size: 13px;
+    font-family: system-ui, -apple-system, sans-serif;
+    border: none;
+    margin: 0;
+  }
+
+  .notebook-output th,
+  .notebook-output td {
+    border-right: 1px solid #e5e7eb;
+    border-bottom: 1px solid #e5e7eb;
+    padding: 6px 10px;
+    text-align: right;
+    white-space: nowrap;
+    min-width: 80px;
+  }
+
+  .notebook-output th:last-child,
+  .notebook-output td:last-child {
+    border-right: none;
+  }
+
+  .notebook-output tbody tr:last-child td {
+    border-bottom: none;
+  }
+
+  .notebook-output th {
+    background-color: #f9fafb;
+    font-weight: 600;
+    font-size: 12px;
+    color: #374151;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  .notebook-output tbody tr:nth-child(even) {
+    background-color: #fafafa;
+  }
+
+  .notebook-output tbody tr:hover {
+    background-color: #e0f2fe;
+  }
+
+  /* Override pandas default styles */
+  .notebook-output .dataframe {
+    margin: 0;
+    font-size: 13px;
+    border: none;
+  }
+
+  /* Scrollbar styling for webkit browsers */
+  .notebook-output::-webkit-scrollbar {
+    height: 8px;
+  }
+
+  .notebook-output::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 4px;
+  }
+
+  .notebook-output::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+  }
+
+  .notebook-output::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+  }
+
+  /* Scroll indicator shadow for tables */
+  .notebook-output::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 20px;
+    background: linear-gradient(to left, rgba(255, 255, 255, 0.9), transparent);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    z-index: 5;
+  }
+
+  .notebook-output:hover::after {
+    opacity: 1;
+  }
+
+  /* Mobile responsiveness */
+  @media (max-width: 768px) {
+    .notebook-output table {
+      font-size: 11px;
+    }
+
+    .notebook-output th,
+    .notebook-output td {
+      padding: 4px 6px;
+      min-width: 60px;
+    }
+
+    .notebook-output th {
+      font-size: 10px;
+    }
+  }
+}

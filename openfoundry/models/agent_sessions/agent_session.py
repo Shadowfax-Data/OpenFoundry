@@ -20,6 +20,7 @@ if TYPE_CHECKING:
 
 class AgentSessionType(enum.Enum):
     APP_AGENT_SESSION = "app_agent_session"
+    NOTEBOOK_AGENT_SESSION = "notebook_agent_session"
 
 
 class AgentSessionStatus(enum.Enum):
