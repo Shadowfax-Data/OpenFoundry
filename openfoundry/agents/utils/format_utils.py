@@ -139,15 +139,75 @@ def dict_to_xml(
     return _dict_to_xml_standard(data, indent, max_depth, current_depth)
 
 
+def _format_output_for_xml(output: dict, output_indent: str) -> list[str]:
+    """Format a single notebook cell output as XML fragments.
+
+    Args:
+        output: The output dictionary from a notebook cell
+        output_indent: The indentation string for this output level
+
+    Returns:
+        List of XML string fragments for this output
+
+    """
+    fragments = []
+    output_type = output.get("output_type", "")
+
+    if output_type == "stream":
+        name = output.get("name", "stdout")
+        text = output.get("text", "")
+        fragments.append(f"{output_indent}<{name}>{_escape_xml(text)}</{name}>")
+
+    elif output_type in ["display_data", "execute_result"]:
+        # Handle images with compact format
+        if "image" in output:
+            img_format = output.get("image_format", "png")
+            description = output.get("description", f"Image ({img_format})")
+            fragments.append(
+                f'{output_indent}<image format="{img_format}" description="{_escape_xml(description)}">'
+            )
+            fragments.append(f"{output_indent}    {output['image']}")
+            fragments.append(f"{output_indent}</image>")
+
+        # Handle text results
+        if "text" in output:
+            fragments.append(
+                f"{output_indent}<result>{_escape_xml(output['text'])}</result>"
+            )
+
+        # Handle HTML
+        if "text_html" in output:
+            fragments.append(
+                f"{output_indent}<html>{_escape_xml(output['text_html'])}</html>"
+            )
+
+    elif output_type == "error":
+        fragments.append(f"{output_indent}<error>")
+        fragments.append(
+            f"{output_indent}    <name>{_escape_xml(output.get('ename', ''))}</name>"
+        )
+        fragments.append(
+            f"{output_indent}    <value>{_escape_xml(output.get('evalue', ''))}</value>"
+        )
+        if output.get("traceback"):
+            tb_text = "\n".join(output["traceback"])
+            fragments.append(
+                f"{output_indent}    <traceback>{_escape_xml(tb_text)}</traceback>"
+            )
+        fragments.append(f"{output_indent}</error>")
+
+    return fragments
+
+
 def _format_notebook_tail_cells(data: dict, indent: int = 0) -> str:
     """Optimized formatter for notebook tail_cells output."""
     space = "    "
     indent_str = space * indent
 
     fragments = [
-        f"{indent_str}<total_cells>{data['total_cells']}</total_cells>",
-        f"{indent_str}<returned_cells>{data['returned_cells']}</returned_cells>",
-        f"{indent_str}<start_index>{data['start_index']}</start_index>",
+        _format_xml_tag("total_cells", str(data["total_cells"]), indent_str),
+        _format_xml_tag("returned_cells", str(data["returned_cells"]), indent_str),
+        _format_xml_tag("start_index", str(data["start_index"]), indent_str),
         f"{indent_str}<cells>",
     ]
 
@@ -172,50 +232,7 @@ def _format_notebook_tail_cells(data: dict, indent: int = 0) -> str:
         outputs = cell.get("outputs", [])
         for output in outputs:
             output_indent = space * (indent + 2)
-            output_type = output.get("output_type", "")
-
-            if output_type == "stream":
-                name = output.get("name", "stdout")
-                text = output.get("text", "")
-                fragments.append(f"{output_indent}<{name}>{_escape_xml(text)}</{name}>")
-
-            elif output_type in ["display_data", "execute_result"]:
-                # Handle images with compact format
-                if "image" in output:
-                    img_format = output.get("image_format", "png")
-                    description = output.get("description", f"Image ({img_format})")
-                    fragments.append(
-                        f'{output_indent}<image format="{img_format}" description="{_escape_xml(description)}">'
-                    )
-                    fragments.append(f"{output_indent}    {output['image']}")
-                    fragments.append(f"{output_indent}</image>")
-
-                # Handle text results
-                if "text" in output:
-                    fragments.append(
-                        f"{output_indent}<result>{_escape_xml(output['text'])}</result>"
-                    )
-
-                # Handle HTML
-                if "text_html" in output:
-                    fragments.append(
-                        f"{output_indent}<html>{_escape_xml(output['text_html'])}</html>"
-                    )
-
-            elif output_type == "error":
-                fragments.append(f"{output_indent}<error>")
-                fragments.append(
-                    f"{output_indent}    <name>{_escape_xml(output.get('ename', ''))}</name>"
-                )
-                fragments.append(
-                    f"{output_indent}    <value>{_escape_xml(output.get('evalue', ''))}</value>"
-                )
-                if output.get("traceback"):
-                    tb_text = "\n".join(output["traceback"])
-                    fragments.append(
-                        f"{output_indent}    <traceback>{_escape_xml(tb_text)}</traceback>"
-                    )
-                fragments.append(f"{output_indent}</error>")
+            fragments.extend(_format_output_for_xml(output, output_indent))
 
         fragments.append(f"{cell_indent}</cell>")
 

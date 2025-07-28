@@ -115,13 +115,11 @@ async def tail_cells(
         num_cells: Number of cells to retrieve from the end of the notebook (default: 5).
 
     Returns:
-        Dictionary containing the last N cells with their outputs, execution counts, and metadata.
+       XML string containing the last N cells with their outputs, execution counts, and metadata.
 
     """
     async with wrapper.context.get_sandbox_client() as client:
-        response = await client.get(
-            f"/api/notebook/notebook/tail?num_cells={num_cells}"
-        )
+        response = await client.get(f"/api/notebook/tail?num_cells={num_cells}")
         if response.is_error:
             raise Exception(f"Failed to get tail cells: {response.text}")
 

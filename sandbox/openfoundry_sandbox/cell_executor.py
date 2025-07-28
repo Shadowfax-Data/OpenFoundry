@@ -591,7 +591,7 @@ class CellExecutor:
 
                 # Handle images with optimization
                 if "image/png" in data:
-                    # Convert to JPEG for smaller size if possible, otherwise keep PNG
+                    # Extract PNG image data
                     image_data = data["image/png"]
                     optimized_output["image"] = image_data
                     optimized_output["image_format"] = "png"
