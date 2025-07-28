@@ -15,8 +15,9 @@ RUN pip install --upgrade pip \
     && pip install poetry \
     && rm -rf ~/.cache/pip
 
-# Copy dependency definitions
+# Copy dependency definitions and shared types
 COPY pyproject.toml poetry.lock ./
+COPY shared-types /app/shared-types
 
 # Install dependencies without creating a virtualenv and without installing dev deps
 RUN poetry config virtualenvs.create false \
