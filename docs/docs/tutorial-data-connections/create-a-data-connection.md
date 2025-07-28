@@ -36,7 +36,7 @@ To create a service account key. Navigate to **Google Cloud Console** -> **IAM &
 ### Databricks
 Databricks will also require several fields to be filled out
 - **Name:** This is the name that will be used to identify the connection
-- **Host:** The databricks workspace URL. Be sure to not include the http:// or https:// prefix. This can be found in your SQL Warehouse's Connection Details tab.
+- **Host:** The Databricks workspace URL. Be sure to not include the http:// or https:// prefix. This can be found in your SQL Warehouse's Connection Details tab.
 - **HTTP Path:** The HTTP Path for your Databricks SQL Warehouse (e.g., /sql/1.0/warehouses/xxx).
 - **Personal Access Token:** Generate a PAT from your Databricks User Settings page with workspace access permissions.
 - **Catalog and Schema:** Specify the catalog and schema.

@@ -4,7 +4,7 @@ sidebar_position: 1
 
 # Create a Jupyter Notebook
 
-In addition to building Streamlit applications, we can also create an interactive AI assisted Notebook
+In addition to building Streamlit applications, we can also create an interactive AI assisted Notebook.
 
 To create a new Notebook, we can navigate to the Notebooks tab in the sidebar. This will take us to the Notebook landing page.
 
