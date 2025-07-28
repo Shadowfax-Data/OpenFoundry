@@ -6,7 +6,7 @@ sidebar_position: 2
 
 Once your data connection has been set up, you are ready to build your first Streamlit Application!
 
-To begin, let's navigate to the Apps tab, from there you will see any streamlit applications that you have made. To create a new application
+To begin, let's navigate to the Apps tab, from there you will see any Streamlit applications that you have made. To create a new application
 simply click the `+ New App` button. This will prompt you to provide the following
 
 - **Name:** The name of your application
@@ -21,14 +21,14 @@ Once created an application card will appear, click the `Edit App` button to ope
 
 
 ## Example
-Let's walk through building a simple dashboard with caltrain data that is stored in BigQuery, When we first start up the application we will be met with the Chat interface. Additionally we can also set the LLM model we wish to use.
+Let's walk through building a simple dashboard with Caltrain data that is stored in BigQuery, When we first start up the application we will be met with the Chat interface. Additionally we can also set the LLM model we wish to use.
 We can pick from `o4-mini`, `o3`, and `gpt-4.1`.
 
 ![app-start](/img/app-start.png)
 
 For this example, we will be using `o4-mini`.
 
-Once the agent session starts, we can prompt the agent to build the streamlit dashboard. We will ask the agent with a simple prompt such as
+Once the agent session starts, we can prompt the agent to build the Streamlit dashboard. We will ask the agent with a simple prompt such as
 ```
 Build a dashboard using the caltrain_schedules table. I want the total count of trains that stop by each station
 ```

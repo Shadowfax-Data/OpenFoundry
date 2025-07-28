@@ -15,7 +15,7 @@ From here we can create a new notebook. It will ask for the following fields
 - **Notebook Name:** The name of your notebook
 - **Connections:** The data connection you want to connect your notebook to.
 
-For this example, we will be connecting to our Jaffle Database within our Snowflake Data warehouse. Once we have create out notebook we can Open the Notebook to start the session.
+For this example, we will be connecting to our Jaffle Database within our Snowflake Data warehouse. Once we have create our notebook we can Open the Notebook to start the session.
 Once the session has started we should be met with the chat interface
 
 ![notebook-interface](/img/notebook-interface.png)
@@ -42,7 +42,7 @@ The agent will then proceed with implementing the ML model of splitting the data
 
 ![notebok-ml](/img/notebook-ml.png)
 
-The last component of the data science life cyle is predicting on the test set
+The last component of the data science life cycle is predicting on the test set
 
 ![notebook-report](/img/notebook-report.png)
 

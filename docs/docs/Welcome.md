@@ -5,7 +5,7 @@ sidebar_position: 1
 # Welcome
 
 Welcome to OpenFoundry, a platform for analysts and non-technical users to build powerful data products with the help of AI agents.
-OpenFoundry helps you build rich interactive streamlit applications and Notebooks on top of your private data. OpenFoundry takes care of
+OpenFoundry helps you build rich interactive Streamlit applications and Notebooks on top of your private data. OpenFoundry takes care of
 all the code implementation and data connections underneath.
 
 ## Core Features
