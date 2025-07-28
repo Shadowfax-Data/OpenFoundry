@@ -8,12 +8,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential gcc libffi-dev libssl-dev \
  && rm -rf /var/lib/apt/lists/*
 
-# Copy shared types first
-COPY shared-types/ /shared-types/
-# Install Python dependencies with Poetry
-COPY sandbox/pyproject.toml sandbox/poetry.lock /app/
-WORKDIR /app
-RUN pip install --upgrade pip poetry==2.1.2 \
+# copy shared types first
+copy shared-types/ /shared-types/
+# install python dependencies with poetry
+copy sandbox/pyproject.toml sandbox/poetry.lock /app/
+workdir /app
+run pip install --upgrade pip poetry==2.1.2 \
  && poetry config virtualenvs.create false \
  && poetry install --no-interaction --without dev \
  && rm -rf /root/.cache/pypoetry
