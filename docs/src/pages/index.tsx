@@ -2,6 +2,7 @@ import type {ReactNode} from 'react';
 import clsx from 'clsx';
 import Link from '@docusaurus/Link';
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
+import useBaseUrl from '@docusaurus/useBaseUrl';
 import Layout from '@theme/Layout';
 import HomepageFeatures from '@site/src/components/HomepageFeatures';
 import EcosystemDiagram from '@site/src/components/EcosystemDiagram';
@@ -16,7 +17,7 @@ function HomepageHeader() {
       <div className="container">
         <div className={styles.heroTitleContainer}>
           <img
-            src="/img/arcs.svg"
+            src={useBaseUrl('/img/arcs.svg')}
             alt="OpenFoundry Logo"
             className={styles.heroLogo}
           />

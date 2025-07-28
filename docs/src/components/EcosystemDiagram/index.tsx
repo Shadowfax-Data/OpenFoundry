@@ -1,5 +1,6 @@
 import React from 'react';
 import { SiStreamlit, SiJupyter } from '@icons-pack/react-simple-icons';
+import useBaseUrl from '@docusaurus/useBaseUrl';
 import styles from './styles.module.css';
 
 export default function EcosystemDiagram() {
@@ -51,7 +52,7 @@ export default function EcosystemDiagram() {
         {/* OpenFoundry Core */}
         <div className={styles.coreCard}>
           <div className={styles.coreIconContainer}>
-            <img src="/img/arcs.svg" alt="OpenFoundry Logo" className={styles.coreIcon} />
+            <img src={useBaseUrl('/img/arcs.svg')} alt="OpenFoundry Logo" className={styles.coreIcon} />
           </div>
           <h3 className={styles.coreTitle}>Open Foundry</h3>
         </div>
