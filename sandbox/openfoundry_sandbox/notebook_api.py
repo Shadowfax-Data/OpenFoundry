@@ -84,7 +84,7 @@ async def get_notebook():
     return await cell_executor.get_notebook()
 
 
-@router.get("/notebook/tail", response_model=TailCellsResult)
+@router.get("/tail", response_model=TailCellsResult)
 async def get_tail_cells(num_cells: int = 5):
     """Get the last N cells from the notebook.
 
