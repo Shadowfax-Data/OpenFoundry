@@ -47,4 +47,4 @@ MODEL_CONFIGS = {
 
 
 def get_model_name_and_settings(model: str | None) -> tuple[str, ModelSettings]:
-    return MODEL_CONFIGS[model or "o4-mini"]
+    return MODEL_CONFIGS[model or "gpt-4.1"]

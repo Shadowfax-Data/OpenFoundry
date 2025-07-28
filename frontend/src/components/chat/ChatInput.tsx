@@ -32,7 +32,7 @@ export function ChatInput({
   disabled = false,
 }: ChatInputProps) {
   const [inputMessage, setInputMessage] = useState<string>("");
-  const [selectedModel, setSelectedModel] = useState<string>("o4-mini");
+  const [selectedModel, setSelectedModel] = useState<string>("gpt-4.1");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {

@@ -5,6 +5,16 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
+from openfoundry_types import TailCellsResult
+
+
+def _is_tail_cells_result(data: Any) -> bool:
+    """Check if data matches the TailCellsResult structure using Pydantic validation."""
+    try:
+        TailCellsResult.model_validate(data)
+        return True
+    except Exception:
+        return False
 
 
 def _format_primitive(val: Any) -> str:
@@ -92,7 +102,7 @@ def _format_sequence_items(
         item_close = "</item>"
 
         if _is_complex_type(item):
-            item_inner = dict_to_xml(
+            item_inner = _dict_to_xml_standard(
                 item,
                 indent=indent + 2,
                 max_depth=max_depth,
@@ -122,6 +132,112 @@ def dict_to_xml(
         XML-formatted string representation
 
     """
+    # Special handling for notebook tail_cells output
+    if _is_tail_cells_result(data):
+        return _format_notebook_tail_cells(data, indent)
+
+    return _dict_to_xml_standard(data, indent, max_depth, current_depth)
+
+
+def _format_notebook_tail_cells(data: dict, indent: int = 0) -> str:
+    """Optimized formatter for notebook tail_cells output."""
+    space = "    "
+    indent_str = space * indent
+
+    fragments = [
+        f"{indent_str}<total_cells>{data['total_cells']}</total_cells>",
+        f"{indent_str}<returned_cells>{data['returned_cells']}</returned_cells>",
+        f"{indent_str}<start_index>{data['start_index']}</start_index>",
+        f"{indent_str}<cells>",
+    ]
+
+    for cell in data.get("cells", []):
+        cell_indent = space * (indent + 1)
+
+        # Streamlined cell header
+        cell_attrs = (
+            f'index="{cell.get("cell_index", "")}" type="{cell.get("cell_type", "")}"'
+        )
+        if cell.get("execution_count") is not None:
+            cell_attrs += f' exec_count="{cell["execution_count"]}"'
+
+        fragments.append(f"{cell_indent}<cell {cell_attrs}>")
+
+        # Source code
+        source = cell.get("source", "")
+        if source:
+            fragments.append(f"{cell_indent}    <source>{_escape_xml(source)}</source>")
+
+        # Optimized outputs
+        outputs = cell.get("outputs", [])
+        for output in outputs:
+            output_indent = space * (indent + 2)
+            output_type = output.get("output_type", "")
+
+            if output_type == "stream":
+                name = output.get("name", "stdout")
+                text = output.get("text", "")
+                fragments.append(f"{output_indent}<{name}>{_escape_xml(text)}</{name}>")
+
+            elif output_type in ["display_data", "execute_result"]:
+                # Handle images with compact format
+                if "image" in output:
+                    img_format = output.get("image_format", "png")
+                    description = output.get("description", f"Image ({img_format})")
+                    fragments.append(
+                        f'{output_indent}<image format="{img_format}" description="{_escape_xml(description)}">'
+                    )
+                    fragments.append(f"{output_indent}    {output['image']}")
+                    fragments.append(f"{output_indent}</image>")
+
+                # Handle text results
+                if "text" in output:
+                    fragments.append(
+                        f"{output_indent}<result>{_escape_xml(output['text'])}</result>"
+                    )
+
+                # Handle HTML
+                if "text_html" in output:
+                    fragments.append(
+                        f"{output_indent}<html>{_escape_xml(output['text_html'])}</html>"
+                    )
+
+            elif output_type == "error":
+                fragments.append(f"{output_indent}<error>")
+                fragments.append(
+                    f"{output_indent}    <name>{_escape_xml(output.get('ename', ''))}</name>"
+                )
+                fragments.append(
+                    f"{output_indent}    <value>{_escape_xml(output.get('evalue', ''))}</value>"
+                )
+                if output.get("traceback"):
+                    tb_text = "\n".join(output["traceback"])
+                    fragments.append(
+                        f"{output_indent}    <traceback>{_escape_xml(tb_text)}</traceback>"
+                    )
+                fragments.append(f"{output_indent}</error>")
+
+        fragments.append(f"{cell_indent}</cell>")
+
+    fragments.append(f"{indent_str}</cells>")
+    return "\n".join(fragments)
+
+
+def _escape_xml(text: str) -> str:
+    """Escape special XML characters."""
+    return (
+        text.replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+        .replace('"', "&quot;")
+        .replace("'", "&#x27;")
+    )
+
+
+def _dict_to_xml_standard(
+    data: Any, indent: int = 0, max_depth: int = 5, current_depth: int = 0
+) -> str:
+    """Standard XML formatter for non-notebook data."""
     space = "    "
     indent_str = space * indent
 
@@ -133,7 +249,7 @@ def dict_to_xml(
     if isinstance(data, pd.DataFrame):
         fragments = [f"{indent_str}<DataFrame>"]
         for _, row in data.iterrows():
-            row_content = dict_to_xml(
+            row_content = _dict_to_xml_standard(
                 row.to_dict(),
                 indent=indent + 2,
                 max_depth=max_depth,
@@ -147,7 +263,7 @@ def dict_to_xml(
 
     # Handle pandas Series
     if isinstance(data, pd.Series):
-        return dict_to_xml(
+        return _dict_to_xml_standard(
             data.to_dict(),
             indent=indent,
             max_depth=max_depth,
@@ -160,7 +276,7 @@ def dict_to_xml(
         for key, value in data.items():
             if isinstance(value, dict):
                 # Nested dictionary
-                inner = dict_to_xml(
+                inner = _dict_to_xml_standard(
                     value,
                     indent=indent + 1,
                     max_depth=max_depth,

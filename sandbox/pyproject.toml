@@ -18,6 +18,7 @@ classifiers = [
 
 [tool.poetry.dependencies]
 python = "~3.12"
+openfoundry-types = {path = "../shared-types", develop = true}
 
 # Core dependencies for the untrusted server
 fastapi = {extras = ["standard"], version = "^0.115.14"}

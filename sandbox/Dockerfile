@@ -8,8 +8,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential gcc libffi-dev libssl-dev \
  && rm -rf /var/lib/apt/lists/*
 
+# Copy shared types first
+COPY shared-types/ /shared-types/
 # Install Python dependencies with Poetry
-COPY pyproject.toml poetry.lock /app/
+COPY sandbox/pyproject.toml sandbox/poetry.lock /app/
 WORKDIR /app
 RUN pip install --upgrade pip poetry==2.1.2 \
  && poetry config virtualenvs.create false \
@@ -28,6 +30,8 @@ ENV PYTHONUNBUFFERED=1
 
 # Copy Python packages from builder
 COPY --from=builder /usr/local /usr/local
+# Copy shared types to final stage
+COPY shared-types/ /shared-types/
 
 # Install basic system tools
 RUN apt-get update \
@@ -37,7 +41,7 @@ RUN apt-get update \
  && rm -rf /var/lib/apt/lists/* /tmp/*
 
 # Copy source code
-COPY . /app/
+COPY sandbox/ /app/
 WORKDIR /app
 
 # Create workspace directory

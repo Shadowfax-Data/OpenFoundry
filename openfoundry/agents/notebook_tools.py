@@ -99,6 +99,37 @@ async def get_notebook(
 
 
 @function_tool
+async def tail_cells(
+    wrapper: RunContextWrapper[AgentRunContext],
+    thought: str,
+    num_cells: int = 5,
+):
+    """Get the last N cells from the notebook with their outputs.
+
+    This is an optimized alternative to get_notebook when you only need recent cells,
+    which helps reduce context window usage especially with smaller reasoning models.
+
+    Args:
+        wrapper: The agent run context wrapper for accessing sandbox client.
+        thought: Your thought process for using this tool. It will be displayed in the chat to the user. Talk in first person and present reasoning as to why you are using this tool.
+        num_cells: Number of cells to retrieve from the end of the notebook (default: 5).
+
+    Returns:
+        Dictionary containing the last N cells with their outputs, execution counts, and metadata.
+
+    """
+    async with wrapper.context.get_sandbox_client() as client:
+        response = await client.get(
+            f"/api/notebook/notebook/tail?num_cells={num_cells}"
+        )
+        if response.is_error:
+            raise Exception(f"Failed to get tail cells: {response.text}")
+
+        tail_data = response.json()
+        return dict_to_xml(tail_data)
+
+
+@function_tool
 async def run_all_cells(
     wrapper: RunContextWrapper[AgentRunContext],
     thought: str,
