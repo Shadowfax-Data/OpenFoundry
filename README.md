@@ -15,7 +15,7 @@ Welcome to OpenFoundry, a platform for analysts and non‑technical users to bui
 
 ### Core Capabilities
 - **AI-Powered App Development**: Build interactive Streamlit applications using intelligent agents
-- **AI-powered Notebook Development**: Utilize agents to generate code, visualize data, and streamline your analysis for your Notebooks
+- **AI-powered Notebook Development**: Utilize agents to generate code, visualize data, and streamline your analysis in your Notebooks
 - **Data Connection Management**: Connect to Snowflake, Databricks, and other data sources
 - **Secure Sandbox Environment**: Isolated Docker containers for safe code execution
 - **Run Locally on Private Data**: Deploy and operate OpenFoundry entirely on your own infrastructure, ensuring your data never leaves your environment
@@ -24,7 +24,7 @@ Welcome to OpenFoundry, a platform for analysts and non‑technical users to bui
 - **Snowflake**: Full support for Snowflake data warehouse connections
 - **Databricks**: Connect to Databricks SQL endpoints
 - **BigQuery**: Connect to BigQuery
-- **Clickhouse**: Connect to ClickHouse
+- **ClickHouse**: Connect to ClickHouse
 - **Postgres**: Connect to PostgreSQL
 - **Extensible Architecture**: Easy to add new connection types
 
