@@ -5,7 +5,8 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
-from openfoundry_types import TailCellsResult
+
+from openfoundry.notebook_types import TailCellsResult
 
 
 def _is_tail_cells_result(data: Any) -> bool:
