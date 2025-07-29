@@ -4,7 +4,7 @@ from pathlib import Path
 from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import StreamingResponse
 from nbformat import write
-from openfoundry_types import (
+from notebook_types import (
     DeleteCellResponse,
     ExecuteCodeRequest,
     KernelStatusResponse,
