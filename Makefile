@@ -17,7 +17,7 @@ docker-images:
 # Build the sandbox Docker image
 docker-sandbox-images:
 	@echo "Building sandbox Docker image: $(SANDBOX_IMAGE_NAME)"
-	docker build -f $(SANDBOX_DOCKER_FILE) -t $(SANDBOX_IMAGE_NAME) .
+	docker build -f $(SANDBOX_DOCKER_FILE) -t $(SANDBOX_IMAGE_NAME) sandbox/
 
 # Start openfoundry backend locally
 start-backend: install

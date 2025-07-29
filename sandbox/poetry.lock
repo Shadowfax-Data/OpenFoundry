@@ -3008,23 +3008,6 @@ signals = ["blinker (>=1.4.0)"]
 signedtoken = ["cryptography (>=3.0.0)", "pyjwt (>=2.0.0,<3)"]
 
 [[package]]
-name = "openfoundry-types"
-version = "0.1.0"
-description = "Shared types for OpenFoundry packages"
-optional = false
-python-versions = "^3.12"
-groups = ["main"]
-files = []
-develop = true
-
-[package.dependencies]
-pydantic = "^2.0.0"
-
-[package.source]
-type = "directory"
-url = "../shared-types"
-
-[[package]]
 name = "openhands-aci"
 version = "0.3.1"
 description = "An Agent-Computer Interface (ACI) designed for software development agents OpenHands."
@@ -6358,4 +6341,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.1"
 python-versions = "~3.12"
-content-hash = "befe80766c956f4ec13582156f8606f8393fa67d2a4ec9ee397b6cff0010298e"
+content-hash = "0caa7d5de8b6a6b143d8473110f1672240916479fc3adca6233cf117682316a9"
