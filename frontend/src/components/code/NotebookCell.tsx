@@ -14,7 +14,7 @@ import {
   NotebookOutput,
   OutputEventData,
   StreamingEventData,
-} from "@/hooks/useNotebookOperations";
+} from "@/hooks/types";
 
 import { CodeMirrorEditor } from "./CodeMirrorEditor";
 import { NotebookOutputItem } from "./NotebookOutputItem";

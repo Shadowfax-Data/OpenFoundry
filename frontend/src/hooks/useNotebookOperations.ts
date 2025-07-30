@@ -1,33 +1,11 @@
 import { useCallback, useEffect } from "react";
 
+// Import types from the types file
+import { NotebookData, NotebookOutput } from "./types";
 import { useKernelStatus } from "./useKernelStatus";
 import { useNotebookCells } from "./useNotebookCells";
 import { useNotebookData } from "./useNotebookData";
 import { useNotebookExecution } from "./useNotebookExecution";
-
-// Re-export types for backward compatibility
-export type {
-  CompletedEventData,
-  DisplayDataOutput,
-  ErrorEventData,
-  ErrorOutput,
-  ExecuteResultOutput,
-  InterruptedEventData,
-  NotebookCell,
-  NotebookCellInput,
-  NotebookData,
-  NotebookMetadata,
-  NotebookOutput,
-  NotebookOutputData,
-  OutputEventData,
-  StartedEventData,
-  StreamingEventData,
-  StreamOutput,
-} from "./types";
-export { KernelStatus } from "./useKernelStatus";
-
-// Import types from the types file
-import { NotebookData, NotebookOutput } from "./types";
 
 interface UseNotebookOperationsProps {
   notebookId: string;
