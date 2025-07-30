@@ -71,7 +71,11 @@ export const useBaseChat = ({
     initialPrompt,
   });
 
-  const sendMessage = async (inputMessage: string, model?: string) => {
+  const sendMessage = async (
+    inputMessage: string,
+    model?: string,
+    images?: string[],
+  ) => {
     if (!inputMessage.trim()) return;
 
     let currentToolCall: { name: string; arguments: string } | null = null;
@@ -101,6 +105,7 @@ export const useBaseChat = ({
           body: JSON.stringify({
             message: inputMessage,
             model: model,
+            ...(images && images.length > 0 && { images }),
           }),
         },
       );
