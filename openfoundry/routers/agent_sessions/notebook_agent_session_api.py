@@ -648,6 +648,49 @@ async def save_notebook(
     return {"message": "Notebook and workspace saved successfully"}
 
 
+@router.delete(
+    "/notebooks/{notebook_id}/sessions/{session_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def delete_notebook_agent_session(
+    notebook_id: uuid.UUID, session_id: uuid.UUID, request: Request
+):
+    """Delete a notebook agent session and its associated Docker container."""
+    db: Session = request.state.db
+
+    # Get the specific agent session for the notebook
+    notebook_agent_session = (
+        db.query(NotebookAgentSession)
+        .options(joinedload(NotebookAgentSession.agent_session))
+        .filter(
+            NotebookAgentSession.id == session_id,
+            NotebookAgentSession.notebook_id == notebook_id,
+        )
+        .first()
+    )
+
+    if not notebook_agent_session:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Session with id {session_id} not found for notebook {notebook_id}",
+        )
+
+    agent_session = notebook_agent_session.agent_session
+    if container_exists(agent_session.container_id):
+        notebook_agent_session.stop_in_docker()
+        notebook_agent_session.remove_from_docker()
+        logger.info(
+            f"Container {agent_session.container_id} stopped and removed for session {session_id}"
+        )
+
+    # Delete the notebook agent session and its associated agent session
+    db.delete(notebook_agent_session)
+    db.delete(agent_session)
+    db.commit()
+
+    logger.info(f"Notebook agent session {session_id} deleted successfully")
+
+
 @router.post(
     "/notebooks/{notebook_id}/sessions/{session_id}/connections",
 )
