@@ -4,14 +4,6 @@ from pathlib import Path
 from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import StreamingResponse
 from nbformat import write
-from notebook_types import (
-    DeleteCellResponse,
-    ExecuteCodeRequest,
-    KernelStatusResponse,
-    StopExecutionRequest,
-    StopExecutionResponse,
-    TailCellsResult,
-)
 
 from openfoundry_sandbox.cell_executor import (
     CellExecutor,
@@ -19,6 +11,14 @@ from openfoundry_sandbox.cell_executor import (
     KernelStatus,
 )
 from openfoundry_sandbox.config import get_notebook_path
+from openfoundry_sandbox.notebook_types import (
+    DeleteCellResponse,
+    ExecuteCodeRequest,
+    KernelStatusResponse,
+    StopExecutionRequest,
+    StopExecutionResponse,
+    TailCellsResult,
+)
 
 logger = logging.getLogger(__name__)
 

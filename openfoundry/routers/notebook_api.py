@@ -197,8 +197,6 @@ def delete_notebook(notebook_id: uuid.UUID, request: Request):
 
     # Stop and remove Docker containers for active sessions
     for notebook_agent_session in active_sessions:
-        container_id = notebook_agent_session.agent_session.container_id
-
         logger.info(
             f"Stopping Docker container for session {notebook_agent_session.id} during notebook deletion"
         )

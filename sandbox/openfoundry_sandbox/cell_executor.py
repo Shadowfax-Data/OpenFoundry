@@ -10,10 +10,10 @@ from nbclient import NotebookClient
 from nbclient.exceptions import CellExecutionError
 from nbformat import NotebookNode, read
 from nbformat.v4 import new_code_cell, new_notebook
-from notebook_types import TailCellsResult
 from pydantic import BaseModel, Field
 
 from openfoundry_sandbox.config import get_notebook_path, get_workspace_path
+from openfoundry_sandbox.notebook_types import TailCellsResult
 
 logger = logging.getLogger(__name__)
 
