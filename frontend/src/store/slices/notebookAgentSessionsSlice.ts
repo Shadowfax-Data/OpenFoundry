@@ -11,6 +11,7 @@ export const fetchNotebookAgentSessions = thunks.fetchSessions;
 export const createNotebookAgentSession = thunks.createSession;
 export const stopNotebookAgentSession = thunks.stopSession;
 export const resumeNotebookAgentSession = thunks.resumeSession;
+export const deleteNotebookAgentSession = thunks.deleteSession;
 export const saveNotebookWorkspace = thunks.saveWorkspace!; // Non-null assertion since this is notebooks
 
 const initialState: NotebookAgentSessionsState = {
@@ -126,6 +127,26 @@ const notebookAgentSessionsSlice = createSlice({
         state.loading = false;
         state.error =
           (action.payload as string) || "Failed to save notebook workspace";
+      })
+      // Delete notebook agent session
+      .addCase(deleteNotebookAgentSession.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(deleteNotebookAgentSession.fulfilled, (state, action) => {
+        state.loading = false;
+        const { notebookId, sessionId } = action.payload;
+        if (state.sessions[notebookId]) {
+          state.sessions[notebookId] = state.sessions[notebookId].filter(
+            (session) => session.id !== sessionId,
+          );
+        }
+      })
+      .addCase(deleteNotebookAgentSession.rejected, (state, action) => {
+        state.loading = false;
+        state.error =
+          (action.payload as string) ||
+          "Failed to delete notebook agent session";
       });
   },
 });

@@ -17,6 +17,7 @@ import { fetchConnections } from "@/store/slices/connectionsSlice";
 import {
   clearError as clearSessionsError,
   createNotebookAgentSession,
+  deleteNotebookAgentSession,
   fetchNotebookAgentSessions,
   resumeNotebookAgentSession,
   saveNotebookWorkspace,
@@ -226,6 +227,29 @@ export function NotebooksPage({
     }
   };
 
+  // Helper to handle Delete Session action
+  const handleDeleteSession = async (notebookId: string) => {
+    const notebookSessions = sessions[notebookId] || [];
+    // Find the most recent session to delete
+    const sessionToDelete = [...notebookSessions].sort(
+      (a, b) =>
+        new Date(b.created_on).getTime() - new Date(a.created_on).getTime(),
+    )[0];
+
+    if (sessionToDelete) {
+      try {
+        await dispatch(
+          deleteNotebookAgentSession({
+            notebookId,
+            sessionId: sessionToDelete.id,
+          }),
+        ).unwrap();
+      } catch (error) {
+        console.error("Failed to delete session:", error);
+      }
+    }
+  };
+
   // Helper to handle Save Notebook action
   const handleSaveNotebook = async (notebookId: string) => {
     const notebookSessions = sessions[notebookId] || [];
@@ -355,6 +379,7 @@ export function NotebooksPage({
                     isSaveLoading={saveLoadingNotebookId === notebook.id}
                     onEditClick={handleEditClick}
                     onStopSession={handleStopSession}
+                    onDeleteSession={handleDeleteSession}
                     onSaveNotebook={handleSaveNotebook}
                     onDeleteNotebook={handleDeleteNotebook}
                   />

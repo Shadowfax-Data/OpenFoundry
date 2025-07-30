@@ -207,41 +207,45 @@ export function createAgentSessionThunks<T extends ResourceType>(
     },
   );
 
-  // Delete session (only for apps)
-  const deleteSession =
-    resourceType === "apps"
-      ? createAsyncThunk(
-          `${sliceName}/delete${resourceSingular.charAt(0).toUpperCase() + resourceSingular.slice(1)}AgentSession`,
-          async (
-            params: { appId: string; sessionId: string },
-            { rejectWithValue },
-          ) => {
-            try {
-              const response = await fetch(
-                `/api/${resourceType}/${params.appId}/sessions/${params.sessionId}`,
-                {
-                  method: "DELETE",
-                },
-              );
+  // Delete session
+  const deleteSession = createAsyncThunk(
+    `${sliceName}/delete${resourceSingular.charAt(0).toUpperCase() + resourceSingular.slice(1)}AgentSession`,
+    async (
+      params: T extends "apps"
+        ? { appId: string; sessionId: string }
+        : { notebookId: string; sessionId: string },
+      { rejectWithValue },
+    ) => {
+      try {
+        const resourceId =
+          resourceType === "apps"
+            ? (params as { appId: string; sessionId: string }).appId
+            : (params as { notebookId: string; sessionId: string }).notebookId;
 
-              if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-              }
-
-              return {
-                [resourceIdKey]: params.appId,
-                sessionId: params.sessionId,
-              } as DeleteSessionReturn<T>;
-            } catch (error) {
-              return rejectWithValue(
-                error instanceof Error
-                  ? error.message
-                  : `Failed to delete ${resourceSingular} agent session`,
-              );
-            }
+        const response = await fetch(
+          `/api/${resourceType}/${resourceId}/sessions/${params.sessionId}`,
+          {
+            method: "DELETE",
           },
-        )
-      : undefined;
+        );
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        return {
+          [resourceIdKey]: resourceId,
+          sessionId: params.sessionId,
+        } as DeleteSessionReturn<T>;
+      } catch (error) {
+        return rejectWithValue(
+          error instanceof Error
+            ? error.message
+            : `Failed to delete ${resourceSingular} agent session`,
+        );
+      }
+    },
+  );
 
   // Save workspace (only for notebooks)
   const saveWorkspace =
@@ -289,7 +293,7 @@ export function createAgentSessionThunks<T extends ResourceType>(
     createSession,
     stopSession,
     resumeSession,
-    ...(deleteSession && { deleteSession }),
+    deleteSession,
     ...(saveWorkspace && { saveWorkspace }),
   };
 }
