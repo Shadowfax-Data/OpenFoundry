@@ -2,6 +2,7 @@ import io
 import json
 import tarfile
 import tempfile
+import time
 from functools import cache
 from pathlib import Path
 
@@ -113,6 +114,7 @@ def create_docker_container(
     logger.info(f"Docker container {container_name} started successfully")
 
     # Get container information (reload to get port mapping)
+    time.sleep(0.5)  # Hacky fix for MacOS to get port mapping to show up
     container.reload()
     port_mappings = {}
     for container_port in docker_config["ports"]:
