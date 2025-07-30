@@ -1,4 +1,4 @@
-import { ArrowUp, BarChart3, Paperclip, Sparkles } from "lucide-react";
+import { ArrowUp, BarChart3, ImageIcon, Paperclip, X } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -13,9 +13,19 @@ import { Textarea } from "@/components/ui/textarea";
 interface ChatInputProps {
   isStreaming: boolean;
   error?: string | null;
-  onSendMessage: (message: string, model?: string) => Promise<void> | void;
+  onSendMessage: (
+    message: string,
+    model?: string,
+    images?: string[],
+  ) => Promise<void> | void;
   placeholder?: string;
   disabled?: boolean;
+}
+
+interface AttachedImage {
+  id: string;
+  base64: string;
+  name: string;
 }
 
 const MODEL_OPTIONS = [
@@ -33,7 +43,9 @@ export function ChatInput({
 }: ChatInputProps) {
   const [inputMessage, setInputMessage] = useState<string>("");
   const [selectedModel, setSelectedModel] = useState<string>("gpt-4.1");
+  const [attachedImages, setAttachedImages] = useState<AttachedImage[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -44,11 +56,16 @@ export function ChatInput({
 
   const handleSendMessage = async () => {
     if (!inputMessage.trim() || isStreaming || disabled) return;
-    const result = onSendMessage(inputMessage, selectedModel);
+    const images =
+      attachedImages.length > 0
+        ? attachedImages.map((img) => img.base64)
+        : undefined;
+    const result = onSendMessage(inputMessage, selectedModel, images);
     if (result instanceof Promise) {
       await result;
     }
     setInputMessage("");
+    setAttachedImages([]);
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
     }
@@ -59,6 +76,37 @@ export function ChatInput({
       e.preventDefault();
       handleSendMessage();
     }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    Array.from(files).forEach((file) => {
+      if (file.type.startsWith("image/")) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const base64 = e.target?.result as string;
+          const base64Data = base64.split(",")[1]; // Remove data:image/...;base64, prefix
+          const newImage: AttachedImage = {
+            id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+            base64: base64Data,
+            name: file.name,
+          };
+          setAttachedImages((prev) => [...prev, newImage]);
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const removeImage = (imageId: string) => {
+    setAttachedImages((prev) => prev.filter((img) => img.id !== imageId));
   };
 
   return (
@@ -73,6 +121,28 @@ export function ChatInput({
         rows={1}
         disabled={isStreaming || disabled}
       />
+      {attachedImages.length > 0 && (
+        <div className="flex flex-wrap gap-2 p-2 border-t">
+          {attachedImages.map((image) => (
+            <div
+              key={image.id}
+              className="relative group bg-gray-100 rounded-lg p-2 flex items-center gap-2"
+            >
+              <ImageIcon className="w-4 h-4 text-gray-600" />
+              <span className="text-xs text-gray-700 max-w-20 truncate">
+                {image.name}
+              </span>
+              <button
+                onClick={() => removeImage(image.id)}
+                className="opacity-0 group-hover:opacity-100 transition-opacity"
+                type="button"
+              >
+                <X className="w-3 h-3 text-gray-500 hover:text-red-500" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
       <div className="flex items-center justify-between p-2 mt-1">
         <div className="flex items-center gap-2">
           <DropdownMenu>
@@ -101,12 +171,23 @@ export function ChatInput({
           </DropdownMenu>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
-            <Sparkles className="w-4 h-4" />
-          </Button>
-          <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 w-7 p-0"
+            onClick={() => fileInputRef.current?.click()}
+            type="button"
+          >
             <Paperclip className="w-4 h-4" />
           </Button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            onChange={handleFileSelect}
+            className="hidden"
+          />
           <Button
             onClick={handleSendMessage}
             disabled={!inputMessage.trim() || isStreaming || disabled}

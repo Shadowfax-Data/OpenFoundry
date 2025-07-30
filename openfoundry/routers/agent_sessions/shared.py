@@ -57,6 +57,7 @@ class MessageRequest(BaseModel):
 
     message: str
     model: str | None = None
+    images: list[str] | None = None
 
 
 class MessageResponse(BaseModel):
@@ -138,8 +139,21 @@ async def send_agent_chat_message(
         StreamingResponse: The streaming response for the chat message
 
     """
+    # Create content array starting with the text message
+    content = [{"type": "input_text", "text": message_request.message}]
+
+    # Add base64 images if provided
+    if message_request.images:
+        for image_b64 in message_request.images:
+            content.append(
+                {
+                    "type": "input_image",
+                    "image_url": f"data:image/jpeg;base64,{image_b64}",
+                }
+            )
+
     new_input_item: TResponseInputItem = {
-        "content": message_request.message,
+        "content": content,
         "role": "user",
     }
 
@@ -571,11 +585,24 @@ def get_conversation_messages_for_session(session_id: UUID) -> list[MessageRespo
 
             # user message doesn't have a type
             if role == "user":
+                # Handle user message content - can be string or array
+                content = message_data.get("content", "")
+                if isinstance(content, list):
+                    # Extract text from content array (for messages with images)
+                    text_parts = []
+                    for content_item in content:
+                        if (
+                            isinstance(content_item, dict)
+                            and content_item.get("type") == "input_text"
+                        ):
+                            text_parts.append(content_item.get("text", ""))
+                    content = "".join(text_parts)
+
                 formatted_messages.append(
                     MessageResponse(
                         id=item.id,
                         role="user",
-                        content=message_data.get("content", ""),
+                        content=content,
                     )
                 )
             elif item_type == "message":
