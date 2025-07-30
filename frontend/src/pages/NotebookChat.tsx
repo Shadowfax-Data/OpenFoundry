@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router";
 import { toast } from "sonner";
 
@@ -37,12 +37,26 @@ export function NotebookChat() {
   const [isAgentWorkingOnNotebook, setIsAgentWorkingOnNotebook] =
     useState(false);
   const refreshTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const notebookContainerRef = useRef<HTMLDivElement | null>(null);
 
   const notebookOps = useNotebookOperations({
     notebookId: notebookId!,
     sessionId: sessionId!,
     autoLoad: isSandboxReady,
   });
+
+  // Auto-scroll to latest cell
+  const scrollToLatestCell = useCallback(() => {
+    if (notebookContainerRef.current) {
+      // Find the last cell element
+      const cellElements =
+        notebookContainerRef.current.querySelectorAll("[data-cell-index]");
+      if (cellElements.length > 0) {
+        const lastCell = cellElements[cellElements.length - 1];
+        lastCell.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    }
+  }, []);
 
   // Handle notebook tool activity with immediate refresh
   const handleNotebookToolActivity = (
@@ -70,6 +84,8 @@ export function NotebookChat() {
         setIsAgentWorkingOnNotebook(false);
         // Final refresh to catch any delayed changes
         notebookOps.getNotebook();
+        // Auto-scroll to latest cell after refresh
+        setTimeout(scrollToLatestCell, 100);
       }, 2000);
     }
   };
@@ -91,6 +107,17 @@ export function NotebookChat() {
       dispatch(fetchNotebookAgentSessions(notebookId));
     }
   }, [notebookId, sessionId, session, dispatch]);
+
+  // Auto-scroll when notebook data changes (new cells added)
+  useEffect(() => {
+    if (
+      notebookOps.notebookData?.cells &&
+      notebookOps.notebookData.cells.length > 0
+    ) {
+      // Small delay to ensure DOM is updated
+      setTimeout(scrollToLatestCell, 200);
+    }
+  }, [notebookOps.notebookData?.cells, scrollToLatestCell]);
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -232,7 +259,7 @@ export function NotebookChat() {
               </div>
             </div>
           ) : (
-            <div className="h-full relative">
+            <div className="h-full relative" ref={notebookContainerRef}>
               {isAgentWorkingOnNotebook && (
                 <div className="absolute top-2 right-2 z-10 bg-blue-100 text-blue-800 px-2 py-1 rounded-md text-xs">
                   🔄 Syncing...

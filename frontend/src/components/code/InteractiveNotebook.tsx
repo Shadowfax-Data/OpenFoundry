@@ -2,11 +2,11 @@ import { Plus, RotateCcw, Save } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
-  KernelStatus,
   NotebookCellInput,
   NotebookData,
   StreamingEventData,
-} from "@/hooks/useNotebookOperations";
+} from "@/hooks/types";
+import { KernelStatus } from "@/hooks/useKernelStatus";
 
 import { NotebookCellComponent } from "./NotebookCell";
 

@@ -4,7 +4,6 @@ from pathlib import Path
 from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import StreamingResponse
 from nbformat import write
-from pydantic import BaseModel, Field
 
 from openfoundry_sandbox.cell_executor import (
     CellExecutor,
@@ -12,63 +11,18 @@ from openfoundry_sandbox.cell_executor import (
     KernelStatus,
 )
 from openfoundry_sandbox.config import get_notebook_path
+from openfoundry_sandbox.notebook_types import (
+    DeleteCellResponse,
+    ExecuteCodeRequest,
+    KernelStatusResponse,
+    StopExecutionRequest,
+    StopExecutionResponse,
+    TailCellsResult,
+)
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/notebook", tags=["notebook"])
-
-
-# --- Pydantic Models ---
-
-
-class ExecuteCodeRequest(BaseModel):
-    """Request model for executing code in the Jupyter kernel."""
-
-    code: str = Field(..., description="Python code to execute")
-    cell_id: str = Field(..., description="Unique identifier for this cell execution")
-
-
-class KernelStatusResponse(BaseModel):
-    """Response model for kernel status."""
-
-    is_ready: bool = Field(..., description="Whether the kernel is ready for execution")
-    is_starting: bool = Field(
-        ..., description="Whether the kernel is currently starting or initializing"
-    )
-    is_initializing: bool = Field(
-        ..., description="Whether the kernel is running initial auto-execution"
-    )
-    kernel_id: str | None = Field(None, description="Unique kernel identifier")
-
-
-class DeleteCellRequest(BaseModel):
-    """Request model for deleting a cell."""
-
-    cell_id: str = Field(..., description="Unique identifier of the cell to delete")
-
-
-class DeleteCellResponse(BaseModel):
-    """Response model for cell deletion."""
-
-    success: bool = Field(..., description="Whether the deletion was successful")
-    message: str = Field(..., description="Deletion result message")
-    cell_id: str = Field(..., description="ID of the cell that was deleted")
-
-
-class StopExecutionRequest(BaseModel):
-    """Request model for stopping cell execution."""
-
-    cell_id: str | None = Field(
-        None,
-        description="Optional specific cell ID to stop (if not provided, stops any currently executing cell)",
-    )
-
-
-class StopExecutionResponse(BaseModel):
-    """Response model for stopping execution."""
-
-    success: bool = Field(..., description="Whether the stop operation was successful")
-    message: str = Field(..., description="Result message")
 
 
 # Global cell executor instance
@@ -128,6 +82,25 @@ async def get_kernel_status():
 async def get_notebook():
     """Get the complete notebook data including all cells and their results."""
     return await cell_executor.get_notebook()
+
+
+@router.get("/tail", response_model=TailCellsResult)
+async def get_tail_cells(num_cells: int = 5):
+    """Get the last N cells from the notebook.
+
+    Args:
+        num_cells: Number of cells to retrieve from the end (default: 5)
+
+    Returns:
+        Dictionary containing the last N cells with their outputs
+    """
+    if num_cells < 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="num_cells must be non-negative",
+        )
+
+    return await cell_executor.tail_cells(num_cells)
 
 
 @router.post("/stop", response_model=StopExecutionResponse)

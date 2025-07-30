@@ -14,7 +14,7 @@ import {
   NotebookOutput,
   OutputEventData,
   StreamingEventData,
-} from "@/hooks/useNotebookOperations";
+} from "@/hooks/types";
 
 import { CodeMirrorEditor } from "./CodeMirrorEditor";
 import { NotebookOutputItem } from "./NotebookOutputItem";
@@ -196,7 +196,10 @@ export function NotebookCellComponent({
   };
 
   return (
-    <div className="border rounded-lg p-4 mb-4 group hover:shadow-sm transition-shadow">
+    <div
+      className="border rounded-lg p-4 mb-4 group hover:shadow-sm transition-shadow"
+      data-cell-index={index}
+    >
       {/* Cell Header */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">

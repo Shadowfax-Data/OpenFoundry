@@ -1,6 +1,6 @@
 import DOMPurify from "dompurify";
 
-import { NotebookOutput } from "@/hooks/useNotebookOperations";
+import { NotebookOutput } from "@/hooks/types";
 
 interface NotebookOutputItemProps {
   output: NotebookOutput;

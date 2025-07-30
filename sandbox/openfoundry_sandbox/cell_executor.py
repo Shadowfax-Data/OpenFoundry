@@ -13,6 +13,7 @@ from nbformat.v4 import new_code_cell, new_notebook
 from pydantic import BaseModel, Field
 
 from openfoundry_sandbox.config import get_notebook_path, get_workspace_path
+from openfoundry_sandbox.notebook_types import TailCellsResult
 
 logger = logging.getLogger(__name__)
 
@@ -529,6 +530,127 @@ class CellExecutor:
     async def get_notebook(self) -> NotebookNode:
         """Get the complete notebook data."""
         return self.nb
+
+    async def tail_cells(self, num_cells: int = 5) -> TailCellsResult:
+        """Get the last N cells from the notebook with their outputs.
+
+        Args:
+            num_cells: Number of cells to retrieve from the end of the notebook
+
+        Returns:
+            Dictionary containing optimized cell data for the last N cells
+        """
+        cells = self.nb.cells[-num_cells:] if num_cells > 0 else []
+
+        formatted_cells = []
+        total_cells = len(self.nb.cells)
+        start_index = max(0, total_cells - num_cells)
+
+        for i, cell in enumerate(cells):
+            cell_info = {
+                "cell_index": start_index + i,
+                "cell_type": cell.get("cell_type", "unknown"),
+                "source": cell.get("source", ""),
+                "execution_count": cell.get("execution_count"),
+            }
+
+            # Optimize outputs if they exist
+            if cell.get("outputs"):
+                cell_info["outputs"] = self._optimize_cell_outputs(cell["outputs"])
+
+            formatted_cells.append(cell_info)
+
+        return TailCellsResult(
+            total_cells=total_cells,
+            returned_cells=len(formatted_cells),
+            start_index=start_index,
+            cells=formatted_cells,
+        )
+
+    def _optimize_cell_outputs(self, outputs: list) -> list:
+        """Optimize cell outputs to reduce context window usage while preserving essential content."""
+        optimized = []
+
+        for output in outputs:
+            output_type = output.get("output_type", "")
+
+            if output_type == "stream":
+                # Keep stream outputs (stdout/stderr) as-is since they're usually important
+                optimized.append(
+                    {
+                        "output_type": "stream",
+                        "name": output.get("name", "stdout"),
+                        "text": output.get("text", ""),
+                    }
+                )
+
+            elif output_type == "display_data":
+                # Optimize display data, especially images
+                data = output.get("data", {})
+                optimized_output = {"output_type": "display_data"}
+
+                # Handle images with optimization
+                if "image/png" in data:
+                    # Extract PNG image data
+                    image_data = data["image/png"]
+                    optimized_output["image"] = image_data
+                    optimized_output["image_format"] = "png"
+
+                    # Add description from text/plain if available
+                    if "text/plain" in data:
+                        text_desc = data["text/plain"]
+                        # Extract meaningful description from matplotlib figure text
+                        if "Figure size" in text_desc:
+                            optimized_output["description"] = text_desc
+
+                elif "image/jpeg" in data:
+                    optimized_output["image"] = data["image/jpeg"]
+                    optimized_output["image_format"] = "jpeg"
+                    if "text/plain" in data:
+                        optimized_output["description"] = data["text/plain"]
+
+                # Keep other important data types
+                for key in ["text/html", "application/json"]:
+                    if key in data:
+                        optimized_output[key.replace("/", "_")] = data[key]
+
+                if len(optimized_output) > 1:  # More than just output_type
+                    optimized.append(optimized_output)
+
+            elif output_type == "execute_result":
+                # Keep execute results but optimize similar to display_data
+                data = output.get("data", {})
+                optimized_output = {
+                    "output_type": "execute_result",
+                    "execution_count": output.get("execution_count"),
+                }
+
+                # Keep text/plain for simple results
+                if "text/plain" in data:
+                    optimized_output["text"] = data["text/plain"]
+
+                # Handle images in execute results
+                if "image/png" in data:
+                    optimized_output["image"] = data["image/png"]
+                    optimized_output["image_format"] = "png"
+                elif "image/jpeg" in data:
+                    optimized_output["image"] = data["image/jpeg"]
+                    optimized_output["image_format"] = "jpeg"
+
+                optimized.append(optimized_output)
+
+            elif output_type == "error":
+                # Keep error information as it's crucial for debugging
+                optimized.append(
+                    {
+                        "output_type": "error",
+                        "ename": output.get("ename", ""),
+                        "evalue": output.get("evalue", ""),
+                        "traceback": output.get("traceback", []),
+                    }
+                )
+
+        return optimized
 
     def delete_cell(self, cell_id: str) -> bool:
         """Delete a cell from the notebook by its ID."""

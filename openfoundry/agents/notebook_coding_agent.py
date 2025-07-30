@@ -6,6 +6,7 @@ from openfoundry.agents.notebook_tools import (
     get_notebook,
     run_all_cells,
     stop_cell,
+    tail_cells,
 )
 from openfoundry.agents.utils.template_loader import load_prompt_template
 
@@ -28,6 +29,7 @@ def get_notebook_coding_agent(
             run_all_cells,
             stop_cell,
             delete_cell,
+            tail_cells,
         ],
         model=model,
         model_settings=model_settings,
