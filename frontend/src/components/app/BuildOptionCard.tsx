@@ -18,7 +18,7 @@ export function BuildOptionCard({
 }: Omit<BuildOption, "id">) {
   return (
     <div
-      className={`rounded-lg border p-6 text-center transition h-full flex flex-col ${
+      className={`rounded-lg border p-6 text-left transition h-full flex flex-col ${
         disabled
           ? "cursor-not-allowed opacity-50"
           : "cursor-pointer hover:shadow-lg"

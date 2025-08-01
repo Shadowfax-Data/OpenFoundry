@@ -38,12 +38,14 @@ interface CreateNotebookDialogProps {
   onCreatingSession: (isCreating: boolean) => void;
   onClose: () => void;
   disabled?: boolean;
+  initialPrompt?: string;
 }
 
 export function CreateNotebookDialog({
   onCreatingSession,
   onClose,
   disabled = false,
+  initialPrompt,
 }: CreateNotebookDialogProps) {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
@@ -55,7 +57,7 @@ export function CreateNotebookDialog({
     defaultValues: {
       name: "",
       connectionIds: [],
-      prompt: "",
+      prompt: initialPrompt || "",
     },
   });
 
