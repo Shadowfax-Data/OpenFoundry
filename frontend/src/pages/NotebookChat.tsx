@@ -29,6 +29,7 @@ export function NotebookChat() {
   const [isSandboxReady, setIsSandboxReady] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
   const [searchParams] = useSearchParams();
+  const [initialPromptSent, setInitialPromptSent] = useState(false);
 
   // Extract prompt from query params
   const prompt = searchParams.get("prompt")?.trim() || "";
@@ -93,7 +94,6 @@ export function NotebookChat() {
   const { messages, isStreaming, error, sendMessage } = useNotebookChat({
     notebookId: notebookId!,
     sessionId: sessionId!,
-    initialPrompt: prompt,
     onNotebookToolActivity: handleNotebookToolActivity,
   });
 
@@ -165,6 +165,33 @@ export function NotebookChat() {
 
     return () => clearInterval(intervalId);
   }, [notebookId, sessionId]);
+
+  // Send initial prompt when sandbox is ready
+  useEffect(() => {
+    if (isSandboxReady && prompt && !initialPromptSent) {
+      sendMessage(prompt);
+      setInitialPromptSent(true);
+
+      // Remove the prompt from URL to prevent re-sending on refresh
+      const newSearchParams = new URLSearchParams(searchParams);
+      newSearchParams.delete("prompt");
+      const newUrl = newSearchParams.toString()
+        ? `?${newSearchParams.toString()}`
+        : "";
+      navigate(`/notebooks/${notebookId}/sessions/${sessionId}/chat${newUrl}`, {
+        replace: true,
+      });
+    }
+  }, [
+    isSandboxReady,
+    prompt,
+    initialPromptSent,
+    sendMessage,
+    navigate,
+    searchParams,
+    notebookId,
+    sessionId,
+  ]);
 
   const handleResetChat = async () => {
     if (!notebookId || !sessionId) return;
