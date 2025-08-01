@@ -107,10 +107,9 @@ export function Home() {
           {/* Input area */}
           <div className="mb-8">
             <div className="relative">
-              <input
-                type="text"
+              <textarea
                 placeholder="Ask OpenFoundry to build..."
-                className="w-full rounded-lg border border-gray-200 bg-background px-4 py-3 text-sm placeholder:text-muted-foreground focus:border-gray-300 focus:outline-none focus:ring-0"
+                className="w-full rounded-lg border border-gray-200 bg-background px-4 py-3 text-sm placeholder:text-muted-foreground focus:border-gray-300 focus:outline-none focus:ring-0 resize-none overflow-hidden min-h-[48px]"
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 onKeyDown={(e) => {
@@ -119,8 +118,14 @@ export function Home() {
                     handlePromptSubmit();
                   }
                 }}
+                onInput={(e) => {
+                  const target = e.target as HTMLTextAreaElement;
+                  target.style.height = "auto";
+                  target.style.height = target.scrollHeight + "px";
+                }}
+                rows={1}
               />
-              <div className="absolute right-3 top-3 flex items-center">
+              <div className="absolute right-3 bottom-3 flex items-center">
                 <Button
                   size="sm"
                   variant="ghost"
