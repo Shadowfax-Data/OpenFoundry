@@ -5,7 +5,6 @@ import {
   BookOpen,
   FileText,
   Globe,
-  Hammer,
   TrendingUp,
   Users,
 } from "lucide-react";
@@ -15,6 +14,7 @@ import { useNavigate } from "react-router";
 import { BuildOptionsDialog } from "@/components/app/BuildOptionsDialog";
 import { CreateAppDialog } from "@/components/app/CreateAppDialog";
 import { SampleProjectCard } from "@/components/app/SampleProjectCard";
+import { CreateNotebookDialog } from "@/components/notebooks/CreateNotebookDialog";
 import { Button } from "@/components/ui/button";
 import { useAppDispatch } from "@/store";
 import { fetchConnections } from "@/store/slices/connectionsSlice";
@@ -23,6 +23,8 @@ export function Home() {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const [createAppDialogOpen, setCreateAppDialogOpen] = useState(false);
+  const [createNotebookDialogOpen, setCreateNotebookDialogOpen] =
+    useState(false);
   const [buildOptionsDialogOpen, setBuildOptionsDialogOpen] = useState(false);
   const [prompt, setPrompt] = useState("");
   const [initialPrompt, setInitialPrompt] = useState<string | undefined>(
@@ -56,6 +58,11 @@ export function Home() {
     setCreateAppDialogOpen(true);
   };
 
+  const handleSelectNotebook = () => {
+    setBuildOptionsDialogOpen(false);
+    setCreateNotebookDialogOpen(true);
+  };
+
   const buildOptions = [
     {
       id: "application",
@@ -71,8 +78,7 @@ export function Home() {
       description: "Create data analysis and computational notebooks",
       icon: <BookOpen className="h-6 w-6" />,
       iconBgColor: "bg-purple-600",
-      onClick: () => {},
-      disabled: true,
+      onClick: handleSelectNotebook,
     },
   ];
 
@@ -143,19 +149,19 @@ export function Home() {
               variant="outline"
               size="sm"
               className="flex items-center gap-2"
-              onClick={() => navigate("/apps")}
+              onClick={handleBuildApplicationClick}
             >
-              <Hammer className="h-4 w-4" />
-              App Builder
+              <FileText className="h-4 w-4" />
+              Create a data application
             </Button>
             <Button
               variant="outline"
               size="sm"
               className="flex items-center gap-2"
-              onClick={handleBuildApplicationClick}
+              onClick={() => setCreateNotebookDialogOpen(true)}
             >
-              <FileText className="h-4 w-4" />
-              Create a data application
+              <BookOpen className="h-4 w-4" />
+              Create a notebook
             </Button>
           </div>
 
@@ -227,6 +233,14 @@ export function Home() {
         <CreateAppDialog
           onCreatingSession={setIsCreatingSession}
           onClose={() => setCreateAppDialogOpen(false)}
+          initialPrompt={initialPrompt}
+          disabled={isCreatingSession}
+        />
+      )}
+      {createNotebookDialogOpen && (
+        <CreateNotebookDialog
+          onCreatingSession={setIsCreatingSession}
+          onClose={() => setCreateNotebookDialogOpen(false)}
           initialPrompt={initialPrompt}
           disabled={isCreatingSession}
         />
