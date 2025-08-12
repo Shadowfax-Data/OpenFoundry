@@ -13,7 +13,7 @@ export function Layout() {
         <div className="flex flex-1 flex-col overflow-hidden">
           <Navbar />
           <main className="flex flex-1 min-h-0">
-            <div className="flex-1 p-2">
+            <div className="w-full flex-1 p-2">
               <div className="h-full border bg-background">
                 <Outlet />
               </div>

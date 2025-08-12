@@ -595,6 +595,9 @@ async def delete_notebook_cell(
     """Delete a cell from the notebook."""
     async with run_context.get_sandbox_client() as client:
         response = await client.delete(f"/api/notebook/cells/{cell_id}")
+        if response.is_error and response.status_code == 404:
+            # Treat 404 as success for this endpoint
+            return {"message": "Cell deleted successfully", "success": True}
         response.raise_for_status()
         return response.json()
 

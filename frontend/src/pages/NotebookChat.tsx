@@ -289,7 +289,7 @@ export function NotebookChat() {
             <div className="h-full relative" ref={notebookContainerRef}>
               {isAgentWorkingOnNotebook && (
                 <div className="absolute top-2 right-2 z-10 bg-blue-100 text-blue-800 px-2 py-1 rounded-md text-xs">
-                  🔄 Syncing...
+                  Syncing...
                 </div>
               )}
               <InteractiveNotebook
