@@ -231,9 +231,10 @@ def _format_notebook_tail_cells(data: dict, indent: int = 0) -> str:
 
         # Optimized outputs
         outputs = cell.get("outputs", [])
-        for output in outputs:
-            output_indent = space * (indent + 2)
-            fragments.extend(_format_output_for_xml(output, output_indent))
+        if outputs is not None:
+            for output in outputs:
+                output_indent = space * (indent + 2)
+                fragments.extend(_format_output_for_xml(output, output_indent))
 
         fragments.append(f"{cell_indent}</cell>")
 
