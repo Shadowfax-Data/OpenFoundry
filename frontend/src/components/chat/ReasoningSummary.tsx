@@ -22,7 +22,11 @@ export const ReasoningSummary: React.FC<ReasoningSummaryProps> = ({
   }, [isStreaming, summary]);
 
   if (!summary || summary.trim() === "") return null;
-
+  // Simplify: replace any non-alphanumeric char (e.g. '.', '!', '?', etc) followed by '**...**\n' with that char + '\n\n**...**\n'
+  const fixedSummary = summary.replace(
+    /([^a-zA-Z0-9])((\*\*.*?\*\*\n))/g,
+    "$1\n\n$2",
+  );
   return (
     <div className="mt-2">
       <button
@@ -35,7 +39,7 @@ export const ReasoningSummary: React.FC<ReasoningSummaryProps> = ({
       {open && (
         <div className="text-xs text-gray-500 bg-gray-50 rounded p-2 mt-1 whitespace-pre-wrap">
           <MarkdownMessage
-            content={summary}
+            content={fixedSummary}
             className="text-xs text-gray-500"
           />
         </div>

@@ -16,6 +16,36 @@ NAME_TO_AGENT_FACTORY: dict[str, Callable] = {
 
 TEMPERATURE = 0.5
 MODEL_CONFIGS = {
+    "gpt-5 thinking": (
+        "gpt-5",
+        ModelSettings(
+            parallel_tool_calls=False,
+            reasoning=Reasoning(
+                effort="high",
+                summary="auto",
+            ),
+        ),
+    ),
+    "gpt-5": (
+        "gpt-5",
+        ModelSettings(
+            parallel_tool_calls=False,
+            reasoning=Reasoning(
+                effort="minimal",
+                summary="auto",
+            ),
+        ),
+    ),
+    "gpt-5 mini": (
+        "gpt-5-mini",
+        ModelSettings(
+            parallel_tool_calls=False,
+            reasoning=Reasoning(
+                effort="high",
+                summary="auto",
+            ),
+        ),
+    ),
     "o4-mini": (
         "o4-mini",
         ModelSettings(
@@ -47,4 +77,4 @@ MODEL_CONFIGS = {
 
 
 def get_model_name_and_settings(model: str | None) -> tuple[str, ModelSettings]:
-    return MODEL_CONFIGS[model or "gpt-4.1"]
+    return MODEL_CONFIGS[model or "gpt-5 thinking"]

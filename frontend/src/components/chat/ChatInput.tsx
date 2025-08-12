@@ -29,10 +29,11 @@ interface AttachedImage {
 }
 
 const MODEL_OPTIONS = [
-  { value: "o4-mini", label: "o4-mini" },
-  { value: "gpt-4.1", label: "gpt-4.1" },
-  { value: "o3", label: "o3" },
+  { value: "gpt-5 thinking", label: "gpt-5 thinking" },
+  { value: "gpt-5", label: "gpt-5" },
+  { value: "gpt-5 mini", label: "gpt-5 mini" },
 ];
+const DEFAULT_MODEL = "gpt-5 thinking";
 
 export function ChatInput({
   isStreaming,
@@ -42,7 +43,7 @@ export function ChatInput({
   disabled = false,
 }: ChatInputProps) {
   const [inputMessage, setInputMessage] = useState<string>("");
-  const [selectedModel, setSelectedModel] = useState<string>("gpt-4.1");
+  const [selectedModel, setSelectedModel] = useState<string>(DEFAULT_MODEL);
   const [attachedImages, setAttachedImages] = useState<AttachedImage[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);

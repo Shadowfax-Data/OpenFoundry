@@ -1,4 +1,7 @@
+.git
 .env
 **/__pycache__/
 **/*.pyc
+storage
+sandbox
 tests
